@@ -1,19 +1,22 @@
 #pragma once
 
+typedef void (*ChoiceCallback)(const struct ChoiceDialogChoice*);
+typedef void (*ChoiceDialogCallback)(const struct ChoiceDialogChoice*, const int);
+
 struct ChoiceDialogChoice
 {
 	const char* name, * description;
-	const void (*callback)(const struct ChoiceDialogChoice*);
+	const ChoiceCallback callback;
 };
-
-void drawBox(const int width, int height, const char* text, const char title[], const enum BorderStyle border, const char color[]);
-void showChoiceDialog(const char title[], const char* text, const char* prompt, const struct ChoiceDialogChoice* choices, const int choices_size, const void (*callback)(const struct ChoiceDialogChoice*, const int index), const char color[]);
-void showInfoDialog(const char title[], const char text[]);
 
 enum BorderStyle {
 	BORDER_SINGLE,
 	BORDER_DOUBLE
 };
+
+void drawBox(const int width, int height, const char* text, const char title[], const enum BorderStyle border, const char color[], const int paddingX, const int paddingY);
+void showChoiceDialog(const char title[], const char* text, const char* prompt, const struct ChoiceDialogChoice* choices, const int choices_size, const ChoiceDialogCallback callback, const char color[]);
+void showInfoDialog(const char title[], const char text[]);
 
 #define BOX_CHAR_D_DR   201
 #define BOX_CHAR_D_DL   187
@@ -28,7 +31,9 @@ enum BorderStyle {
 #define BOX_CHAR_UR     192
 #define BOX_CHAR_UL     217
 
-#define DIALOG_WIDTH 32
+#define DIALOG_PADDING_X 4
+#define DIALOG_PADDING_Y 1
+#define DIALOG_WIDTH 32 + DIALOG_PADDING_X * 2
 
 #define choice_callback(name) void menu_ ## name(const struct ChoiceDialogChoice* choice)
 // Default callback for all choices

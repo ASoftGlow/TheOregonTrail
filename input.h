@@ -1,11 +1,9 @@
 #pragma once
-
-int qgetch(enum QKeyType* key_type);
-void waitForKey(const int key);
+#include <stdarg.h>
 
 enum QKeyType {
-	QKEYTYPE_NORMAL,
-	QKEYTYPE_ARROW
+	QKEY_TYPE_NORMAL,
+	QKEY_TYPE_ARROW
 };
 
 enum QArrowKey {
@@ -14,3 +12,16 @@ enum QArrowKey {
 	QARROW_RIGHT = 77,
 	QARROW_LEFT = 75
 };
+
+enum QKeyCallbackReturn {
+	QKEY_CALLBACK_RETURN_NORMAL = 1,
+	QKEY_CALLBACK_RETURN_IGNORE = 0,
+	QKEY_CALLBACK_RETURN_IDK = -1
+};
+
+typedef enum QKeyCallbackReturn(*vQKeyCallback)(int, enum QKeyType, va_list);
+
+int qgetch(enum QKeyType* key_type);
+void waitForKey(const int key);
+int getNumber(int start, int end, const vQKeyCallback key_callback);
+int vgetNumber(int start, int end, const vQKeyCallback key_callback, ...);

@@ -37,8 +37,5 @@ size_t strlen_iae(const char* str)
 
 void clear_stdout(void)
 {
-	puts_n("\033[0;0H");
-#ifndef _WIN32
-	puts_n("\033[2J");
-#endif
+	puts_n("\033[1;1H" "\033[2J");
 }

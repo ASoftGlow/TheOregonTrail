@@ -16,7 +16,6 @@ typedef unsigned char byte;
 
 const char dialog_txt[] = "You may:";
 const char dialog_prompt[] = "What is your choice?";
-const char dialog_leader_name[] = "What is the first name of the wagon leader? " ANSI_CURSOR_SAVE;
 
 #define WAGON_MEMBER_COUNT 4
 #define NAME_SIZE 10
@@ -123,7 +122,9 @@ void show_month(void)
 		{"Ask for advice",.callback = &menu_month_advice}
 	};
 
-	showChoiceDialog(0, text, dialog_prompt, choices, _countof(choices), &menu_month, 0);
+	showChoiceDialog(text, dialog_prompt, choices, _countof(choices), &(struct _DialogOptions){
+		.callback = &menu_month
+	});
 }
 
 static choice_callback(role_learn)
@@ -138,7 +139,10 @@ static choice_callback_g(role)
 	money = (float[]){ 1600.f, 800.f, 400.f } [index] ;
 
 	clear_stdout();
-	drawBox(DIALOG_WIDTH, 8, dialog_leader_name, 0, BORDER_DOUBLE, ANSI_COLOR_YELLOW, 0, 0);
+	drawBox(&"What is the first name of the wagon leader? " ANSI_CURSOR_SAVE, DIALOG_WIDTH, BORDER_DOUBLE, &(struct _BoxOptions){
+		.height = 8,
+			.color = ANSI_COLOR_YELLOW
+	});
 	puts_n(ANSI_CURSOR_SHOW ANSI_CURSOR_RESTORE);
 
 	fputc('t', stdin);
@@ -156,7 +160,7 @@ static choice_callback_g(role)
 
 void show_role(void)
 {
-	const char text[] = "Many kinds of people made the trip to Oregon.\n\nYou may:";
+	//const char text[] = ;
 	const struct ChoiceDialogChoice choices[] = {
 		{"Be a banker from Boston"},
 		{"Be a carpenter from Ohio"},
@@ -164,7 +168,9 @@ void show_role(void)
 		{"Find out the differences between these choices",.callback = &menu_role_learn}
 	};
 
-	showChoiceDialog(0, text, dialog_prompt, choices, _countof(choices), &menu_role, 0);
+	showChoiceDialog("Many kinds of people made the trip to Oregon.\n\nYou may:", dialog_prompt, choices, _countof(choices), &(struct _DialogOptions){
+		.callback = &menu_role
+	});
 }
 
 static choice_callback(main_start)
@@ -199,7 +205,9 @@ void show_main(void)
 		{"Exit",.callback = &menu_main_exit}
 	};
 
-	showChoiceDialog("Welcome to Oregon Trail", dialog_txt, dialog_prompt, choices, _countof(choices), 0, 0);
+	showChoiceDialog(dialog_txt, dialog_prompt, choices, _countof(choices), &(struct _DialogOptions){
+		.title = "Welcome to Oregon Trail"
+	});
 }
 
 int main(void)
@@ -213,7 +221,7 @@ int main(void)
 	SetConsoleMode(hOut, dwMode);
 #endif
 	//getNumber(3, 8);
-	
+
 	puts_n(ANSI_CURSOR_SHOW);
 	show_main();
 

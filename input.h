@@ -25,3 +25,4 @@ int qgetch(enum QKeyType* key_type);
 void waitForKey(const int key);
 int getNumber(int start, int end, const vQKeyCallback key_callback);
 int vgetNumber(int start, int end, const vQKeyCallback key_callback, ...);
+COORD GetConsoleCursorPosition(HANDLE hConsoleOutput);

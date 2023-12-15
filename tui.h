@@ -14,8 +14,25 @@ enum BorderStyle {
 	BORDER_DOUBLE
 };
 
-void drawBox(const int width, int height, const char* text, const char title[], const enum BorderStyle border, const char color[], const int paddingX, const int paddingY);
-void showChoiceDialog(const char title[], const char* text, const char* prompt, const struct ChoiceDialogChoice* choices, const int choices_size, const ChoiceDialogCallback callback, const char color[]);
+typedef struct _BoxOptions
+{
+	const char* title;
+	const int height;
+	const char* color;
+	const int paddingX;
+	const int paddingY;
+	COORD* captures;
+} *BoxOptions;
+
+typedef struct _DialogOptions
+{
+	const char* title;
+	const ChoiceDialogCallback callback;
+	const char* color;
+} *DialogOptions;
+
+void drawBox(const char* text, const int width, const enum BorderStyle border, const BoxOptions options);
+void showChoiceDialog(const char* text, const char* prompt, const struct ChoiceDialogChoice* choices, const int choices_size, const DialogOptions options);
 void showInfoDialog(const char title[], const char text[]);
 
 #define BOX_CHAR_D_DR   201

@@ -2,20 +2,92 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef _WIN32
-#include <Windows.h>
-#endif
+#include <ctype.h>
+#include "libs/cvector.h"
 
 #include "tui.h"
-#include "constants.h"
 #include "utils.h"
 #include "input.c"
-#include <stdarg.h>
 
-void drawChoice(const struct ChoiceDialogChoice* choice, const int index, const int selected);
+void drawChoice(const struct ChoiceDialogChoice* choices, const struct WrapLine* lines, const struct _ChoiceInfo* choices_info, const int index, const bool selected);
 
-char down[] = "\033[?B";
-char forward[] = "\033[?C";
+struct WrapLine* wrapText(const char* text, int width, const WrapLineOptions options)
+{
+	struct WrapLine* lines = 0;
+	if (options && options->plines)
+	{
+		lines = options->plines;
+	}
+	else
+	{
+		cvector_init(lines, 0, 0);
+	}
+	byte start = (byte)cvector_size(lines);
+	cvector_push_back_struct(lines);
+	assert(lines);
+	byte l = start;
+	lines[l].length = 0;
+
+	const bool auto_height = options && options->height;
+
+	int i = -1;
+	bool is_escaping = 0;
+	byte escaped_chars = 0;
+	int last_break = 0;
+	int capture_i = 0;
+
+	while (text[++i])
+	{
+		if (text[i] == '\n')
+		{
+		newline:
+			lines[l].client_length = lines[l].length - escaped_chars;
+			lines[l].text[lines[l].length++] = 0;
+			++l;
+			cvector_push_back_struct(lines);
+			lines[l].length = 0;
+			lines[l].text[0] = 0;
+			escaped_chars = 0;
+			continue;
+		}
+		else if (text[i] == 27) is_escaping = 1;
+		else if (text[i] == ' ') last_break = i;
+		else if (text[i] == 5 && options)
+		{
+			options->captures[capture_i].y = l;
+			options->captures[capture_i++].x = lines[l].length;
+			continue;
+		}
+
+		if (is_escaping)
+		{
+			++escaped_chars;
+			if (isalpha(text[i])) is_escaping = 0;
+		}
+		lines[l].text[lines[l].length++] = text[i];
+		if (lines[l].length - escaped_chars == width)
+		{
+			lines[l].text[lines[l].length -= i - last_break] = 0;
+			i = last_break;
+			goto newline;
+		}
+	}
+	lines[l].client_length = lines[l].length - escaped_chars;
+	lines[l].text[lines[l].length++] = 0;
+
+	if (options && options->lines_count) *options->lines_count = l - start + (byte)1;
+	return lines;
+}
+
+static struct WrapLine* addNewline(struct WrapLine* lines)
+{
+	cvector_push_back_struct(lines);
+	const byte i = (byte)cvector_size(lines) - (byte)1;
+	lines[i].length = 0;
+	lines[i].client_length = 0;
+	lines[i].text[0] = 0;
+	return lines;
+}
 
 static enum QKeyCallbackReturn inputCallback(int key, enum QKeyType type, va_list args)
 {
@@ -23,6 +95,9 @@ static enum QKeyCallbackReturn inputCallback(int key, enum QKeyType type, va_lis
 	const int choices_size = va_arg(args, const int);
 	const struct ChoiceDialogChoice* choices = va_arg(args, const struct ChoiceDialogChoice*);
 	const ChoiceDialogCallback callback = va_arg(args, const ChoiceDialogCallback);
+	const struct WrapLine* lines = va_arg(args, const struct WrapLine*);
+	const struct _ChoiceInfo* choices_info = va_arg(args, const struct _ChoiceInfo*);
+	const Coord end = va_arg(args, const Coord);
 	va_end(args);
 
 	if (type == QKEY_TYPE_ARROW)
@@ -30,36 +105,38 @@ static enum QKeyCallbackReturn inputCallback(int key, enum QKeyType type, va_lis
 		if (key == QARROW_DOWN && *cur_pos + 1 != choices_size)
 		{
 			if (*cur_pos != -1)
-				drawChoice(&choices[*cur_pos], *cur_pos, 0);
+				drawChoice(choices, lines, choices_info, *cur_pos, 0);
 			else
 				puts_n(ANSI_CURSOR_HIDE);
 
-			drawChoice(&choices[++*cur_pos], *cur_pos, 1);
+			drawChoice(choices, lines, choices_info, ++ * cur_pos, 1);
 		}
 		else if (key == QARROW_UP && *cur_pos != 0)
 		{
 			if (*cur_pos != -1)
-				drawChoice(&choices[*cur_pos], *cur_pos, 0);
+				drawChoice(choices, lines, choices_info, *cur_pos, 0);
 			else
 			{
 				*cur_pos = choices_size;
 				puts_n(ANSI_CURSOR_HIDE);
 			}
-			drawChoice(&choices[--*cur_pos], *cur_pos, 1);
+			drawChoice(choices, lines, choices_info, -- * cur_pos, 1);
 		}
 	}
 	else
 	{
 		if (key == '\r' && *cur_pos != -1)
 		{
+			puts_n(ANSI_CURSOR_SHOW);
 			const struct ChoiceDialogChoice* choice = &choices[*cur_pos];
 			if (choice->callback) (*choice->callback)(choice);
 			else if (callback) (*callback)(choice, *cur_pos);
 		}
 		else if (key == 27 && *cur_pos > -1)
 		{
-			drawChoice(&choices[*cur_pos], *cur_pos, 0);
+			drawChoice(choices, lines, choices_info, *cur_pos, 0);
 			*cur_pos = -1;
+			set_cursor_pos(end.x, end.y);
 			puts_n(ANSI_CURSOR_SHOW);
 		}
 	}
@@ -69,82 +146,93 @@ static enum QKeyCallbackReturn inputCallback(int key, enum QKeyType type, va_lis
 
 void showChoiceDialog(const char* text, const char* prompt, const struct ChoiceDialogChoice* choices, const int choices_size, const DialogOptions options)
 {
-	//const int str_size = strlen(title) + 2 + 1;
-	//char* str = malloc(str_size);
-	char str[256] = { 0 }; // TODO: dynamic
-	COORD* captures = malloc(sizeof(COORD) * (choices_size));
-	strcat(str, text);
-	strcat(str, "\n");
+	Coord captures[1];
+	struct _ChoiceInfo* choices_info = (struct _ChoiceInfo*)malloc(sizeof(struct _ChoiceInfo) * choices_size);
+	assert(choices_info);
+	struct WrapLine* lines = wrapText(text, DIALOG_WIDTH - DIALOG_PADDING_X * 2, 0);
+	lines = addNewline(lines);
+
 	for (int i = 0; i < choices_size; i++)
 	{
-		const struct ChoiceDialogChoice choice = choices[i];
-		strcat(str, "\n\005");
-		strcat_ch(str, '1' + i);
-		strcat(str, ". ");
-		strcat(str, choice.name);
-		if (choice.description)
+		byte added_count = 0;
+#pragma warning( once : 6011 )
+		char str[64] = { '1' + i, ". " };
+		strcat(str, choices[i].name);
+		if (choices[i].description)
 		{
-			strcat(str, "\t");
-			strcat(str, choice.description);
+			strcat(str, " - ");
+			strcat(str, choices[i].description);
 		}
+		choices_info[i].start = (byte)cvector_size(lines);
+		lines = wrapText(str, DIALOG_WIDTH - DIALOG_PADDING_X * 2, &(struct _WrapLineOptions){
+			.plines = lines,
+				.lines_count = &added_count
+		});
+		choices_info[i].end = (byte)choices_info[i].start + added_count;
 	}
-	strcat(str, "\n\n");
-	strcat(str, prompt);
+	lines = addNewline(lines);
+
+	const size_t len = strlen(prompt);
+	char* str2 = malloc(sizeof(char) * (len + sizeof(" \005")));
+	assert(str2);
+	memcpy(str2, prompt, len);
+	strcpy(str2 + len, " \005");
+	lines = wrapText(str2, DIALOG_WIDTH - DIALOG_PADDING_X * 2, &(struct _WrapLineOptions){
+		.plines = lines,
+			.captures = &captures
+	});
+	free(str2);
+	captures[0].x += 1 + DIALOG_PADDING_X;
+	captures[0].y += 2;
 
 	clear_stdout();
-	drawBox(str, DIALOG_WIDTH, BORDER_DOUBLE, &(struct _BoxOptions) {
+	drawBox_wl(lines, DIALOG_WIDTH, BORDER_DOUBLE, &(struct _BoxOptions) {
 		.title = options->title,
 			.color = options->color ? options->color : ANSI_COLOR_YELLOW,
 			.paddingX = DIALOG_PADDING_X,
-			.paddingY = DIALOG_PADDING_Y,
-			.captures = captures
+			.paddingY = DIALOG_PADDING_Y
 	});
+	puts_n(ANSI_CURSOR_SAVE);
 
-	free(captures);
-	//free(str);
-
+	set_cursor_pos(captures[0].x, captures[0].y);
 	int cur_pos = -1;
-	const int num = vgetNumber(1, choices_size, &inputCallback, &cur_pos, choices_size, choices, options->callback) - 1;
+	const int num = vgetNumber(1, choices_size, &inputCallback, &cur_pos, choices_size, choices, options->callback, lines, choices_info, captures[0]) - 1;
+
 	const struct ChoiceDialogChoice* choice = &choices[num];
 	if (choice->callback) (*choice->callback)(choice);
 	else if (options->callback) (*options->callback)(choice, num);
 
+	free(choices_info);
+	cvector_free(lines);
 }
 
-void drawChoice(const struct ChoiceDialogChoice* choice, const int index, const int selected)
+void drawChoice(const struct ChoiceDialogChoice* choices, const struct WrapLine* lines, const struct _ChoiceInfo* choices_info, const int index, const bool selected)
 {
-	down[2] = '1' + index;
-	puts_n(ANSI_CURSOR_RESTORE);
-
-	HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
-	COORD pos = GetConsoleCursorPosition(handle);
-
-	puts_n(down);
-	pos = GetConsoleCursorPosition(handle);
-	if (selected) puts_n(ANSI_SELECTED);
-	putchar('1' + index);
-	puts_n(". ");
-	puts_n(choice->name);
-	if (choice->description)
+	byte x = 1 + DIALOG_PADDING_X;
+	byte y = 1 + DIALOG_PADDING_Y;
+	puts_n(selected ? ANSI_SELECTED : ANSI_COLOR_RESET);
+	for (byte i = choices_info[index].start; i < choices_info[index].end; i++)
 	{
-		putchar('\t');
-		puts_n(choice->description);
+		set_cursor_pos(x, y + i);
+		puts_n(lines[i].text);
 	}
 	if (selected) puts_n(ANSI_COLOR_RESET);
 }
 
-
 void drawBox(const char* text, const int width, const enum BorderStyle border, const BoxOptions options)
 {
-	HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
-	const size_t old_text_size = strlen(text) + 1;
-	char* _text = malloc(old_text_size);
-	assert(_text);
-	memcpy(_text, text, old_text_size);
+	struct WrapLine* lines = wrapText(text, width - options->paddingX * 2, &(struct _WrapLineOptions){
+		.height = options->height - options->paddingY * 2,
+			.captures = options->captures
+	});
 
+	drawBox_wl(lines, width, border, options);
+}
+
+void drawBox_wl(struct WrapLine* lines, const int width, const enum BorderStyle border, const BoxOptions options)
+{
 	if (options->title) assert(*options->title && strlen(options->title) + 2 <= width);
-	int w = width, h = options->height ? options->height - options->paddingY * 2 : 1;
-	const int auto_height = !options->height;
+	int w = width;
 
 	const char BORDER_V = border ? BOX_CHAR_D_V : BOX_CHAR_V;
 	const char BORDER_H = border ? BOX_CHAR_D_H : BOX_CHAR_H;
@@ -184,82 +272,15 @@ void drawBox(const char* text, const int width, const enum BorderStyle border, c
 		putchar('\n');
 	}
 
-	int capture_i = 0;
-	int progress = 0;
-	char* ch = strtok(_text, " \n");
-	while (h--)
+	for (byte l = 0; l < cvector_size(lines); l++)
 	{
-		if (auto_height && ch == 0) break;
 		putchar(BORDER_V);
 		if (options->color) puts_n(ANSI_COLOR_RESET);
-		w = width - options->paddingX;
 		int p = options->paddingX;
 		while (p--) putchar(' ');
-
-		while (ch && w)
-		{
-			int real_length = (int)strlen(ch);
-			if (ch[0] == 5)
-			{
-				if (real_length != 1)
-				{
-					--real_length;
-					++ch;
-					++progress;
-					options->captures[capture_i++] = GetConsoleCursorPosition(handle);
-				}
-			}
-			int length = (int)strlen_iae(ch);
-
-			if (*ch && progress)
-			{
-				if (text[progress/* - (text[progress] == 5 ? 1 : 0)*/] == '\n')
-				{
-					progress++;
-					if (auto_height) h++;
-					break;
-				}
-
-			}
-
-			if (w != width - options->paddingX)
-			{
-				length++;
-				real_length++;
-			}
-
-			if (h == 0)
-			{
-				if (auto_height)
-				{
-					h++;
-					goto dynamic_height_continue;
-				}
-				if (length > w - 4 - options->paddingX) {
-					puts_n("...");
-					ch = 0;
-					w -= 3;
-					break;
-				}
-			}
-			else
-			{
-			dynamic_height_continue:
-				if (length > w - options->paddingX)
-				{
-					progress++;
-					break;
-				}
-			}
-			if (w != width - options->paddingX) putchar(' ');
-			progress += real_length;
-			puts_n(ch);
-			w -= length;
-			if (w == 0) progress++;
-			ch = strtok(0, " \n");
-		}
-
-		while (w--) putchar(' ');
+		puts_n(lines[l].text);
+		p = width - options->paddingX - lines[l].client_length;
+		while (p--) putchar(' ');
 		if (options->color) puts_n(options->color);
 		putchar(BORDER_V);
 		putchar('\n');
@@ -285,7 +306,6 @@ void drawBox(const char* text, const int width, const enum BorderStyle border, c
 	putchar('\n');
 
 	fflush(stdout);
-	free(_text);
 }
 
 const char press_space[] = "\n\n" ANSI_COLOR_CYAN "Press SPACE BAR to continue" ANSI_COLOR_RESET;

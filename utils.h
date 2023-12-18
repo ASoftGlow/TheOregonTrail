@@ -1,12 +1,14 @@
 #pragma once
+#include "base.h"
 
 // puts without newline
-#define puts_n(string) fputs(string,stdout)
+inline int puts_n(const char* str)
+{
+	return fputs(str, stdout);
+}
 
 // strcat but single char
 char* strcat_ch(char* dst, const char src);
 
-// strlen but ignores ANSI escape codes
-size_t strlen_iae(const char* str);
-
 void clear_stdout(void);
+void set_cursor_pos(byte x, byte y);

@@ -80,17 +80,45 @@ int vgetNumber(int start, int end, const vQKeyCallback key_callback, ...)
 	return num;
 }
 
-COORD GetConsoleCursorPosition(HANDLE hConsoleOutput)
+void getString(char* buffer, int min_len, int max_len, const vQKeyCallback key_callback)
 {
-	CONSOLE_SCREEN_BUFFER_INFO cbsi;
-	if (GetConsoleScreenBufferInfo(hConsoleOutput, &cbsi))
+	vgetString(buffer, min_len, max_len, key_callback);
+}
+
+void vgetString(char* buffer, int min_len, int max_len, const vQKeyCallback key_callback, ...)
+{
+	va_list argptr;
+	va_start(argptr, key_callback);
+
+	int i = 0;
+
+	enum QKeyType type;
+	int key;
+	while (1)
 	{
-		return cbsi.dwCursorPosition;
+		key = qgetch(&type);
+		if (key_callback && !(*key_callback)(key, type, argptr)) continue;
+		if (key == '\r' && i >= min_len) break;
+
+		if (type == QKEY_TYPE_NORMAL)
+		{
+			switch (key)
+			{
+			case '\b':
+				if (!i) break;
+				--i;
+				puts_n("\b \b");
+				break;
+
+			default:
+				if (isalpha(key) && i < max_len)
+				{
+					buffer[i++] = putchar(key);
+				}
+				break;
+			}
+
+		}
 	}
-	else
-	{
-		// The function failed. Call GetLastError() for details.
-		COORD invalid = { 0, 0 };
-		return invalid;
-	}
+	buffer[i] = 0;
 }

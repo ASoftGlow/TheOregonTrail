@@ -16,26 +16,22 @@ char* strcat_ch(char* dst, const char src)
 	return dst;                  /* return dst */
 }
 
-size_t strlen_iae(const char* str)
-{
-	size_t len = 0, pos = 0;
-
-	while (1)
-	{
-		if (str[pos] == 0) break;
-		if (str[pos] == 27)
-		{
-			// ignore ANSI escape codes
-			while (!isalpha(str[++pos]));
-		}
-		else
-			len++;
-		pos++;
-	}
-	return len;
-}
-
 void clear_stdout(void)
 {
 	puts_n("\033[1;1H" "\033[2J");
+}
+
+void set_cursor_pos(byte x, byte y)
+{
+	const byte dy = ++y / (byte)10;
+	y -= dy * 10;
+	const byte dx = ++x / (byte)10;
+	x -= dx * 10;
+	puts_n("\033[");
+	putchar('0' + dy);
+	putchar('0' + y);
+	putchar(';');
+	putchar('0' + dx);
+	putchar('0' + x);
+	putchar('H');
 }

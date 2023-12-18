@@ -137,7 +137,7 @@
     <Text Include="example.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="constants.h" />
+    <ClInclude Include="base.h" />
     <ClInclude Include="input.c" />
     <ClInclude Include="input.h" />
     <ClInclude Include="tui.h" />

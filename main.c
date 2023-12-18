@@ -1,15 +1,10 @@
 ﻿#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
 #ifdef _WIN32
 #include <Windows.h>
-#else
-typedef unsigned char byte;
 #endif
 
-
-#include "constants.h"
 #include "tui.h"
 #include "utils.h"
 #include "input.h"
@@ -143,24 +138,20 @@ static choice_callback_g(role)
 		.height = 8,
 			.color = ANSI_COLOR_YELLOW
 	});
-	puts_n(ANSI_CURSOR_SHOW ANSI_CURSOR_RESTORE);
+	puts_n(ANSI_CURSOR_RESTORE ANSI_CURSOR_SHOW);
 
-	fputc('t', stdin);
-	scanf_s("%10[a-zA-Z]s", wagon_leader->name, (unsigned)(NAME_SIZE + 1));
+	getString(&wagon_leader->name, 1, NAME_SIZE, 0);
 
 	for (int i = 0; i < WAGON_MEMBER_COUNT; i++)
 	{
 		strcpy(wagon_members[i].name, getRandomName());
 	}
 
-	puts_n(ANSI_CURSOR_HIDE);
-
 	show_month();
 }
 
 void show_role(void)
 {
-	//const char text[] = ;
 	const struct ChoiceDialogChoice choices[] = {
 		{"Be a banker from Boston"},
 		{"Be a carpenter from Ohio"},
@@ -191,7 +182,7 @@ static choice_callback(main_top)
 
 static choice_callback(main_exit)
 {
-	puts_n(ANSI_CURSOR_SHOW);
+	puts_n(ANSI_CURSOR_RESTORE ANSI_COLOR_RESET ANSI_CURSOR_SHOW);
 	exit(0);
 }
 
@@ -220,11 +211,8 @@ int main(void)
 	dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
 	SetConsoleMode(hOut, dwMode);
 #endif
-	//getNumber(3, 8);
 
 	puts_n(ANSI_CURSOR_SHOW);
 	show_main();
-
-	//drawBox(21, 5, text, title, BORDER_DOUBLE, ANSI_COLOR_YELLOW);
 }
 

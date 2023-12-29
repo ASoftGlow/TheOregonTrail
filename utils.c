@@ -16,18 +16,18 @@ char* strcat_ch(char* dst, const char src)
 	return dst;                  /* return dst */
 }
 
-void clear_stdout(void)
+void clearStdout(void)
 {
-	puts_n("\033[1;1H" "\033[2J");
+	putsn("\033[1;1H" "\033[2J");
 }
 
-void set_cursor_pos(byte x, byte y)
+void setCursorPos(byte x, byte y)
 {
 	const byte dy = ++y / (byte)10;
 	y -= dy * 10;
 	const byte dx = ++x / (byte)10;
 	x -= dx * 10;
-	puts_n("\033[");
+	putsn("\033[");
 	putchar('0' + dy);
 	putchar('0' + y);
 	putchar(';');
@@ -35,3 +35,16 @@ void set_cursor_pos(byte x, byte y)
 	putchar('0' + x);
 	putchar('H');
 }
+
+#ifdef _WIN32
+#include <Windows.h>
+void enableANSICodes()
+{
+	// enable ANSI escape codes
+	HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	DWORD dwMode = 0;
+	GetConsoleMode(hOut, &dwMode);
+	dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+	SetConsoleMode(hOut, dwMode);
+}
+#endif

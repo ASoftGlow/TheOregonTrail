@@ -10,7 +10,11 @@
 int qgetch(enum QKeyType* key_type)
 {
 	int key = _getch();
-	if (key == 3 || key == 4) exit(-1);
+	if (key == 3 || key == 4)
+	{
+		putsn(ANSI_CURSOR_RESTORE ANSI_COLOR_RESET ANSI_CURSOR_STYLE_DEFAULT ANSI_CURSOR_SHOW);
+		exit(EXIT_FAILURE);
+	}
 	if (key == 0 || key == 224) { // if the first value is esc
 		*key_type = QKEY_TYPE_ARROW;
 		return _getch();
@@ -42,14 +46,19 @@ int vgetNumber(int start, int end, const vQKeyCallback key_callback, ...)
 	int num = 0;
 	int factor = 1;
 	int i = 0;
-	int buffer[16];
+	int buffer[8];
 
 	enum QKeyType type;
 	int key;
 	while (1)
 	{
 		key = qgetch(&type);
-		if (key_callback && !(*key_callback)(key, type, argptr)) continue;
+		if (key_callback)
+		{
+			enum QKeyCallbackReturn result = ((*key_callback)(key, type, argptr));
+			if (result == QKEY_CALLBACK_RETURN_IGNORE) continue;
+			if (result == QKEY_CALLBACK_RETURN_END) return -1;
+		}
 		if (key == '\r') break;
 
 		if (type == QKEY_TYPE_NORMAL)
@@ -60,12 +69,15 @@ int vgetNumber(int start, int end, const vQKeyCallback key_callback, ...)
 				if (!i) break;
 				factor /= 10;
 				num -= buffer[--i] * factor;
-				puts_n("\b \b");
+				putsn("\b \b");
 				break;
 
 			default:
 				const int digit = key - '0';
-				if ((end > 9 || (digit >= start && digit <= end)) && (num + digit * factor <= end))
+				if (digit == 0 && i) break; //FIXME
+				if (end == 0
+					? digit >= start
+					: (end > 9 || (digit >= start && digit <= end)) && (num + digit * factor <= end))
 				{
 					num += digit * factor;
 					factor *= 10;
@@ -107,11 +119,11 @@ void vgetString(char* buffer, int min_len, int max_len, const vQKeyCallback key_
 			case '\b':
 				if (!i) break;
 				--i;
-				puts_n("\b \b");
+				putsn("\b \b");
 				break;
 
 			default:
-				if (isalpha(key) && i < max_len)
+				if ((isalpha(key) || key == ' ' || key == '\'') && i < max_len)
 				{
 					buffer[i++] = putchar(key);
 				}

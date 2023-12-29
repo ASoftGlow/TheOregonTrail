@@ -14,9 +14,9 @@ enum QArrowKey {
 };
 
 enum QKeyCallbackReturn {
-	QKEY_CALLBACK_RETURN_NORMAL = 1,
-	QKEY_CALLBACK_RETURN_IGNORE = 0,
-	QKEY_CALLBACK_RETURN_IDK = -1
+	QKEY_CALLBACK_RETURN_NORMAL,
+	QKEY_CALLBACK_RETURN_IGNORE,
+	QKEY_CALLBACK_RETURN_END
 };
 
 typedef enum QKeyCallbackReturn(*vQKeyCallback)(int, enum QKeyType, va_list);

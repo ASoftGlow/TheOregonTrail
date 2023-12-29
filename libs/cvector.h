@@ -224,7 +224,15 @@ typedef struct cvector_metadata_t {
  * @return a pointer to one past the last element (or NULL)
  */
 #define cvector_end(vec) \
-    ((vec) ? &((vec)[cvector_size(vec)]) : NULL)
+    (&((vec)[cvector_size(vec)]))
+
+ /**
+  * @brief cvector_last - returns the last element of the vector
+  * @param vec - the vector
+  * @return the last element
+  */
+#define cvector_last(vec) \
+    ((vec)[cvector_size(vec) - (size_t)1])
 
 /* user request to use logarithmic growth algorithm */
 #ifdef CVECTOR_LOGARITHMIC_GROWTH

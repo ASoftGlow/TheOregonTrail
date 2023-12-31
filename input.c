@@ -62,7 +62,7 @@ int vgetNumber(unsigned start, unsigned end, bool erase, const vQKeyCallback key
 				return -1;
 			}
 		}
-		if (key == '\r') break;
+		if (key == '\r' && i) break;
 
 		if (type == QKEY_TYPE_NORMAL)
 		{

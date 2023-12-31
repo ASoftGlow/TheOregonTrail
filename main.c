@@ -335,7 +335,6 @@ static declare_choice_callback(main_top)
 static declare_choice_callback(main_exit)
 {
 	putsn(ANSI_CURSOR_RESTORE ANSI_COLOR_RESET ANSI_CURSOR_SHOW);
-	exit(0);
 }
 
 const struct ChoiceDialogChoice main_choices[] = {

@@ -220,14 +220,16 @@ void showChoiceDialog(const char* text, const char* prompt, const struct ChoiceD
 		.title = options->title,
 			.color = options->color ? options->color : ANSI_COLOR_YELLOW,
 			.paddingX = DIALOG_PADDING_X,
-			.paddingY = DIALOG_PADDING_Y
+			.paddingY = DIALOG_PADDING_Y,
+			.do_not_free = 1
 	});
 	putsn(ANSI_CURSOR_SAVE);
 
 	setCursorPos(capture.x, capture.y);
 	int cur_pos = -1;
-	const unsigned num = vgetNumber(1, choices_size, 0, &inputCallback, &cur_pos, choices_size, choices, options->callback, lines, choices_info, capture) - 1;
+	const int num = vgetNumber(1, choices_size, 0, &inputCallback, &cur_pos, choices_size, choices, options->callback, lines, choices_info, capture) - 1;
 
+	cvector_free(lines);
 	free(choices_info);
 
 	if (num != -2)
@@ -373,7 +375,7 @@ void drawBoxWL(struct WrapLine* lines, const int width, const enum BorderStyle b
 	putchar('\n');
 
 	fflush(stdout);
-	cvector_free(lines);
+	if (!(options && options->do_not_free)) cvector_free(lines);
 }
 
 const char press_space[] = "\n\n" ANSI_COLOR_CYAN "Press SPACE BAR to continue" ANSI_COLOR_RESET;

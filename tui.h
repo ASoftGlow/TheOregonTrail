@@ -30,6 +30,7 @@ typedef struct _BoxOptions
 	const int paddingX;
 	const int paddingY;
 	Coord* captures;
+	bool do_not_free;
 } *BoxOptions;
 
 typedef struct _DialogOptions

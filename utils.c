@@ -38,7 +38,7 @@ void setCursorPos(byte x, byte y)
 
 #ifdef _WIN32
 #include <Windows.h>
-void enableANSICodes()
+void setupConsoleWIN()
 {
 	// enable ANSI escape codes
 	HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -46,5 +46,6 @@ void enableANSICodes()
 	GetConsoleMode(hOut, &dwMode);
 	dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
 	SetConsoleMode(hOut, dwMode);
+	SetConsoleOutputCP(437);
 }
 #endif

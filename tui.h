@@ -1,5 +1,6 @@
 #pragma once
 #include "base.h"
+#include "ansi_codes.h"
 
 typedef void (*ChoiceCallback)(const struct ChoiceDialogChoice*);
 typedef void (*ChoiceDialogCallback)(const struct ChoiceDialogChoice*, const int);
@@ -58,6 +59,7 @@ typedef struct _WrapLineOptions
 	Coord* captures;
 	struct WrapLine* lines;
 	byte* added_count;
+	WrapLineKind kind;
 } *WrapLineOptions;
 
 struct _ChoiceInfo
@@ -73,10 +75,12 @@ void drawBox(const char* text, const int width, const enum BorderStyle border, c
 void showChoiceDialog(const char* text, const char* prompt, const struct ChoiceDialogChoice* choices, const int choices_size, const DialogOptions options);
 void showInfoDialog(const char title[], const char text[]);
 void putBlock(const char* text, byte x, byte y);
-void putBlockWL(const struct WrapLine* lines, byte x, byte y);
+void putBlockWL(struct WrapLine* lines, byte x, byte y, byte width);
+void putBlockWLFill(struct WrapLine* lines, byte x, byte y, byte width);
 struct WrapLine* addNewline(struct WrapLine* lines);
 struct WrapLine* addLine(struct WrapLine* lines, const char* text, WrapLineKind kind);
 struct WrapLine* justifyLineWL(struct WrapLine* lines, const char* text1, const char* text2, const byte width);
+struct WrapLine* addBar(struct WrapLine* lines);
 
 #define addStaticLine(lines, _text, _kind) \
 	cvector_push_back_struct(lines); \
@@ -98,26 +102,6 @@ struct WrapLine* justifyLineWL(struct WrapLine* lines, const char* text1, const 
 #define BOX_CHAR_UR     192
 #define BOX_CHAR_UL     217
 
-#define ANSI_COLOR_RED         "\033[31m"
-#define ANSI_COLOR_GREEN       "\033[32m"
-#define ANSI_COLOR_YELLOW      "\033[33m"
-#define ANSI_COLOR_BLUE        "\033[34m"
-#define ANSI_COLOR_MAGENTA     "\033[35m"
-#define ANSI_COLOR_CYAN        "\033[36m"
-#define ANSI_COLOR_BROWN       "\033[38;5;94m"
-#define ANSI_SELECTED	       "\033[30;47m"
-#define ANSI_COLOR_RESET       "\033[0m"
-#define ANSI_BG_RESET          "\033[40m"
-#define ANSI_CURSOR_SHOW	   "\033[?25h"
-#define ANSI_CURSOR_HIDE	   "\033[?25l"
-#define ANSI_CURSOR_SAVE       "\033[s"
-#define ANSI_CURSOR_RESTORE    "\033[u"
-#define ANSI_CURSOR_POS(x, y)  "\033[" x ";" y "H"
-#define ANSI_CURSOR_STYLE_UNDERLINE "\033[3q"
-#define ANSI_CURSOR_STYLE_DEFAULT "\033[0q"
-#define ANSI_BG_BROWN    "\033[48;5;94m"
-#define ANSI_BOLD "\033[4m"
-
 #define DIALOG_PADDING_X 4
 #define DIALOG_PADDING_Y 1
 #define DIALOG_CONTENT_WIDTH 32
@@ -126,6 +110,8 @@ struct WrapLine* justifyLineWL(struct WrapLine* lines, const char* text1, const 
 #define CONTROL_CHAR (char)5
 #define CONTROL_CHAR_STR "\5"
 
-#define choice_callback(name) static void menu_ ## name(const struct ChoiceDialogChoice* choice)
+#define __callback_prefix __menu_
+#define choice_callback(name) &TOKENPASTE2(__callback_prefix, name)
+#define declare_choice_callback(name) void TOKENPASTE2(__callback_prefix, name)(const struct ChoiceDialogChoice* choice)
 // Default callback for all choices
-#define choice_callback_g(name) static void menu_ ## name(const struct ChoiceDialogChoice* choice, const int index)
+#define declare_choice_callback_g(name) void TOKENPASTE2(__callback_prefix, name)(const struct ChoiceDialogChoice* choice, const int index)

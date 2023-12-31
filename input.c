@@ -33,20 +33,19 @@ void waitForKey(const int key)
 	}
 }
 
-int getNumber(int start, int end, const vQKeyCallback key_callback)
+int getNumber(unsigned start, unsigned end, bool erase, const vQKeyCallback key_callback)
 {
-	return vgetNumber(start, end, key_callback);
+	return vgetNumber(start, end, erase, key_callback);
 }
 
-int vgetNumber(int start, int end, const vQKeyCallback key_callback, ...)
+int vgetNumber(unsigned start, unsigned end, bool erase, const vQKeyCallback key_callback, ...)
 {
 	va_list argptr;
 	va_start(argptr, key_callback);
 
-	int num = 0;
-	int factor = 1;
-	int i = 0;
-	int buffer[8];
+	unsigned num = 0;
+	byte i = 0;
+	unsigned buffer[8];
 
 	enum QKeyType type;
 	int key;
@@ -57,7 +56,11 @@ int vgetNumber(int start, int end, const vQKeyCallback key_callback, ...)
 		{
 			enum QKeyCallbackReturn result = ((*key_callback)(key, type, argptr));
 			if (result == QKEY_CALLBACK_RETURN_IGNORE) continue;
-			if (result == QKEY_CALLBACK_RETURN_END) return -1;
+			if (result == QKEY_CALLBACK_RETURN_END)
+			{
+				if (erase) while (i--) putsn("\b \b");
+				return -1;
+			}
 		}
 		if (key == '\r') break;
 
@@ -67,20 +70,21 @@ int vgetNumber(int start, int end, const vQKeyCallback key_callback, ...)
 			{
 			case '\b':
 				if (!i) break;
-				factor /= 10;
-				num -= buffer[--i] * factor;
+				num -= buffer[--i];
+				num /= 10;
 				putsn("\b \b");
 				break;
 
 			default:
-				const int digit = key - '0';
-				if (digit == 0 && i) break; //FIXME
+				if (key < '0' || key > '9') break;
+				const unsigned digit = key - '0';
+				if ((digit == 0 || i == 1) && (i && !num)) break;
 				if (end == 0
 					? digit >= start
-					: (end > 9 || (digit >= start && digit <= end)) && (num + digit * factor <= end))
+					: (end > 9 || (digit >= start && digit <= end)) && (num * 10 + digit <= end))
 				{
-					num += digit * factor;
-					factor *= 10;
+					num *= 10;
+					num += digit;
 					putchar(key);
 					buffer[i++] = digit;
 				}
@@ -89,6 +93,7 @@ int vgetNumber(int start, int end, const vQKeyCallback key_callback, ...)
 
 		}
 	}
+	if (erase) while (i--) putsn("\b \b");
 	return num;
 }
 

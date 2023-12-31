@@ -138,6 +138,7 @@
     <Text Include="example.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ansi_codes.h" />
     <ClInclude Include="base.h" />
     <ClInclude Include="input.c" />
     <ClInclude Include="input.h" />

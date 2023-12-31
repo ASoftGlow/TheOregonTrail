@@ -10,16 +10,9 @@
 
 const char dialog_txt[] = "You may:";
 const char dialog_prompt[] = "What is your choice?";
-const char months[][8] = {
-	"March",
-	"April",
-	"May",
-	"June",
-	"July"
-};
 
 enum Role role;
-int month;
+byte month;
 struct WagonMember wagon_leader[NAME_SIZE + 1];
 struct WagonMember wagon_members[WAGON_MEMBER_COUNT];
 float money = 0.f;
@@ -31,6 +24,9 @@ wagon_axles = 0,
 wagon_wheels = 0,
 wagon_torques = 0;
 byte water = 255;
+short food;
+
+float total_bill = 0;
 
 static struct WrapLine* showStoreCategory(struct WrapLine* lines, const struct StoreCategory* categories, byte* index)
 {
@@ -41,15 +37,11 @@ static struct WrapLine* showStoreCategory(struct WrapLine* lines, const struct S
 	return justifyLineWL(lines, text, text2, DIALOG_CONTENT_WIDTH);
 }
 
-static struct WrapLine* addBar(struct WrapLine* lines)
-{
-	return addLine(lines, ANSI_COLOR_CYAN"컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴", WRAPLINEKIND_NONE);
-}
-
-static void showStoreCategoryMenu(struct StoreCategory* category)
+static void showStoreCategoryMenu(struct StoreCategory* category, byte index, Coord input_pos)
 {
 	struct StoreItem* item = category->items;
 	const struct StoreItem* items_end = &category->items[category->items_count];
+	float last_total_bill = total_bill - category->spent;
 	category->spent = 0;
 
 #define question_start "\n\nHow many "CONTROL_CHAR_STR
@@ -79,9 +71,10 @@ static void showStoreCategoryMenu(struct StoreCategory* category)
 	lines = textToLinesWL(lines, category->image);
 	lines = addNewline(lines);
 	char text2[24];
-	sprintf(text2, "Bill so far: $%.2f", 99.f);
+	sprintf(text2, "Bill so far: $%.2f", total_bill);
 	lines = addLine(lines, text2, WRAPLINEKIND_CENTER);
 
+	putsn(ANSI_SB_ALT);
 	clearStdout();
 	drawBoxWL(lines, DIALOG_WIDTH, BORDER_DOUBLE, &(struct _BoxOptions){
 		.title = "Matt's General Store",
@@ -90,7 +83,7 @@ static void showStoreCategoryMenu(struct StoreCategory* category)
 	});
 	setCursorPos(captures[1].x + DIALOG_PADDING_X + 1, captures[1].y + DIALOG_PADDING_Y);
 
-	item->amount = getNumber(item->min, item->max, NULL);
+	item->amount = getNumber(item->min, item->max, 1, NULL);
 	category->spent += item->price * item->amount;
 
 	while (++item < items_end)
@@ -100,84 +93,72 @@ static void showStoreCategoryMenu(struct StoreCategory* category)
 		struct WrapLine* lines = wrapText(text2, DIALOG_CONTENT_WIDTH, &(struct _WrapLineOptions){
 			.captures = &captures[1]
 		});
-		putsn("\b ");
-		putBlockWL(lines, captures[0].x + DIALOG_PADDING_X + 1, captures[0].y + DIALOG_PADDING_Y);
+		putBlockWL(lines, captures[0].x + DIALOG_PADDING_X + 1, captures[0].y + DIALOG_PADDING_Y, 0);
 		setCursorPos(captures[1].x + captures[0].x + DIALOG_PADDING_X + 1, captures[1].y + captures[0].y + DIALOG_PADDING_Y);
 
-		item->amount = getNumber(item->min, item->max, NULL);
+		item->amount = getNumber(item->min, item->max, 1, NULL);
 		category->spent += item->price * item->amount;
 	}
 
 #undef question_start
 #undef question_end
-	showStore();
+	putsn(ANSI_SB_MAIN);
+	// redraw
+	sprintf(text2, "   $%.2f", category->spent);
+	setCursorPos(5 + DIALOG_CONTENT_WIDTH - (int)strlen(text2), 5 + index);
+	putsn(text2);
+
+	total_bill = last_total_bill + category->spent;
+	sprintf(text2, "    Total bill: $%.2f", total_bill);
+	setCursorPos(5 + DIALOG_CONTENT_WIDTH - (int)strlen(text2), 6 + _countof(STORE_MATT_CATEGORIES));
+	putsn(text2);
+
+	workStore(input_pos);
 }
 
-struct StoreCategory STORE_MATT_CATEGORIES[] = {
-	{
-		.name = "Oxen",
-		.desciption = "There are 2 oxen in a yoke; I recommend at least 3 yoke. I charge $40 a yoke.",
-		.image = "o-uu,",
-		.items = &(struct StoreItem[]) {
-			{.name = "yokes", .price = 10.f, .min = 1, .max = 9}
-		},
-		.items_count = 1
-	},
-	{
-		.name = "Food",
-		.desciption = "I recommend you take at least 200 pounds of food for each person in your family. I see that you have 5 people in all. You'll need flour, sugar, bacon, and coffee. My price is 20 cents a pound.",
-		.image = "()O=-+\n    _\n   \\ \\",
-		.items = &(struct StoreItem[]) {
-			{.name = "pounds of bacon", .price = .2f},
-			{.name = "pounds of flour", .price = .2f}
-		},
-		.items_count = 2
-	},
-	{
-		.name = "Clothing",
-		.desciption = "You'll need warm clothing in the mountains. I recommend taking at least 2 sets of clothes per person, $10.00 each.",
-		.image = "__\n||",
-		.items = &(struct StoreItem[]) {
-			{.name = "sets of clothes", .price = 10.f}
-		},
-		.items_count = 1
-	},
-	{
-		.name = "Ammunition",
-		.desciption = "I sell ammunition in boxes of 20 bullets. Each box costs $2.00.",
-		.image = "gun",
-		.items = &(struct StoreItem[]) {
-			{.name = "boxes", .price = 2.f}
-		},
-		.items_count = 1
-	},
-	{
-		.name = "Spare parts",
-		.desciption = "It's a good idea to have a few spare parts for your wagon. Here are the prices:\n\n    axle - $10\n   wheel - $10\n  tongue - $10",
-		.image = "O _",
-		.items = &(struct StoreItem[]) {
-			{.name = "axles", .price = 10.f},
-			{.name = "wheels", .price = 10.f},
-			{.name = "tongues", .price = 10.f}
-		},
-		.items_count = 3
-	}
-};
-
-static enum QKeyCallbackReturn storeInputCallback(int key, enum QKeyType type, va_list args)
+static enum QKeyCallbackReturn storeInputCallback(unsigned key, enum QKeyType type, va_list args)
 {
-	float total_bill = va_arg(args, float);
-
 	if (type == QKEY_TYPE_NORMAL)
 	{
 		if (key == ' ')
 		{
 			if (money < total_bill)
 			{
+				char text[116];
+				sprintf(text, "Okay, that comes to a total of $%.2f, but I see you only have $%.2f. We'd better go over the list again.\n\n", total_bill, money);
+				struct WrapLine* lines = wrapText(text, DIALOG_CONTENT_WIDTH, NULL);
+				addStaticLine(lines, "Press SPACE BAR to continue", WRAPLINEKIND_CENTER);
 
+				putBlockWLFill(lines, 5, 8 + _countof(STORE_MATT_CATEGORIES), DIALOG_CONTENT_WIDTH);
+				putsn(ANSI_CURSOR_HIDE);
+				waitForKey(' ');
+
+				lines = 0;
+				cvector_init(lines, 0, 0);
+				sprintf(text, "Amount you have: $%.2f", money);
+				lines = addLine(lines, text, WRAPLINEKIND_RTL);
+				lines = addNewline(lines);
+
+				lines = wrapText("Which item would you like to buy?    \n\n", DIALOG_CONTENT_WIDTH - DIALOG_PADDING_X, &(struct _WrapLineOptions){
+					.lines = lines
+				});
+				addStaticLine(lines, "Press SPACE BAR to leave store", WRAPLINEKIND_CENTER);
+				putBlockWLFill(lines, 5, 8 + _countof(STORE_MATT_CATEGORIES), DIALOG_CONTENT_WIDTH);
+				putsn(ANSI_CURSOR_SHOW);
+				return QKEY_CALLBACK_RETURN_IGNORE;
 			}
 			else
 			{
+				money -= total_bill;
+
+				oxen = STORE_MATT_CATEGORIES[0].items[0].amount * 2;
+				food = STORE_MATT_CATEGORIES[1].items[0].amount + STORE_MATT_CATEGORIES[1].items[1].amount;
+				clothing_sets = STORE_MATT_CATEGORIES[2].items[0].amount;
+				bullets = STORE_MATT_CATEGORIES[3].items[0].amount * 20;
+				wagon_axles = STORE_MATT_CATEGORIES[4].items[0].amount;
+				wagon_wheels = STORE_MATT_CATEGORIES[4].items[1].amount;
+				wagon_torques = STORE_MATT_CATEGORIES[4].items[2].amount;
+
 				return QKEY_CALLBACK_RETURN_END;
 			}
 		}
@@ -185,7 +166,7 @@ static enum QKeyCallbackReturn storeInputCallback(int key, enum QKeyType type, v
 	return QKEY_CALLBACK_RETURN_NORMAL;
 }
 
-void showStore(void)
+Coord drawStore(void)
 {
 	struct WrapLine* lines = 0;
 	cvector_init(lines, 0, 0);
@@ -197,8 +178,8 @@ void showStore(void)
 	lines = addLine(lines, date, WRAPLINEKIND_RTL);
 	lines = addBar(lines);
 
-	float total_bill = 0;
 	byte i = 0;
+	total_bill = 0.f;
 	while (i != _countof(STORE_MATT_CATEGORIES))
 	{
 		total_bill += STORE_MATT_CATEGORIES[i].spent;
@@ -214,10 +195,11 @@ void showStore(void)
 	lines = addNewline(lines);
 
 	Coord capture;
-	lines = wrapText("Which item would you like to buy? "CONTROL_CHAR_STR"\n\nPress SPACE BAR to leave store", DIALOG_WIDTH - DIALOG_PADDING_X * 3, &(struct _WrapLineOptions){
+	lines = wrapText("Which item would you like to buy? "CONTROL_CHAR_STR"\n\n", DIALOG_CONTENT_WIDTH - DIALOG_PADDING_X, &(struct _WrapLineOptions){
 		.captures = &capture,
 			.lines = lines
 	});
+	addStaticLine(lines, "Press SPACE BAR to leave store", WRAPLINEKIND_CENTER);
 
 	clearStdout();
 	drawBoxWL(lines, DIALOG_WIDTH, BORDER_DOUBLE, &(struct _BoxOptions){
@@ -225,14 +207,35 @@ void showStore(void)
 			.paddingX = DIALOG_PADDING_X,
 			.color = "\033[38;5;94m"
 	});
+	putsn(ANSI_CURSOR_SAVE);
 
-	setCursorPos(capture.x + DIALOG_PADDING_X + 1, capture.y + 1);
-	putsn(ANSI_CURSOR_SHOW);
-	int choice = vgetNumber(1, _countof(STORE_MATT_CATEGORIES), &storeInputCallback, total_bill) - 1;
-	showStoreCategoryMenu(&STORE_MATT_CATEGORIES[choice]);
+	capture.x += DIALOG_PADDING_X + 1;
+	++capture.y;
+	return capture;
 }
 
-choice_callback_g(month)
+void workStore(Coord input_pos)
+{
+	setCursorPos(input_pos.x, input_pos.y);
+	const int choice = vgetNumber(1, _countof(STORE_MATT_CATEGORIES), 1, &storeInputCallback, &total_bill) - 1;
+	if (choice >= 0)
+		showStoreCategoryMenu(&STORE_MATT_CATEGORIES[choice], choice, input_pos);
+}
+
+void showStore(void)
+{
+	total_bill = 0;
+	for (byte i = 0; i < _countof(STORE_MATT_CATEGORIES); i++)
+	{
+		total_bill += STORE_MATT_CATEGORIES[i].spent;
+	}
+
+	const Coord capture = drawStore();
+	putsn(ANSI_CURSOR_SHOW);
+	workStore(capture);
+}
+
+static declare_choice_callback_g(month)
 {
 	month = index;
 
@@ -249,36 +252,36 @@ choice_callback_g(month)
 	showStore();
 }
 
-choice_callback(month_advice)
+static declare_choice_callback(month_advice)
 {
 	showInfoDialog("Month Info", "You attend a public meeting held for \"folks with the California - Oregon fever.\" You're told:\n\nIf you leave too early, there won't be any grass for your oxen to eat. If you leave too late, you may not get to Oregon before winter comes. If you leave at just the right time, there will be green grass and the weather will still be cool.");
 	showMonth();
 }
 
+const struct ChoiceDialogChoice month_choices[] = {
+	{"March"},
+	{"April"},
+	{"May"},
+	{"June"},
+	{"July"},
+	{"Ask for advice",.callback = choice_callback(month_advice)}
+};
 void showMonth(void)
 {
 	const char text[] = "It is 1848. Your jumping off place for Oregon is Independence, Missouri. You must decide which month to leave Independence.";
-	const struct ChoiceDialogChoice choices[] = {
-		{"March"},
-		{"April"},
-		{"May"},
-		{"June"},
-		{"July"},
-		{"Ask for advice",.callback = &menu_month_advice}
-	};
 
-	showChoiceDialog(text, dialog_prompt, choices, _countof(choices), &(struct _DialogOptions){
-		.callback = &menu_month
+	showChoiceDialog(text, dialog_prompt, month_choices, _countof(month_choices), &(struct _DialogOptions){
+		.callback = choice_callback(month)
 	});
 }
 
-choice_callback(role_learn)
+static declare_choice_callback(role_learn)
 {
 	showInfoDialog("Role Info", "Traveling to Oregon isn't easy! But if you're a banker, you'll have more money for supplies and services than a carpenter or a farmer.\n\nHowever, the harder you have to try, the more points you deserve! Therefore, the farmer earns the greatest number of points and the banker earns the least.");
 	showRole();
 }
 
-choice_callback_g(role)
+static declare_choice_callback_g(role)
 {
 	role = index;
 	money = (float[]){ 1600.f, 800.f, 400.f } [index] ;
@@ -300,53 +303,51 @@ choice_callback_g(role)
 	showMonth();
 }
 
+const struct ChoiceDialogChoice role_choices[] = {
+	{"Be a banker from Boston"},
+	{"Be a carpenter from Ohio"},
+	{"Be a farmer from Illinois"},
+	{"Find out the differences between these choices",.callback = choice_callback(role_learn)}
+};
 void showRole(void)
 {
-	const struct ChoiceDialogChoice choices[] = {
-		{"Be a banker from Boston"},
-		{"Be a carpenter from Ohio"},
-		{"Be a farmer from Illinois"},
-		{"Find out the differences between these choices",.callback = &menu_role_learn}
-	};
-
-	showChoiceDialog("Many kinds of people made the trip to Oregon.\n\nYou may:", dialog_prompt, choices, _countof(choices), &(struct _DialogOptions){
-		.callback = &menu_role
+	showChoiceDialog("Many kinds of people made the trip to Oregon.\n\nYou may:", dialog_prompt, role_choices, _countof(role_choices), &(struct _DialogOptions){
+		.callback = choice_callback(role)
 	});
 }
 
-choice_callback(main_start)
+static declare_choice_callback(main_start)
 {
 	showRole();
 }
 
-choice_callback(main_learn)
+static declare_choice_callback(main_learn)
 {
 	showInfoDialog("Oregon Trail Info", "idk lol\n\n\n");
 	showMain();
 }
 
-choice_callback(main_top)
+static declare_choice_callback(main_top)
 {
 
 }
 
-choice_callback(main_exit)
+static declare_choice_callback(main_exit)
 {
 	putsn(ANSI_CURSOR_RESTORE ANSI_COLOR_RESET ANSI_CURSOR_SHOW);
 	exit(0);
 }
 
+const struct ChoiceDialogChoice main_choices[] = {
+	{ANSI_COLOR_CYAN "Travel the trail" ANSI_COLOR_RESET,.callback = choice_callback(main_start)},
+	{"Learn about the trail",.callback = choice_callback(main_learn)},
+	{"See the Oregon Top Ten",.callback = choice_callback(main_top)},
+	//{"Choose Management Options"},
+	{"Exit",.callback = choice_callback(main_exit)}
+};
 void showMain(void)
 {
-	const struct ChoiceDialogChoice choices[] = {
-		{ANSI_COLOR_CYAN "Travel the trail" ANSI_COLOR_RESET,.callback = &menu_main_start},
-		{"Learn about the trail",.callback = &menu_main_learn},
-		{"See the Oregon Top Ten",.callback = &menu_main_top},
-		//{"Choose Management Options"},
-		{"Exit",.callback = &menu_main_exit}
-	};
-
-	showChoiceDialog(dialog_txt, dialog_prompt, choices, _countof(choices), &(struct _DialogOptions){
+	showChoiceDialog(dialog_txt, dialog_prompt, main_choices, _countof(main_choices), &(struct _DialogOptions){
 		.title = "Welcome to Oregon Trail"
 	});
 }
@@ -354,9 +355,9 @@ void showMain(void)
 int main(void)
 {
 #ifdef _WIN32
-	enableANSICodes();
+	setupConsoleWIN();
 #endif
 
-	putsn(ANSI_CURSOR_STYLE_UNDERLINE ANSI_CURSOR_SHOW);
-	showStore();
+	putsn(ANSI_CURSOR_STYLE_UNDERLINE ANSI_CURSOR_SHOW ANSI_WINDOW_TITLE("Oregon Trail") ANSI_WINDOW_SIZE("42", ""));
+	showMain();
 }

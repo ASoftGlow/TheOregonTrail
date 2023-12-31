@@ -19,11 +19,11 @@ enum QKeyCallbackReturn {
 	QKEY_CALLBACK_RETURN_END
 };
 
-typedef enum QKeyCallbackReturn(*vQKeyCallback)(int, enum QKeyType, va_list);
+typedef enum QKeyCallbackReturn(*vQKeyCallback)(unsigned, enum QKeyType, va_list);
 
 int qgetch(enum QKeyType* key_type);
 void waitForKey(const int key);
-int getNumber(int start, int end, const vQKeyCallback key_callback);
-int vgetNumber(int start, int end, const vQKeyCallback key_callback, ...);
+int getNumber(unsigned start, unsigned end, bool erase, const vQKeyCallback key_callback);
+int vgetNumber(unsigned start, unsigned end, bool erase, const vQKeyCallback key_callback, ...);
 void getString(char* buffer, int min_len, int max_len, const vQKeyCallback key_callback);
 void vgetString(char* buffer, int min_len, int max_len, const vQKeyCallback key_callback, ...);

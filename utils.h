@@ -13,5 +13,5 @@ char* strcat_ch(char* dst, const char src);
 void clearStdout(void);
 void setCursorPos(byte x, byte y);
 #ifdef _WIN32
-void enableANSICodes();
+void setupConsoleWIN();
 #endif

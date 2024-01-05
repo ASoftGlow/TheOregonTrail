@@ -13,7 +13,7 @@ void drawChoice(const struct ChoiceDialogChoice* choices, const struct WrapLine*
 
 struct WrapLine* wrapText(const char* text, int width, const WrapLineOptions options)
 {
-	struct WrapLine* lines = 0;
+	struct WrapLine* lines = NULL;
 	if (options && options->lines)
 	{
 		lines = options->lines;
@@ -244,7 +244,7 @@ void drawChoice(const struct ChoiceDialogChoice* choices, const struct WrapLine*
 {
 	byte x = 1 + DIALOG_PADDING_X;
 	byte y = 1 + DIALOG_PADDING_Y;
-	putsn(selected ? ANSI_SELECTED : ANSI_COLOR_RESET);
+	if (selected) putsn(ANSI_SELECTED);
 	for (byte i = choices_info[index].start; i < choices_info[index].end; i++)
 	{
 		setCursorPos(x, y + i);
@@ -253,14 +253,17 @@ void drawChoice(const struct ChoiceDialogChoice* choices, const struct WrapLine*
 	if (selected) putsn(ANSI_COLOR_RESET);
 }
 
-void drawBox(const char* text, const int width, const enum BorderStyle border, const BoxOptions options)
+struct WrapLine* wrapBox(const char* text, const int width, const BoxOptions options)
 {
-	struct WrapLine* lines = wrapText(text, width - options->paddingX * 2, &(struct _WrapLineOptions){
+	return wrapText(text, width - options->paddingX * 2, &(struct _WrapLineOptions){
 		.height = options->height - options->paddingY * 2,
 			.captures = options->captures
 	});
+}
 
-	drawBoxWL(lines, width, border, options);
+void drawBox(const char* text, const int width, const enum BorderStyle border, const BoxOptions options)
+{
+	drawBoxWL(wrapBox(text, width, options), width, border, options);
 }
 
 void drawBoxWL(struct WrapLine* lines, const int width, const enum BorderStyle border, const BoxOptions options)
@@ -388,14 +391,18 @@ void showInfoDialog(const char title[], const char text[])
 	memcpy(_text, text, text_len);
 	memcpy(_text + text_len, press_space, sizeof(press_space));
 
-	putsn(ANSI_CURSOR_HIDE);
-	clearStdout();
-	drawBox(_text, DIALOG_WIDTH, BORDER_SINGLE, &(struct _BoxOptions){
+	struct _BoxOptions options = {
 		.title = title,
 			.color = ANSI_COLOR_YELLOW,
 			.paddingX = DIALOG_PADDING_X,
 			.paddingY = DIALOG_PADDING_Y
-	});
+	};
+	struct WrapLine* lines = wrapBox(_text, DIALOG_WIDTH, &options);
+	cvector_last(lines).kind = WRAPLINEKIND_CENTER;
+
+	putsn(ANSI_CURSOR_HIDE);
+	clearStdout();
+	drawBoxWL(lines, DIALOG_WIDTH, BORDER_SINGLE, &options);
 
 	fflush(stdout);
 	free(_text);
@@ -454,17 +461,17 @@ void putBlockWLFill(struct WrapLine* lines, byte x, byte y, byte width)
 	{
 		setCursorPos(x, y + i);
 		byte p;
-		if (lines[i].client_length == 0)
-		{
-			p = width;
-			while (p--) putchar(' ');
-		}
 
 		switch (lines[i].kind)
 		{
 		case WRAPLINEKIND_NONE:
+			putsn(lines[i].text);
+			break;
+
 		case WRAPLINEKIND_LTR:
 			putsn(lines[i].text);
+			p = width - lines[i].client_length;
+			while (p--) putchar(' ');
 			break;
 
 		case WRAPLINEKIND_CENTER:
@@ -489,7 +496,7 @@ void putBlockWLFill(struct WrapLine* lines, byte x, byte y, byte width)
 
 struct WrapLine* textToLines(const char* text)
 {
-	struct WrapLine* lines = 0;
+	struct WrapLine* lines = NULL;
 	cvector_init(lines, 0, 0);
 	return textToLinesWL(lines, text);
 }

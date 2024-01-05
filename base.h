@@ -2,6 +2,9 @@
 
 typedef unsigned char byte;
 typedef int bool;
+typedef struct {
+	byte x, y;
+} Coord;
 #ifndef NULL
 #define NULL ((void *)0)
 #endif

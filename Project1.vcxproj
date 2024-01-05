@@ -131,6 +131,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.c" />
+    <ClCompile Include="state.c" />
+    <ClCompile Include="static.c" />
+    <ClCompile Include="store.c" />
     <ClCompile Include="tui.c" />
     <ClCompile Include="utils.c" />
   </ItemGroup>
@@ -143,6 +146,10 @@
     <ClInclude Include="input.c" />
     <ClInclude Include="input.h" />
     <ClInclude Include="main.h" />
+    <ClInclude Include="state.h" />
+    <ClInclude Include="static.h" />
+    <ClInclude Include="store.h" />
+    <ClInclude Include="store_data.h" />
     <ClInclude Include="tui.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>

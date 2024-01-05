@@ -17,11 +17,6 @@ enum BorderStyle
 	BORDER_DOUBLE
 };
 
-typedef struct
-{
-	byte x, y;
-} Coord;
-
 typedef struct _BoxOptions
 {
 	const char* title;
@@ -71,6 +66,7 @@ struct _ChoiceInfo
 struct WrapLine* wrapText(const char* text, int width, const WrapLineOptions options);
 struct WrapLine* textToLines(const char* text);
 struct WrapLine* textToLinesWL(struct WrapLine* lines, const char* text);
+struct WrapLine* wrapBox(const char* text, const int width, const BoxOptions options);
 void drawBoxWL(struct WrapLine* lines, const int width, const enum BorderStyle border, const BoxOptions options);
 void drawBox(const char* text, const int width, const enum BorderStyle border, const BoxOptions options);
 void showChoiceDialog(const char* text, const char* prompt, const struct ChoiceDialogChoice* choices, const int choices_size, const DialogOptions options);
@@ -103,10 +99,14 @@ struct WrapLine* addBar(struct WrapLine* lines);
 #define BOX_CHAR_UR     192
 #define BOX_CHAR_UL     217
 
+#define SCREEN_WIDTH 32
+#define SCREEN_HEIGHT 20;
+
 #define DIALOG_PADDING_X 4
 #define DIALOG_PADDING_Y 1
-#define DIALOG_CONTENT_WIDTH 32
+#define DIALOG_CONTENT_WIDTH SCREEN_WIDTH
 #define DIALOG_WIDTH DIALOG_CONTENT_WIDTH + DIALOG_PADDING_X * 2
+#define INDENT_SIZE DIALOG_PADDING_X
 
 #define CONTROL_CHAR (char)5
 #define CONTROL_CHAR_STR "\5"

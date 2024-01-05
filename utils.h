@@ -1,4 +1,6 @@
 #pragma once
+#include <stdio.h>
+
 #include "base.h"
 
 // puts without newline

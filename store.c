@@ -221,11 +221,11 @@ static enum QKeyCallbackReturn storeInputCallback(unsigned key, enum QKeyType ty
 Coord drawStore(void)
 {
 	struct WrapLine* lines = NULL;
-	cvector_init(lines, 0, 0);
-	addStaticLine(lines, "Independence, Missouri", WRAPLINEKIND_CENTER);
+	cvector_init(lines, 0, NULL);
+	lines = addLine(lines, &location[0], WRAPLINEKIND_CENTER);
 	lines = addNewline(lines);
 	char date[16];
-	memcpy(date, months[month], sizeof(months[0]));
+	memcpy(date, MONTHS[month], sizeof(MONTHS[0]));
 	strcat(date, " 1, 1868");
 	lines = addLine(lines, date, WRAPLINEKIND_RTL);
 	lines = addBar(lines);

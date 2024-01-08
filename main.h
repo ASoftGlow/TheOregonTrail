@@ -39,7 +39,27 @@ enum Role
 	ROLE_FARMER
 };
 
-void showMain(void);
+enum Weather
+{
+	WEATHER_MILD,
+	WEATHER_COLD,
+	WEATHER_HOT,
+	WEATHER_RAIN,
+	WEATHER_SNOW
+};
+
+enum Pace
+{
+	PACE_STEADY,
+	PACE_2
+};
+
+enum Ration
+{
+	RATION_FILLING
+};
+
+void showMainMenu(void);
 void showMonth(void);
 void showRole(void);
 void showStore(void);

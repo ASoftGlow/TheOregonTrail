@@ -11,16 +11,69 @@
 #include "store.h"
 
 const char dialog_txt[] = "You may:";
-const char dialog_prompt[] = "What is your choice?";
 
+static const char* getQuickHealth(void)
+{
+	return "good";
+}
+
+const struct ChoiceDialogChoice SETTLEMENT_CHOICES[] = {
+	{.name = "Continue on trail"},
+	{.name = "Check supplies"},
+	{.name = "Look at map"}
+};
+
+static struct WrapLine* addQuickInfo(struct WrapLine* lines)
+{
+	lines = addBar(lines);
+
+	char buffer[32] = ANSI_SELECTED"Weather: ";
+	strcat(buffer, WEATHERS[weather]);
+	lines = addLine(lines, buffer, WRAPLINEKIND_LTR);
+
+	strcpy(buffer, ANSI_SELECTED"Health: ");
+	strcat(buffer, getQuickHealth());
+	lines = addLine(lines, buffer, WRAPLINEKIND_LTR);
+
+	strcpy(buffer, ANSI_SELECTED"Pace: ");
+	strcat(buffer, PACES[pace]);
+	lines = addLine(lines, buffer, WRAPLINEKIND_LTR);
+
+	strcpy(buffer, ANSI_SELECTED"Rations: ");
+	strcat(buffer, RATIONS[ration]);
+	lines = addLine(lines, buffer, WRAPLINEKIND_LTR);
+
+	lines = addBar(lines);
+	return lines;
+}
+
+static void showMain(void)
+{
+	struct WrapLine* lines = NULL;
+	cvector_init(lines, 0, NULL);
+	char date[16];
+	memcpy(date, MONTHS[month], sizeof(MONTHS[0]));
+	strcat(date, " 1, 1868");
+	lines = addLine(lines, date, WRAPLINEKIND_CENTER);
+	lines = addNewline(lines);
+	
+	lines = addQuickInfo(lines);
+
+	showChoiceDialogWL(lines, &SETTLEMENT_CHOICES[0], _countof(SETTLEMENT_CHOICES), &(struct _DialogOptions){
+		.title = location,
+			.noPaddingY = 1
+	});
+}
 
 void showStore(void)
 {
+	strcpy(location, "Independence, Missouri");
 	const Coord capture = drawStore();
 	putsn(ANSI_CURSOR_SHOW);
 	workStore(capture);
 
 	showInfoDialog("Parting with Matt", "Well then, you're ready to go. Good luck! You have a long and difficult journey ahead of you.");
+	showMain();
 }
 
 static declare_choice_callback_g(month)
@@ -32,7 +85,6 @@ static declare_choice_callback_g(month)
 	sprintf(text, "Before leaving Independence you should buy equipment and supplies. You have $%.2f in cash, but you don't have to spend it all now.", money);
 	showInfoDialog(0, text);
 	showInfoDialog(0, "You can buy whatever you need at Matt's General Store.");
-#define TAB "   "
 #define matt_greeting "Hello, I'm Matt. So you're going to Oregon! I can fix you up with what you need:\n\n"
 	showInfoDialog("Meet Matt", matt_greeting TAB"- a team of oxen to pull\n"TAB"  your wagon\n\n"TAB"- clothing for both\n"TAB"  summer and winter");
 	showInfoDialog("Meet Matt", matt_greeting TAB"- plenty of food for the\n"TAB"  trip\n\n"TAB"- ammunition for your\n"TAB"  rifles\n\n"TAB"- spare parts for your\n"TAB"  wagon");
@@ -58,7 +110,7 @@ void showMonth(void)
 {
 	const char text[] = "It is 1848. Your jumping off place for Oregon is Independence, Missouri. You must decide which month to leave Independence.";
 
-	showChoiceDialog(text, dialog_prompt, month_choices, _countof(month_choices), &(struct _DialogOptions){
+	showChoiceDialog(text, month_choices, _countof(month_choices), &(struct _DialogOptions){
 		.callback = choice_callback(month)
 	});
 }
@@ -99,7 +151,7 @@ const struct ChoiceDialogChoice role_choices[] = {
 };
 void showRole(void)
 {
-	showChoiceDialog("Many kinds of people made the trip to Oregon.\n\nYou may:", dialog_prompt, role_choices, _countof(role_choices), &(struct _DialogOptions){
+	showChoiceDialog("Many kinds of people made the trip to Oregon.\n\nYou may:", role_choices, _countof(role_choices), &(struct _DialogOptions){
 		.callback = choice_callback(role)
 	});
 }
@@ -112,7 +164,7 @@ static declare_choice_callback(main_start)
 static declare_choice_callback(main_learn)
 {
 	showInfoDialog("Oregon Trail Info", "idk lol\n\n\n");
-	showMain();
+	showMainMenu();
 }
 
 static declare_choice_callback(main_top)
@@ -128,7 +180,7 @@ static declare_choice_callback(main_exit)
 static declare_choice_callback(management)
 {
 	showInfoDialog("Compiled "__DATE__, "");
-	showMain();
+	showMainMenu();
 }
 
 const struct ChoiceDialogChoice main_choices[] = {
@@ -138,9 +190,9 @@ const struct ChoiceDialogChoice main_choices[] = {
 	{"Choose Management Options", .callback = choice_callback(management)},
 	{"Exit",.callback = choice_callback(main_exit)}
 };
-void showMain(void)
+void showMainMenu(void)
 {
-	showChoiceDialog(dialog_txt, dialog_prompt, main_choices, _countof(main_choices), &(struct _DialogOptions){
+	showChoiceDialog(dialog_txt, main_choices, _countof(main_choices), &(struct _DialogOptions){
 		.title = "Welcome to Oregon Trail"
 	});
 }
@@ -152,5 +204,6 @@ int main(void)
 #endif
 
 	putsn(ANSI_CURSOR_STYLE_UNDERLINE ANSI_CURSOR_SHOW ANSI_WINDOW_TITLE("Oregon Trail") ANSI_WINDOW_SIZE("42", ""));
-	showMain();
+	strcpy(location, "Independence, Missouri");
+	showMainMenu();
 }

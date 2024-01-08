@@ -1,10 +1,10 @@
 #include <stdlib.h>
 
-#include "static.h";
+#include "static.h"
 
 const char WAGON_MEMBER_NAMES[][NAME_SIZE] = { "John", "Sara", "Henry", "Jed" };
 
-const char months[][8] = {
+const char MONTHS[][8] = {
 	"March",
 	"April",
 	"May",
@@ -12,10 +12,26 @@ const char months[][8] = {
 	"July"
 };
 
-const byte disease_durations[] = { 0 };
-const byte disease_chances[] = { 0 };
-const byte injury_durations[] = { 20, 30 };
-const byte injury_chances[] = { 20, 30 };
+const char WEATHERS[][8] = {
+	"mild",
+	"cold",
+	"hot",
+	"rain",
+	"snow"
+};
+
+const char PACES[][8] = {
+	"steady"
+};
+
+const char RATIONS[][8] = {
+	"filling"
+};
+
+const byte DISEASE_DURATIONS[] = { 0 };
+const byte DISEASE_CHANCES[] = { 0 };
+const byte INJURY_DURATIONS[] = { 20, 30 };
+const byte INJURY_CHANCES[] = { 20, 30 };
 
 const char* getRandomName(void)
 {

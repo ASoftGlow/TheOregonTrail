@@ -94,7 +94,7 @@ struct WrapLine* addNewline(struct WrapLine* lines)
 struct WrapLine* addLine(struct WrapLine* lines, const char* text, WrapLineKind kind)
 {
 	cvector_push_back_struct(lines);
-	cvector_last(lines).length = (byte)strlen(text);
+	cvector_last(lines).length = (byte)strlen(text); //TODO do client length right
 	cvector_last(lines).client_length = cvector_last(lines).length;
 	cvector_last(lines).kind = kind;
 	if (text)
@@ -175,12 +175,18 @@ static enum QKeyCallbackReturn inputCallback(unsigned key, enum QKeyType type, v
 	return *cur_pos == -1 ? QKEY_CALLBACK_RETURN_NORMAL : QKEY_CALLBACK_RETURN_IGNORE;
 }
 
-void showChoiceDialog(const char* text, const char* prompt, const struct ChoiceDialogChoice* choices, const int choices_size, const DialogOptions options)
+void showChoiceDialog(const char* text, const struct ChoiceDialogChoice* choices, const int choices_size, const DialogOptions options)
 {
+	struct WrapLine* lines = wrapText(text, DIALOG_CONTENT_WIDTH, 0);
+	showChoiceDialogWL(lines, choices, choices_size, options);
+}
+
+void showChoiceDialogWL(struct WrapLine* lines, const struct ChoiceDialogChoice* choices, const int choices_size, const DialogOptions options)
+{
+	const int paddingY = options->noPaddingY ? 0 : DIALOG_PADDING_Y;
 	Coord capture;
 	struct _ChoiceInfo* choices_info = (struct _ChoiceInfo*)malloc(sizeof(struct _ChoiceInfo) * choices_size);
 	assert(choices_info);
-	struct WrapLine* lines = wrapText(text, DIALOG_CONTENT_WIDTH, 0);
 	lines = addNewline(lines);
 
 	for (int i = 0; i < choices_size; i++)
@@ -202,25 +208,20 @@ void showChoiceDialog(const char* text, const char* prompt, const struct ChoiceD
 	}
 	lines = addNewline(lines);
 
-	const size_t len = strlen(prompt);
-	char* str2 = malloc(sizeof(char) * (len + sizeof(" "CONTROL_CHAR_STR)));
-	assert(str2);
-	memcpy(str2, prompt, len);
-	strcpy(str2 + len, " "CONTROL_CHAR_STR);
+	char str2[] = "What is your choice? "CONTROL_CHAR_STR;
 	lines = wrapText(str2, DIALOG_CONTENT_WIDTH, &(struct _WrapLineOptions){
 		.lines = lines,
 			.captures = &capture
 	});
-	free(str2);
 	capture.x += 1 + DIALOG_PADDING_X;
-	capture.y += 2;
+	capture.y += 1 + paddingY;
 
 	clearStdout();
 	drawBoxWL(lines, DIALOG_WIDTH, BORDER_DOUBLE, &(struct _BoxOptions) {
 		.title = options->title,
 			.color = options->color ? options->color : ANSI_COLOR_YELLOW,
 			.paddingX = DIALOG_PADDING_X,
-			.paddingY = DIALOG_PADDING_Y,
+			.paddingY = paddingY,
 			.do_not_free = 1
 	});
 	putsn(ANSI_CURSOR_SAVE);

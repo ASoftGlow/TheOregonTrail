@@ -33,6 +33,7 @@ typedef struct _DialogOptions
 	const char* title;
 	const ChoiceDialogCallback callback;
 	const char* color;
+	const bool noPaddingY;
 } *DialogOptions;
 
 typedef byte WrapLineKind;
@@ -69,7 +70,8 @@ struct WrapLine* textToLinesWL(struct WrapLine* lines, const char* text);
 struct WrapLine* wrapBox(const char* text, const int width, const BoxOptions options);
 void drawBoxWL(struct WrapLine* lines, const int width, const enum BorderStyle border, const BoxOptions options);
 void drawBox(const char* text, const int width, const enum BorderStyle border, const BoxOptions options);
-void showChoiceDialog(const char* text, const char* prompt, const struct ChoiceDialogChoice* choices, const int choices_size, const DialogOptions options);
+void showChoiceDialogWL(struct WrapLine* lines, const struct ChoiceDialogChoice* choices, const int choices_size, const DialogOptions options);
+void showChoiceDialog(const char* text, const struct ChoiceDialogChoice* choices, const int choices_size, const DialogOptions options);
 void showInfoDialog(const char title[], const char text[]);
 void putBlock(const char* text, byte x, byte y);
 void putBlockWL(struct WrapLine* lines, byte x, byte y, byte width);
@@ -110,6 +112,8 @@ struct WrapLine* addBar(struct WrapLine* lines);
 
 #define CONTROL_CHAR (char)5
 #define CONTROL_CHAR_STR "\5"
+
+#define TAB "   "
 
 #define __callback_prefix __menu_
 #define choice_callback(name) &TOKENPASTE2(__callback_prefix, name)

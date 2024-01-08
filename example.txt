@@ -64,3 +64,22 @@ _  | |    *,
  ╟*   ╠╝         
 ╚╣   ╚╣   *    
  ║    ║   ╟┘  
+
+
+
+               Map of the Oregon Trail
+
+         
+
+
+
+
+                                                 *
+
+
+ |■| Forts
+ o   Landmarks
+ ──  Your route
+ x   Your marks
+ /\^ Mountains
+ ▒   Water

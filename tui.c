@@ -7,7 +7,7 @@
 
 #include "tui.h"
 #include "utils.h"
-#include "input.c"
+#include "input.h"
 
 void drawChoice(const struct ChoiceDialogChoice* choices, const struct WrapLine* lines, const struct _ChoiceInfo* choices_info, const int index, const bool selected);
 
@@ -84,38 +84,41 @@ struct WrapLine* wrapText(const char* text, int width, const WrapLineOptions opt
 struct WrapLine* addNewline(struct WrapLine* lines)
 {
 	cvector_push_back_struct(lines);
-	cvector_last(lines).length = 0;
-	cvector_last(lines).client_length = 0;
-	cvector_last(lines).text[0] = 0;
-	cvector_last(lines).kind = WRAPLINEKIND_LTR;
+	struct WrapLine* last_line = &cvector_last(lines);
+	last_line->length = 0;
+	last_line->client_length = 0;
+	last_line->text[0] = 0;
+	last_line->kind = WRAPLINEKIND_LTR;
 	return lines;
 }
 
 struct WrapLine* addLine(struct WrapLine* lines, const char* text, WrapLineKind kind)
 {
 	cvector_push_back_struct(lines);
-	cvector_last(lines).length = (byte)strlen(text); //TODO do client length right
-	cvector_last(lines).client_length = cvector_last(lines).length;
-	cvector_last(lines).kind = kind;
+	struct WrapLine* last_line = &cvector_last(lines);
+	last_line->length = (byte)strlen(text); //TODO do client length right
+	last_line->client_length = last_line->length;
+	last_line->kind = kind;
 	if (text)
-		memcpy(cvector_last(lines).text, text, (size_t)cvector_last(lines).length + 1);
+		memcpy(last_line->text, text, (size_t)last_line->length + 1);
 	return lines;
 }
 
 struct WrapLine* justifyLineWL(struct WrapLine* lines, const char* text1, const char* text2, const byte width)
 {
 	cvector_push_back_struct(lines);
-	cvector_last(lines).length = width;
-	cvector_last(lines).client_length = cvector_last(lines).length; //TODO do client length right
-	cvector_last(lines).kind = WRAPLINEKIND_NONE;
+	struct WrapLine* last_line = &cvector_last(lines);
+	last_line->length = width;
+	last_line->client_length = last_line->length; //TODO do client length right
+	last_line->kind = WRAPLINEKIND_NONE;
 	const byte len2 = (byte)strlen(text2);
 	byte pos = (byte)strlen(text1);
-	memcpy(cvector_last(lines).text, text1, pos);
-	while (pos + len2 < width) cvector_last(lines).text[pos++] = ' ';
-	memcpy(cvector_last(lines).text + pos, text2, (size_t)len2);
+	memcpy(last_line->text, text1, pos);
+	while (pos + len2 < width) last_line->text[pos++] = ' ';
+	memcpy(last_line->text + pos, text2, (size_t)len2);
 	pos += len2;
-	while (pos < width) cvector_last(lines).text[pos++] = ' ';
-	cvector_last(lines).text[pos] = 0;
+	while (pos < width) last_line->text[pos++] = ' ';
+	last_line->text[pos] = 0;
 	return lines;
 }
 
@@ -228,7 +231,7 @@ void showChoiceDialogWL(struct WrapLine* lines, const struct ChoiceDialogChoice*
 
 	setCursorPos(capture.x, capture.y);
 	int cur_pos = -1;
-	const int num = vgetNumber(1, choices_size, 0, &inputCallback, &cur_pos, choices_size, choices, options->callback, lines, choices_info, capture) - 1;
+	const int num = getNumberInput(1, choices_size, 0, &inputCallback, &cur_pos, choices_size, choices, options->callback, lines, choices_info, capture) - 1;
 
 	cvector_free(lines);
 	free(choices_info);
@@ -498,7 +501,7 @@ void putBlockWLFill(struct WrapLine* lines, byte x, byte y, byte width)
 struct WrapLine* textToLines(const char* text)
 {
 	struct WrapLine* lines = NULL;
-	cvector_init(lines, 0, 0);
+	cvector_init(lines, 0, NULL);
 	return textToLinesWL(lines, text);
 }
 
@@ -507,14 +510,18 @@ struct WrapLine* textToLinesWL(struct WrapLine* lines, const char* text)
 	char* _text = strdup(text);
 	char* line;
 
+	// split by newline
 	line = strtok(_text, "\n");
-	while (line != 0) {
+	while (line)
+	{
 		cvector_push_back_struct(lines);
-		cvector_last(lines).length = (byte)strlen(line);
-		cvector_last(lines).client_length = cvector_last(lines).length;
-		cvector_last(lines).kind = WRAPLINEKIND_LTR;
-		memcpy(cvector_last(lines).text, line, cvector_last(lines).length);
-		cvector_last(lines).text[cvector_last(lines).length] = 0;
+		struct WrapLine* last_line = &cvector_last(lines);
+
+		last_line->length = (byte)strlen(line);
+		last_line->client_length = last_line->length;
+		last_line->kind = WRAPLINEKIND_LTR;
+		memcpy(last_line->text, line, last_line->length);
+		last_line->text[last_line->length] = 0;
 		line = strtok(0, "\n");
 	}
 	free(_text);

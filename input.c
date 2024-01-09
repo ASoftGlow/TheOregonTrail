@@ -1,4 +1,6 @@
 #include <stdlib.h>
+#include <stdio.h>
+#include <ctype.h>
 #ifdef _WIN32
 #include <conio.h>
 #else
@@ -6,22 +8,31 @@
 #endif
 
 #include "input.h"
+#include "utils.h"
+#include "ansi_codes.h"
 
-int qgetch(enum QKeyType* key_type)
+#define ESCAPE_CHAR 224
+
+int getKeyInput(enum QKeyType* key_type)
 {
 	int key = _getch();
-	if (key == 3 || key == 4)
+	switch (key)
 	{
+	case 3:
+	case 4:
 		putsn(ANSI_CURSOR_RESTORE ANSI_COLOR_RESET ANSI_CURSOR_STYLE_DEFAULT ANSI_CURSOR_SHOW);
+		// TODO: gracefully escape
 		exit(EXIT_FAILURE);
-	}
-	if (key == 0 || key == 224) { // if the first value is esc
+
+	case 0:
+	case ESCAPE_CHAR:
 		*key_type = QKEY_TYPE_ARROW;
 		return _getch();
-	}
 
-	*key_type = QKEY_TYPE_NORMAL;
-	return key;
+	default:
+		*key_type = QKEY_TYPE_NORMAL;
+		return key;
+	}
 }
 
 void waitForKey(const int key)
@@ -29,16 +40,11 @@ void waitForKey(const int key)
 	enum QKeyType type;
 	while (1)
 	{
-		if (qgetch(&type) == key && type == QKEY_TYPE_NORMAL) break;
+		if (getKeyInput(&type) == key && type == QKEY_TYPE_NORMAL) break;
 	}
 }
 
-int getNumber(unsigned start, unsigned end, bool erase, const vQKeyCallback key_callback)
-{
-	return vgetNumber(start, end, erase, key_callback);
-}
-
-int vgetNumber(unsigned start, unsigned end, bool erase, const vQKeyCallback key_callback, ...)
+int getNumberInput(unsigned start, unsigned end, bool erase, const QKeyCallback key_callback, ...)
 {
 	va_list argptr;
 	va_start(argptr, key_callback);
@@ -51,7 +57,7 @@ int vgetNumber(unsigned start, unsigned end, bool erase, const vQKeyCallback key
 	int key;
 	while (1)
 	{
-		key = qgetch(&type);
+		key = getKeyInput(&type);
 		if (key_callback)
 		{
 			enum QKeyCallbackReturn result = ((*key_callback)(key, type, argptr));
@@ -97,12 +103,7 @@ int vgetNumber(unsigned start, unsigned end, bool erase, const vQKeyCallback key
 	return num;
 }
 
-void getString(char* buffer, int min_len, int max_len, const vQKeyCallback key_callback)
-{
-	vgetString(buffer, min_len, max_len, key_callback);
-}
-
-void vgetString(char* buffer, int min_len, int max_len, const vQKeyCallback key_callback, ...)
+void getStringInput(char* buffer, int min_len, int max_len, const QKeyCallback key_callback, ...)
 {
 	va_list argptr;
 	va_start(argptr, key_callback);
@@ -113,7 +114,7 @@ void vgetString(char* buffer, int min_len, int max_len, const vQKeyCallback key_
 	int key;
 	while (1)
 	{
-		key = qgetch(&type);
+		key = getKeyInput(&type);
 		if (key_callback && !(*key_callback)(key, type, argptr)) continue;
 		if (key == '\r' && i >= min_len) break;
 

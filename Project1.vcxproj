@@ -107,6 +107,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard_C>stdc11</LanguageStandard_C>
+      <AdditionalIncludeDirectories>$(VC_IncludePath)/include;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -143,9 +144,10 @@
   <ItemGroup>
     <ClInclude Include="ansi_codes.h" />
     <ClInclude Include="base.h" />
-    <ClInclude Include="input.c" />
+    <ClCompile Include="input.c">
+      <FileType>CppCode</FileType>
+    </ClCompile>
     <ClInclude Include="input.h" />
-    <ClInclude Include="main.h" />
     <ClInclude Include="state.h" />
     <ClInclude Include="static.h" />
     <ClInclude Include="store.h" />

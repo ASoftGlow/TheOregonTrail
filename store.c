@@ -66,7 +66,7 @@ static void showStoreCategoryMenu(struct StoreCategory* category, byte index, Co
 	});
 	setCursorPos(captures[1].x + DIALOG_PADDING_X + 1, captures[1].y + DIALOG_PADDING_Y);
 
-	item->amount = getNumber(item->min, item->max, 1, NULL);
+	item->amount = getNumberInput(item->min, item->max, 1, NULL);
 	category->spent += item->price * item->amount;
 
 	while (++item < items_end)
@@ -79,7 +79,7 @@ static void showStoreCategoryMenu(struct StoreCategory* category, byte index, Co
 		putBlockWL(lines, captures[0].x + DIALOG_PADDING_X + 1, captures[0].y + DIALOG_PADDING_Y, 0);
 		setCursorPos(captures[1].x + captures[0].x + DIALOG_PADDING_X + 1, captures[1].y + captures[0].y + DIALOG_PADDING_Y);
 
-		item->amount = getNumber(item->min, item->max, 1, NULL);
+		item->amount = getNumberInput(item->min, item->max, 1, NULL);
 		category->spent += item->price * item->amount;
 	}
 
@@ -120,7 +120,7 @@ static void showAlert(char text[])
 	lines = NULL;
 	cvector_init(lines, 0, 0);
 	char buffer[32];
-	sprintf(buffer, "Amount you have: $%.2f", money);
+	sprintf(buffer, "Amount you have: $%.2f", state.money);
 	lines = addLine(lines, buffer, WRAPLINEKIND_RTL);
 	lines = addNewline(lines);
 
@@ -170,10 +170,10 @@ static enum QKeyCallbackReturn storeInputCallback(unsigned key, enum QKeyType ty
 				drawChoiceStore(*cur_pos, 0);
 				*cur_pos = -1;
 			}
-			if (money < total_bill)
+			if (state.money < total_bill)
 			{
 				char text[116];
-				sprintf(text, "Okay, that comes to a total of $%.2f, but I see you only have $%.2f. We'd better go over the list again.\n\n", total_bill, money);
+				sprintf(text, "Okay, that comes to a total of $%.2f, but I see you only have $%.2f. We'd better go over the list again.\n\n", total_bill, state.money);
 				showAlert(text);
 				setCursorPos(end.x, end.y);
 				return QKEY_CALLBACK_RETURN_IGNORE;
@@ -187,15 +187,15 @@ static enum QKeyCallbackReturn storeInputCallback(unsigned key, enum QKeyType ty
 			}
 			else
 			{
-				money -= total_bill;
+				state.money -= total_bill;
 
-				oxen = STORE_MATT_CATEGORIES[0].items[0].amount * 2;
-				food = STORE_MATT_CATEGORIES[1].items[0].amount + STORE_MATT_CATEGORIES[1].items[1].amount;
-				clothing_sets = STORE_MATT_CATEGORIES[2].items[0].amount;
-				bullets = STORE_MATT_CATEGORIES[3].items[0].amount * 20;
-				wagon_axles = STORE_MATT_CATEGORIES[4].items[0].amount;
-				wagon_wheels = STORE_MATT_CATEGORIES[4].items[1].amount;
-				wagon_torques = STORE_MATT_CATEGORIES[4].items[2].amount;
+				state.oxen = STORE_MATT_CATEGORIES[0].items[0].amount * 2;
+				state.food = STORE_MATT_CATEGORIES[1].items[0].amount + STORE_MATT_CATEGORIES[1].items[1].amount;
+				state.clothing_sets = STORE_MATT_CATEGORIES[2].items[0].amount;
+				state.bullets = STORE_MATT_CATEGORIES[3].items[0].amount * 20;
+				state.wagon_axles = STORE_MATT_CATEGORIES[4].items[0].amount;
+				state.wagon_wheels = STORE_MATT_CATEGORIES[4].items[1].amount;
+				state.wagon_torques = STORE_MATT_CATEGORIES[4].items[2].amount;
 
 				return QKEY_CALLBACK_RETURN_END;
 			}
@@ -222,10 +222,10 @@ Coord drawStore(void)
 {
 	struct WrapLine* lines = NULL;
 	cvector_init(lines, 0, NULL);
-	lines = addLine(lines, &location[0], WRAPLINEKIND_CENTER);
+	lines = addLine(lines, &state.location[0], WRAPLINEKIND_CENTER);
 	lines = addNewline(lines);
 	char date[16];
-	memcpy(date, MONTHS[month], sizeof(MONTHS[0]));
+	memcpy(date, MONTHS[state.month], sizeof(MONTHS[0]));
 	strcat(date, " 1, 1868");
 	lines = addLine(lines, date, WRAPLINEKIND_RTL);
 	lines = addBar(lines);
@@ -242,7 +242,7 @@ Coord drawStore(void)
 	sprintf(text, "Total bill: $%.2f", total_bill);
 	lines = addLine(lines, text, WRAPLINEKIND_RTL);
 	lines = addNewline(lines);
-	sprintf(text, "Amount you have: $%.2f", money);
+	sprintf(text, "Amount you have: $%.2f", state.money);
 	lines = addLine(lines, text, WRAPLINEKIND_RTL);
 	lines = addNewline(lines);
 
@@ -270,7 +270,7 @@ void workStore(Coord input_pos)
 {
 	setCursorPos(input_pos.x, input_pos.y);
 	char cur_pos = -1;
-	const int choice = vgetNumber(1, _countof(STORE_MATT_CATEGORIES), 1, &storeInputCallback, &cur_pos, input_pos) - 1;
+	const int choice = getNumberInput(1, _countof(STORE_MATT_CATEGORIES), 1, &storeInputCallback, &cur_pos, input_pos) - 1;
 	if (choice >= 0)
 		showStoreCategoryMenu(&STORE_MATT_CATEGORIES[choice], choice, input_pos);
 }

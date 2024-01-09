@@ -42,7 +42,7 @@ typedef byte WrapLineKind;
 #define WRAPLINEKIND_CENTER 2
 #define WRAPLINEKIND_NONE 3
 
-struct WrapLine 
+struct WrapLine
 {
 	byte length;
 	byte client_length;
@@ -64,30 +64,95 @@ struct _ChoiceInfo
 	byte start, end;
 };
 
+// @param options - is optional
 struct WrapLine* wrapText(const char* text, int width, const WrapLineOptions options);
+
+/**
+ * @brief Convert a string to a single line
+ * @returns a new cvector of lines
+ */
 struct WrapLine* textToLines(const char* text);
+
+/**
+ * @brief Convert a string to a single line
+ * @param lines - an existing cvector
+ * @returns the new pointer to <lines>
+ */
 struct WrapLine* textToLinesWL(struct WrapLine* lines, const char* text);
+
+/**
+ * @brief Wraps <text> and applies a border
+ * @param options - is optional
+ * @returns a new cvector of lines
+ */
 struct WrapLine* wrapBox(const char* text, const int width, const BoxOptions options);
-void drawBoxWL(struct WrapLine* lines, const int width, const enum BorderStyle border, const BoxOptions options);
+
+/**
+ * @brief Wraps <text>, applies a border, and draws it
+ * @param border - possible values: BORDER_SINGLE, BORDER_DOUBLE
+ * @param options - is optional
+ */
 void drawBox(const char* text, const int width, const enum BorderStyle border, const BoxOptions options);
-void showChoiceDialogWL(struct WrapLine* lines, const struct ChoiceDialogChoice* choices, const int choices_size, const DialogOptions options);
+
+/**
+ * @brief Applies a border to <lines> and draws it
+ * @param border - possible values: BORDER_SINGLE, BORDER_DOUBLE
+ * @param options - is optional
+ */
+void drawBoxWL(struct WrapLine* lines, const int width, const enum BorderStyle border, const BoxOptions options);
+
+/**
+ * @brief Wraps <text>
+ * @param options - is optional
+ */
 void showChoiceDialog(const char* text, const struct ChoiceDialogChoice* choices, const int choices_size, const DialogOptions options);
+
+/**
+ * @brief Uses cvector of lines
+ * @param options - is optional
+ */
+void showChoiceDialogWL(struct WrapLine* lines, const struct ChoiceDialogChoice* choices, const int choices_size, const DialogOptions options);
 void showInfoDialog(const char title[], const char text[]);
+
+/**
+ * @brief Draws block of text at <x> and <y>
+ */
 void putBlock(const char* text, byte x, byte y);
+
+/**
+ * @brief Draws block of lines at <x> and <y>
+ */
 void putBlockWL(struct WrapLine* lines, byte x, byte y, byte width);
+
+/**
+ * @brief Draws block of lines at <x> and <y> and fills background with whitespace
+ */
 void putBlockWLFill(struct WrapLine* lines, byte x, byte y, byte width);
+
 struct WrapLine* addNewline(struct WrapLine* lines);
-struct WrapLine* addLine(struct WrapLine* lines, const char* text, WrapLineKind kind);
 struct WrapLine* justifyLineWL(struct WrapLine* lines, const char* text1, const char* text2, const byte width);
 struct WrapLine* addBar(struct WrapLine* lines);
 
+/**
+ * @brief Adds a line with <text> to cvector <lines>
+ * @returns new pointer to <lines>
+ */
+struct WrapLine* addLine(struct WrapLine* lines, const char* text, WrapLineKind kind);
+
+/**
+ * @brief Adds a line with const char[] text to cvector <lines>
+ * @returns nothing
+ */
 #define addStaticLine(lines, _text, _kind) \
+do { \
 	cvector_push_back_struct(lines); \
 	cvector_last(lines).client_length = (byte)sizeof(_text) - (byte)1; \
 	cvector_last(lines).length = (byte)sizeof(_text) - (byte)1; \
-	cvector_last(lines).kind = _kind; \
-	memcpy(cvector_last(lines).text, _text, sizeof(_text));
+	cvector_last(lines).kind = (_kind); \
+	memcpy(cvector_last(lines).text, (_text), sizeof(_text)); \
+} while (0)
 
+ // box drawing chars
 #define BOX_CHAR_D_DR   201
 #define BOX_CHAR_D_DL   187
 #define BOX_CHAR_D_H    205
@@ -110,13 +175,23 @@ struct WrapLine* addBar(struct WrapLine* lines);
 #define DIALOG_WIDTH DIALOG_CONTENT_WIDTH + DIALOG_PADDING_X * 2
 #define INDENT_SIZE DIALOG_PADDING_X
 
+// @brief Signifies a position to capture
 #define CONTROL_CHAR (char)5
+// @brief Signifies a position to capture
 #define CONTROL_CHAR_STR "\5"
 
 #define TAB "   "
 
 #define __callback_prefix __menu_
+/**
+ * @brief Gets the choice callback with <name>
+ */
 #define choice_callback(name) &TOKENPASTE2(__callback_prefix, name)
+ /**
+  * @brief Delare a callback function for a specific choice
+  */
 #define declare_choice_callback(name) void TOKENPASTE2(__callback_prefix, name)(const struct ChoiceDialogChoice* choice)
-// Default callback for all choices
+  /**
+   * @brief Declare a default callback function
+   */
 #define declare_choice_callback_g(name) void TOKENPASTE2(__callback_prefix, name)(const struct ChoiceDialogChoice* choice, const int index)

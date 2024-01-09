@@ -3,17 +3,26 @@
 #include <string.h>
 #include "libs/cvector.h"
 
+#include "base.h"
+#include "static.h"
 #include "tui.h"
-#include "main.h"
 #include "utils.h"
 #include "input.h"
 #include "state.h"
 #include "store.h"
 
-const char dialog_txt[] = "You may:";
+void showMainMenu(void);
+void showMonth(void);
+void showRole(void);
+void showStore(void);
 
+/**
+ * @brief Computes the quick health based on each member's health
+ * @return the string description
+ */
 static const char* getQuickHealth(void)
 {
+	// TODO
 	return "good";
 }
 
@@ -23,24 +32,31 @@ const struct ChoiceDialogChoice SETTLEMENT_CHOICES[] = {
 	{.name = "Look at map"}
 };
 
+/**
+ * @return the new pointer to <lines>
+ */
 static struct WrapLine* addQuickInfo(struct WrapLine* lines)
 {
 	lines = addBar(lines);
 
+	// Weather
 	char buffer[32] = ANSI_SELECTED"Weather: ";
-	strcat(buffer, WEATHERS[weather]);
+	strcat(buffer, WEATHERS[state.weather]);
 	lines = addLine(lines, buffer, WRAPLINEKIND_LTR);
 
+	// Health
 	strcpy(buffer, ANSI_SELECTED"Health: ");
 	strcat(buffer, getQuickHealth());
 	lines = addLine(lines, buffer, WRAPLINEKIND_LTR);
 
+	// Pace
 	strcpy(buffer, ANSI_SELECTED"Pace: ");
-	strcat(buffer, PACES[pace]);
+	strcat(buffer, PACES[state.pace]);
 	lines = addLine(lines, buffer, WRAPLINEKIND_LTR);
 
+	// Ration
 	strcpy(buffer, ANSI_SELECTED"Rations: ");
-	strcat(buffer, RATIONS[ration]);
+	strcat(buffer, RATIONS[state.ration]);
 	lines = addLine(lines, buffer, WRAPLINEKIND_LTR);
 
 	lines = addBar(lines);
@@ -51,23 +67,28 @@ static void showMain(void)
 {
 	struct WrapLine* lines = NULL;
 	cvector_init(lines, 0, NULL);
+
 	char date[16];
-	memcpy(date, MONTHS[month], sizeof(MONTHS[0]));
+	memcpy(date, MONTHS[state.month], sizeof(MONTHS[0]));
 	strcat(date, " 1, 1868");
+
 	lines = addLine(lines, date, WRAPLINEKIND_CENTER);
 	lines = addNewline(lines);
-	
+
 	lines = addQuickInfo(lines);
+	addStaticLine(lines, "Work in progress from here on", 0);
 
 	showChoiceDialogWL(lines, &SETTLEMENT_CHOICES[0], _countof(SETTLEMENT_CHOICES), &(struct _DialogOptions){
-		.title = location,
+		.title = state.location,
 			.noPaddingY = 1
 	});
 }
 
 void showStore(void)
 {
-	strcpy(location, "Independence, Missouri");
+	// set location
+	strcpy(state.location, "Independence, Missouri");
+
 	const Coord capture = drawStore();
 	putsn(ANSI_CURSOR_SHOW);
 	workStore(capture);
@@ -78,11 +99,11 @@ void showStore(void)
 
 static declare_choice_callback_g(month)
 {
-	month = index;
+	state.month = index;
 
 	char text[256];
 
-	sprintf(text, "Before leaving Independence you should buy equipment and supplies. You have $%.2f in cash, but you don't have to spend it all now.", money);
+	sprintf(text, "Before leaving Independence you should buy equipment and supplies. You have $%.2f in cash, but you don't have to spend it all now.", state.money);
 	showInfoDialog(0, text);
 	showInfoDialog(0, "You can buy whatever you need at Matt's General Store.");
 #define matt_greeting "Hello, I'm Matt. So you're going to Oregon! I can fix you up with what you need:\n\n"
@@ -123,8 +144,9 @@ static declare_choice_callback(role_learn)
 
 static declare_choice_callback_g(role)
 {
-	role = index;
-	money = (float[]){ 1600.f, 800.f, 400.f } [index] ;
+	state.role = index;
+	// money per role
+	state.money = (float[]){ 1600.f, 800.f, 400.f } [index] ;
 
 	clearStdout();
 	drawBox(&("What is the first name of the wagon leader? " ANSI_CURSOR_SAVE)[0], DIALOG_WIDTH, BORDER_DOUBLE, &(struct _BoxOptions){
@@ -133,11 +155,11 @@ static declare_choice_callback_g(role)
 	});
 	putsn(ANSI_CURSOR_RESTORE ANSI_CURSOR_SHOW);
 
-	getString(&wagon_leader->name[0], 1, NAME_SIZE, 0);
+	getStringInput(&state.wagon_leader->name[0], 1, NAME_SIZE, 0);
 
 	for (int i = 0; i < WAGON_MEMBER_COUNT; i++)
 	{
-		strcpy(wagon_members[i].name, getRandomName());
+		strcpy(state.wagon_members[i].name, getRandomName());
 	}
 
 	showMonth();
@@ -179,7 +201,7 @@ static declare_choice_callback(main_exit)
 
 static declare_choice_callback(management)
 {
-	showInfoDialog("Compiled "__DATE__, "");
+	showInfoDialog("Compiled "__DATE__, "Recreating The Oregon Trail by MECC with only text.");
 	showMainMenu();
 }
 
@@ -192,7 +214,7 @@ const struct ChoiceDialogChoice main_choices[] = {
 };
 void showMainMenu(void)
 {
-	showChoiceDialog(dialog_txt, main_choices, _countof(main_choices), &(struct _DialogOptions){
+	showChoiceDialog("You may:", main_choices, _countof(main_choices), &(struct _DialogOptions){
 		.title = "Welcome to Oregon Trail"
 	});
 }
@@ -203,7 +225,8 @@ int main(void)
 	setupConsoleWIN();
 #endif
 
+	// style console
 	putsn(ANSI_CURSOR_STYLE_UNDERLINE ANSI_CURSOR_SHOW ANSI_WINDOW_TITLE("Oregon Trail") ANSI_WINDOW_SIZE("42", ""));
-	strcpy(location, "Independence, Missouri");
+
 	showMainMenu();
 }

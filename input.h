@@ -1,6 +1,8 @@
 #pragma once
 #include <stdarg.h>
 
+#include "base.h"
+
 enum QKeyType {
 	QKEY_TYPE_NORMAL,
 	QKEY_TYPE_ARROW
@@ -19,11 +21,9 @@ enum QKeyCallbackReturn {
 	QKEY_CALLBACK_RETURN_END
 };
 
-typedef enum QKeyCallbackReturn(*vQKeyCallback)(unsigned, enum QKeyType, va_list);
+typedef enum QKeyCallbackReturn(*QKeyCallback)(unsigned, enum QKeyType, va_list);
 
-int qgetch(enum QKeyType* key_type);
+int getInputKey(enum QKeyType* key_type);
 void waitForKey(const int key);
-int getNumber(unsigned start, unsigned end, bool erase, const vQKeyCallback key_callback);
-int vgetNumber(unsigned start, unsigned end, bool erase, const vQKeyCallback key_callback, ...);
-void getString(char* buffer, int min_len, int max_len, const vQKeyCallback key_callback);
-void vgetString(char* buffer, int min_len, int max_len, const vQKeyCallback key_callback, ...);
+int getNumberInput(unsigned start, unsigned end, bool erase, const QKeyCallback key_callback, ...);
+void getStringInput(char* buffer, int min_len, int max_len, const QKeyCallback key_callback, ...);

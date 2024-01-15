@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include "base.h"
+#include "ansi_codes.h"
 
 // puts without newline
 static inline int putsn(const char* str)
@@ -10,10 +11,16 @@ static inline int putsn(const char* str)
 }
 
 // strcat but single char
-char* strcat_ch(char* dst, const char src);
+char* _strcat_ch(char* dst, const char src);
 
-void clearStdout(void);
+inline void clearStdout(void)
+{
+	putsn(ANSI_CURSOR_ZERO "\033[2J");
+}
+
 void setCursorPos(byte x, byte y);
 #ifdef _WIN32
 void setupConsoleWIN();
 #endif
+// strlen but ignores ANSI escape codes
+size_t strlen_iae(const char* str);

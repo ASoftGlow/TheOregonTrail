@@ -4,7 +4,7 @@
 
 #include "utils.h"
 
-char* strcat_ch(char* dst, const char src)
+char* _strcat_ch(char* dst, const char src)
 {
 	char* cp = dst;
 
@@ -16,11 +16,7 @@ char* strcat_ch(char* dst, const char src)
 	return dst;                  /* return dst */
 }
 
-void clearStdout(void)
-{
-	putsn("\033[1;1H" "\033[2J");
-}
-
+// functional for 2 digits
 void setCursorPos(byte x, byte y)
 {
 	const byte dy = ++y / (byte)10;
@@ -41,6 +37,7 @@ void setCursorPos(byte x, byte y)
 void setupConsoleWIN()
 {
 	// enable ANSI escape codes
+	// TODO: allow reading cursor position
 	HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
 	DWORD dwMode = 0;
 	GetConsoleMode(hOut, &dwMode);
@@ -49,3 +46,20 @@ void setupConsoleWIN()
 	SetConsoleOutputCP(437);
 }
 #endif
+
+size_t strlen_iae(const char* str)
+{
+	size_t len = 0, pos = 0;
+
+	while (1)
+	{
+		if (str[pos] == 0) break;
+		if (str[pos] == 27)
+		{
+			while (!isalpha(str[++pos]));
+		}
+		else ++len;
+		++pos;
+	}
+	return len;
+}

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -108,6 +108,7 @@
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard_C>stdc11</LanguageStandard_C>
       <AdditionalIncludeDirectories>$(VC_IncludePath)/include;</AdditionalIncludeDirectories>
+      <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -131,7 +132,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="input.c" />
     <ClCompile Include="main.c" />
+    <ClCompile Include="map.c" />
     <ClCompile Include="state.c" />
     <ClCompile Include="static.c" />
     <ClCompile Include="store.c" />
@@ -144,10 +147,9 @@
   <ItemGroup>
     <ClInclude Include="ansi_codes.h" />
     <ClInclude Include="base.h" />
-    <ClCompile Include="input.c">
-      <FileType>CppCode</FileType>
-    </ClCompile>
     <ClInclude Include="input.h" />
+    <ClInclude Include="map.h" />
+    <ClInclude Include="map_data.h" />
     <ClInclude Include="state.h" />
     <ClInclude Include="static.h" />
     <ClInclude Include="store.h" />

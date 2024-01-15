@@ -59,6 +59,7 @@ typedef struct _WrapLineOptions
 	WrapLineKind kind;
 } *WrapLineOptions;
 
+// Provides y position of first line and last line
 struct _ChoiceInfo
 {
 	byte start, end;
@@ -120,7 +121,7 @@ void showInfoDialog(const char title[], const char text[]);
 void putBlock(const char* text, byte x, byte y);
 
 /**
- * @brief Draws block of lines at <x> and <y>
+ * @brief Draws lines at <x> and <y>
  */
 void putBlockWL(struct WrapLine* lines, byte x, byte y, byte width);
 
@@ -166,13 +167,13 @@ do { \
 #define BOX_CHAR_UR     192
 #define BOX_CHAR_UL     217
 
-#define SCREEN_WIDTH 32
-#define SCREEN_HEIGHT 20;
+#define SCREEN_WIDTH 40
+#define SCREEN_HEIGHT 15
 
 #define DIALOG_PADDING_X 4
 #define DIALOG_PADDING_Y 1
-#define DIALOG_CONTENT_WIDTH SCREEN_WIDTH
-#define DIALOG_WIDTH DIALOG_CONTENT_WIDTH + DIALOG_PADDING_X * 2
+#define DIALOG_WIDTH SCREEN_WIDTH
+#define DIALOG_CONTENT_WIDTH DIALOG_WIDTH - DIALOG_PADDING_X * 2
 #define INDENT_SIZE DIALOG_PADDING_X
 
 // @brief Signifies a position to capture

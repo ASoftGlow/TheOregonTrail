@@ -10,11 +10,13 @@
 #include "input.h"
 #include "state.h"
 #include "store.h"
+#include "map.h"
 
 void showMainMenu(void);
 void showMonth(void);
 void showRole(void);
 void showStore(void);
+void showMain(void);
 
 /**
  * @brief Computes the quick health based on each member's health
@@ -26,10 +28,18 @@ static const char* getQuickHealth(void)
 	return "good";
 }
 
+static declare_choice_callback(map)
+{
+	putsn(ANSI_SB_ALT);
+	showMap();
+	putsn(ANSI_SB_MAIN);
+	//showMain();
+}
+
 const struct ChoiceDialogChoice SETTLEMENT_CHOICES[] = {
 	{.name = "Continue on trail"},
 	{.name = "Check supplies"},
-	{.name = "Look at map"}
+	{.name = "Look at map", .callback=choice_callback(map)}
 };
 
 /**
@@ -63,7 +73,7 @@ static struct WrapLine* addQuickInfo(struct WrapLine* lines)
 	return lines;
 }
 
-static void showMain(void)
+void showMain(void)
 {
 	struct WrapLine* lines = NULL;
 	cvector_init(lines, 0, NULL);
@@ -91,6 +101,7 @@ void showStore(void)
 
 	const Coord capture = drawStore();
 	putsn(ANSI_CURSOR_SHOW);
+	fflush(stdout);
 	workStore(capture);
 
 	showInfoDialog("Parting with Matt", "Well then, you're ready to go. Good luck! You have a long and difficult journey ahead of you.");
@@ -154,6 +165,7 @@ static declare_choice_callback_g(role)
 			.color = ANSI_COLOR_YELLOW
 	});
 	putsn(ANSI_CURSOR_RESTORE ANSI_CURSOR_SHOW);
+	fflush(stdout);
 
 	getStringInput(&state.wagon_leader->name[0], 1, NAME_SIZE, 0);
 
@@ -225,8 +237,15 @@ int main(void)
 	setupConsoleWIN();
 #endif
 
+	// make stdout fully buffered
+	setvbuf(stdout, NULL, _IOFBF, (size_t)1 << 12);
+
 	// style console
-	putsn(ANSI_CURSOR_STYLE_UNDERLINE ANSI_CURSOR_SHOW ANSI_WINDOW_TITLE("Oregon Trail") ANSI_WINDOW_SIZE("42", ""));
+	putsn(ANSI_CURSOR_STYLE_UNDERLINE ANSI_CURSOR_SHOW ANSI_WINDOW_TITLE("Oregon Trail") ANSI_WINDOW_SIZE("42", "") ANSI_NO_WRAP);
 
 	showMainMenu();
+	//showStore();
+	//showMap();
+	/*strcpy(state.location, "Independence, Missouri");
+	showMain();*/
 }

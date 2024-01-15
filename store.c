@@ -65,6 +65,7 @@ static void showStoreCategoryMenu(struct StoreCategory* category, byte index, Co
 			.paddingX = DIALOG_PADDING_X
 	});
 	setCursorPos(captures[1].x + DIALOG_PADDING_X + 1, captures[1].y + DIALOG_PADDING_Y);
+	fflush(stdout);
 
 	item->amount = getNumberInput(item->min, item->max, 1, NULL);
 	category->spent += item->price * item->amount;
@@ -78,6 +79,7 @@ static void showStoreCategoryMenu(struct StoreCategory* category, byte index, Co
 		});
 		putBlockWL(lines, captures[0].x + DIALOG_PADDING_X + 1, captures[0].y + DIALOG_PADDING_Y, 0);
 		setCursorPos(captures[1].x + captures[0].x + DIALOG_PADDING_X + 1, captures[1].y + captures[0].y + DIALOG_PADDING_Y);
+		fflush(stdout);
 
 		item->amount = getNumberInput(item->min, item->max, 1, NULL);
 		category->spent += item->price * item->amount;
@@ -105,6 +107,7 @@ static void drawChoiceStore(byte index, bool selected)
 	putsn(". ");
 	putsn(STORE_MATT_CATEGORIES[index].name);
 	if (selected) putsn(ANSI_COLOR_RESET);
+	fflush(stdout);
 }
 
 static void showAlert(char text[])
@@ -115,6 +118,7 @@ static void showAlert(char text[])
 
 	putBlockWLFill(lines, 5, 8 + _countof(STORE_MATT_CATEGORIES), DIALOG_CONTENT_WIDTH);
 	putsn(ANSI_CURSOR_HIDE);
+	fflush(stdout);
 	waitForKey(' ');
 
 	lines = NULL;
@@ -130,6 +134,7 @@ static void showAlert(char text[])
 	addStaticLine(lines, "Press SPACE BAR to leave store", WRAPLINEKIND_CENTER);
 	putBlockWLFill(lines, 5, 8 + _countof(STORE_MATT_CATEGORIES), DIALOG_CONTENT_WIDTH);
 	putsn(ANSI_CURSOR_SHOW);
+	fflush(stdout);
 }
 
 static enum QKeyCallbackReturn storeInputCallback(unsigned key, enum QKeyType type, va_list args)
@@ -140,17 +145,20 @@ static enum QKeyCallbackReturn storeInputCallback(unsigned key, enum QKeyType ty
 
 	if (type == QKEY_TYPE_ARROW)
 	{
-		if (key == QARROW_DOWN && (short)*cur_pos + (char)1 != _countof(STORE_MATT_CATEGORIES))
+		switch (key)
 		{
+		case QARROW_DOWN:
+			if (*cur_pos == _countof(STORE_MATT_CATEGORIES) - 1) break;
 			if (*cur_pos != -1)
 				drawChoiceStore(*cur_pos, 0);
 			else
 				putsn(ANSI_CURSOR_HIDE);
 
 			drawChoiceStore(++*cur_pos, 1);
-		}
-		else if (key == QARROW_UP && *cur_pos != 0)
-		{
+			break;
+
+		case QARROW_UP:
+			if (*cur_pos == 0) break;
 			if (*cur_pos != -1)
 				drawChoiceStore(*cur_pos, 0);
 			else
@@ -159,6 +167,21 @@ static enum QKeyCallbackReturn storeInputCallback(unsigned key, enum QKeyType ty
 				putsn(ANSI_CURSOR_HIDE);
 			}
 			drawChoiceStore(--*cur_pos, 1);
+			break;
+
+		case QARROW_PAGE_DOWN:
+			if (*cur_pos == -1 || *cur_pos == _countof(STORE_MATT_CATEGORIES) - 1) break;
+			drawChoiceStore(*cur_pos, 0);
+			*cur_pos = _countof(STORE_MATT_CATEGORIES) - 1;
+			drawChoiceStore(*cur_pos, 1);
+			break;
+
+		case QARROW_PAGE_UP:
+			if (*cur_pos <= 0) break;
+			drawChoiceStore(*cur_pos, 0);
+			*cur_pos = 0;
+			drawChoiceStore(*cur_pos, 1);
+			break;
 		}
 	}
 	else
@@ -176,6 +199,7 @@ static enum QKeyCallbackReturn storeInputCallback(unsigned key, enum QKeyType ty
 				sprintf(text, "Okay, that comes to a total of $%.2f, but I see you only have $%.2f. We'd better go over the list again.\n\n", total_bill, state.money);
 				showAlert(text);
 				setCursorPos(end.x, end.y);
+				fflush(stdout);
 				return QKEY_CALLBACK_RETURN_IGNORE;
 			}
 			// oxen
@@ -183,6 +207,7 @@ static enum QKeyCallbackReturn storeInputCallback(unsigned key, enum QKeyType ty
 			{
 				showAlert("Don't forget, you'll need oxen to pull your wagon.\n\n\n\n");
 				setCursorPos(end.x, end.y);
+				fflush(stdout);
 				return QKEY_CALLBACK_RETURN_IGNORE;
 			}
 			else
@@ -207,12 +232,13 @@ static enum QKeyCallbackReturn storeInputCallback(unsigned key, enum QKeyType ty
 			showStoreCategoryMenu(&STORE_MATT_CATEGORIES[*cur_pos], *cur_pos, end);
 			return QKEY_CALLBACK_RETURN_END;
 		}
-		else if (key == 27 && *cur_pos > -1)
+		else if (key == ESCAPE_CHAR && *cur_pos > -1)
 		{
 			drawChoiceStore(*cur_pos, 0);
 			*cur_pos = -1;
 			setCursorPos(end.x, end.y);
 			putsn(ANSI_CURSOR_SHOW);
+			fflush(stdout);
 		}
 	}
 	return *cur_pos == -1 ? QKEY_CALLBACK_RETURN_NORMAL : QKEY_CALLBACK_RETURN_IGNORE;
@@ -269,6 +295,7 @@ Coord drawStore(void)
 void workStore(Coord input_pos)
 {
 	setCursorPos(input_pos.x, input_pos.y);
+	fflush(stdout);
 	char cur_pos = -1;
 	const int choice = getNumberInput(1, _countof(STORE_MATT_CATEGORIES), 1, &storeInputCallback, &cur_pos, input_pos) - 1;
 	if (choice >= 0)

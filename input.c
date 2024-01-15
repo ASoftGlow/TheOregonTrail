@@ -11,8 +11,6 @@
 #include "utils.h"
 #include "ansi_codes.h"
 
-#define ESCAPE_CHAR 224
-
 int getKeyInput(enum QKeyType* key_type)
 {
 	int key = _getch();
@@ -20,12 +18,12 @@ int getKeyInput(enum QKeyType* key_type)
 	{
 	case 3:
 	case 4:
-		putsn(ANSI_CURSOR_RESTORE ANSI_COLOR_RESET ANSI_CURSOR_STYLE_DEFAULT ANSI_CURSOR_SHOW);
+		putsn(ANSI_CURSOR_RESTORE ANSI_COLOR_RESET ANSI_CURSOR_STYLE_DEFAULT ANSI_CURSOR_SHOW ANSI_WRAP);
 		// TODO: gracefully escape
 		exit(EXIT_FAILURE);
 
 	case 0:
-	case ESCAPE_CHAR:
+	case 224:
 		*key_type = QKEY_TYPE_ARROW;
 		return _getch();
 
@@ -44,6 +42,7 @@ void waitForKey(const int key)
 	}
 }
 
+// @returns a negative number if cancelled
 int getNumberInput(unsigned start, unsigned end, bool erase, const QKeyCallback key_callback, ...)
 {
 	va_list argptr;
@@ -64,10 +63,12 @@ int getNumberInput(unsigned start, unsigned end, bool erase, const QKeyCallback 
 			if (result == QKEY_CALLBACK_RETURN_IGNORE) continue;
 			if (result == QKEY_CALLBACK_RETURN_END)
 			{
+				// overwrite old text
 				if (erase) while (i--) putsn("\b \b");
 				return -1;
 			}
 		}
+		// enter pressed
 		if (key == '\r' && i) break;
 
 		if (type == QKEY_TYPE_NORMAL)
@@ -79,6 +80,7 @@ int getNumberInput(unsigned start, unsigned end, bool erase, const QKeyCallback 
 				num -= buffer[--i];
 				num /= 10;
 				putsn("\b \b");
+				fflush(stdout);
 				break;
 
 			default:
@@ -93,6 +95,7 @@ int getNumberInput(unsigned start, unsigned end, bool erase, const QKeyCallback 
 					num += digit;
 					putchar(key);
 					buffer[i++] = digit;
+					fflush(stdout);
 				}
 				break;
 			}
@@ -126,12 +129,14 @@ void getStringInput(char* buffer, int min_len, int max_len, const QKeyCallback k
 				if (!i) break;
 				--i;
 				putsn("\b \b");
+				fflush(stdout);
 				break;
 
 			default:
 				if ((isalpha(key) || key == ' ' || key == '\'') && i < max_len)
 				{
 					buffer[i++] = putchar(key);
+					fflush(stdout);
 				}
 				break;
 			}

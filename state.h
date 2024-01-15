@@ -58,6 +58,18 @@ enum Ration
 	RATION_FILLING
 };
 
+typedef short MapMarkDensity;
+
+#define	MAP_MARK_DENSITY_NORMAL 0
+#define MAP_MARK_DENSITY_DOUBLE 1
+#define MAP_MARK_DENSITY_SMUDGED 2
+
+struct MapMark
+{
+	byte pos, path_index;
+	MapMarkDensity density;
+};
+
 struct State
 {
 	float money;
@@ -76,7 +88,11 @@ struct State
 	enum Pace pace;
 	enum Ration ration;
 	enum Role role;
+
 	char location[32];
+	unsigned short progress;
+	struct MapMark map_marks[32];
+	byte map_marks_count;
 
 	struct WagonMember wagon_leader[NAME_SIZE + 1];
 	struct WagonMember wagon_members[WAGON_MEMBER_COUNT];

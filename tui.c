@@ -96,8 +96,8 @@ struct WrapLine* addLine(struct WrapLine* lines, const char* text, WrapLineKind 
 {
 	cvector_push_back_struct(lines);
 	struct WrapLine* last_line = &cvector_last(lines);
-	last_line->length = (byte)strlen(text); //TODO do client length right
-	last_line->client_length = last_line->length;
+	last_line->length = (byte)strlen(text);
+	last_line->client_length = (byte)strlen_iae(text);
 	last_line->kind = kind;
 	if (text)
 		memcpy(last_line->text, text, (size_t)last_line->length + 1);
@@ -109,7 +109,7 @@ struct WrapLine* justifyLineWL(struct WrapLine* lines, const char* text1, const 
 	cvector_push_back_struct(lines);
 	struct WrapLine* last_line = &cvector_last(lines);
 	last_line->length = width;
-	last_line->client_length = last_line->length; //TODO do client length right
+	last_line->client_length = width;
 	last_line->kind = WRAPLINEKIND_NONE;
 	const byte len2 = (byte)strlen(text2);
 	byte pos = (byte)strlen(text1);
@@ -135,17 +135,20 @@ static enum QKeyCallbackReturn inputCallback(unsigned key, enum QKeyType type, v
 
 	if (type == QKEY_TYPE_ARROW)
 	{
-		if (key == QARROW_DOWN && *cur_pos + 1 != choices_size)
+		switch (key)
 		{
+		case QARROW_DOWN:
+			if (*cur_pos == choices_size - 1) break;
 			if (*cur_pos != -1)
 				drawChoice(choices, lines, choices_info, *cur_pos, 0);
 			else
 				putsn(ANSI_CURSOR_HIDE);
 
 			drawChoice(choices, lines, choices_info, ++ * cur_pos, 1);
-		}
-		else if (key == QARROW_UP && *cur_pos != 0)
-		{
+			break;
+
+		case QARROW_UP:
+			if (*cur_pos == 0) break;
 			if (*cur_pos != -1)
 				drawChoice(choices, lines, choices_info, *cur_pos, 0);
 			else
@@ -154,6 +157,21 @@ static enum QKeyCallbackReturn inputCallback(unsigned key, enum QKeyType type, v
 				putsn(ANSI_CURSOR_HIDE);
 			}
 			drawChoice(choices, lines, choices_info, -- * cur_pos, 1);
+			break;
+
+		case QARROW_PAGE_DOWN:
+			if (*cur_pos == -1 || *cur_pos == choices_size - 1) break;
+			drawChoice(choices, lines, choices_info, *cur_pos, 0);
+			*cur_pos = choices_size - 1;
+			drawChoice(choices, lines, choices_info, *cur_pos, 1);
+			break;
+
+		case QARROW_PAGE_UP:
+			if (*cur_pos <= 0) break;
+			drawChoice(choices, lines, choices_info, *cur_pos, 0);
+			*cur_pos = 0;
+			drawChoice(choices, lines, choices_info, *cur_pos, 1);
+			break;
 		}
 	}
 	else
@@ -180,7 +198,7 @@ static enum QKeyCallbackReturn inputCallback(unsigned key, enum QKeyType type, v
 
 void showChoiceDialog(const char* text, const struct ChoiceDialogChoice* choices, const int choices_size, const DialogOptions options)
 {
-	struct WrapLine* lines = wrapText(text, DIALOG_CONTENT_WIDTH, 0);
+	struct WrapLine* lines = wrapText(text, DIALOG_CONTENT_WIDTH, NULL);
 	showChoiceDialogWL(lines, choices, choices_size, options);
 }
 
@@ -228,8 +246,9 @@ void showChoiceDialogWL(struct WrapLine* lines, const struct ChoiceDialogChoice*
 			.do_not_free = 1
 	});
 	putsn(ANSI_CURSOR_SAVE);
-
 	setCursorPos(capture.x, capture.y);
+	fflush(stdout);
+
 	int cur_pos = -1;
 	const int num = getNumberInput(1, choices_size, 0, &inputCallback, &cur_pos, choices_size, choices, options->callback, lines, choices_info, capture) - 1;
 
@@ -246,8 +265,8 @@ void showChoiceDialogWL(struct WrapLine* lines, const struct ChoiceDialogChoice*
 
 void drawChoice(const struct ChoiceDialogChoice* choices, const struct WrapLine* lines, const struct _ChoiceInfo* choices_info, const int index, const bool selected)
 {
-	byte x = 1 + DIALOG_PADDING_X;
-	byte y = 1 + DIALOG_PADDING_Y;
+	const byte x = 1 + DIALOG_PADDING_X;
+	const byte y = 1 + DIALOG_PADDING_Y; // FIXME: don't assume padding
 	if (selected) putsn(ANSI_SELECTED);
 	for (byte i = choices_info[index].start; i < choices_info[index].end; i++)
 	{
@@ -255,6 +274,7 @@ void drawChoice(const struct ChoiceDialogChoice* choices, const struct WrapLine*
 		putsn(lines[i].text);
 	}
 	if (selected) putsn(ANSI_COLOR_RESET);
+	fflush(stdout);
 }
 
 struct WrapLine* wrapBox(const char* text, const int width, const BoxOptions options)
@@ -427,6 +447,7 @@ void putBlock(const char* text, byte x, byte y)
 		putsn(line);
 		line = strtok(0, "\n");
 	}
+	fflush(stdout);
 	free(_text);
 }
 

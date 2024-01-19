@@ -67,8 +67,7 @@ static void showStoreCategoryMenu(struct StoreCategory* category, byte index, Co
 	setCursorPos(captures[1].x + DIALOG_PADDING_X + 1, captures[1].y + DIALOG_PADDING_Y);
 	fflush(stdout);
 
-	item->amount = getNumberInput(item->min, item->max, 1, NULL);
-	category->spent += item->price * item->amount;
+	goto get_input;
 
 	while (++item < items_end)
 	{
@@ -81,7 +80,9 @@ static void showStoreCategoryMenu(struct StoreCategory* category, byte index, Co
 		setCursorPos(captures[1].x + captures[0].x + DIALOG_PADDING_X + 1, captures[1].y + captures[0].y + DIALOG_PADDING_Y);
 		fflush(stdout);
 
+	get_input:
 		item->amount = getNumberInput(item->min, item->max, 1, NULL);
+		if (item->amount < 0) return;
 		category->spent += item->price * item->amount;
 	}
 
@@ -120,6 +121,7 @@ static void showAlert(char text[])
 	putsn(ANSI_CURSOR_HIDE);
 	fflush(stdout);
 	waitForKey(' ');
+	if (errno) return;
 
 	lines = NULL;
 	cvector_init(lines, 0, 0);
@@ -128,9 +130,12 @@ static void showAlert(char text[])
 	lines = addLine(lines, buffer, WRAPLINEKIND_RTL);
 	lines = addNewline(lines);
 
-	lines = wrapText("Which item would you like to buy?\n\n", DIALOG_CONTENT_WIDTH - INDENT_SIZE, &(struct _WrapLineOptions){
-		.lines = lines
+	byte added_lines_count;
+	lines = wrapText("Which item would you like to buy?\n", DIALOG_CONTENT_WIDTH - INDENT_SIZE, &(struct _WrapLineOptions){
+		.lines = lines,
+			.added_count = &added_lines_count
 	});
+	indentLines(cvector_end(lines) - added_lines_count, cvector_end(lines), INDENT_SIZE);
 	addStaticLine(lines, "Press SPACE BAR to leave store", WRAPLINEKIND_CENTER);
 	putBlockWLFill(lines, 5, 8 + _countof(STORE_MATT_CATEGORIES), DIALOG_CONTENT_WIDTH);
 	putsn(ANSI_CURSOR_SHOW);
@@ -196,7 +201,7 @@ static enum QKeyCallbackReturn storeInputCallback(unsigned key, enum QKeyType ty
 			if (state.money < total_bill)
 			{
 				char text[116];
-				sprintf(text, "Okay, that comes to a total of $%.2f, but I see you only have $%.2f. We'd better go over the list again.\n\n", total_bill, state.money);
+				sprintf(text, "Okay, that comes to a total of $%.2f, but I see you only have $%.2f. We'd better go over the list again.\n", total_bill, state.money);
 				showAlert(text);
 				setCursorPos(end.x, end.y);
 				fflush(stdout);
@@ -205,7 +210,7 @@ static enum QKeyCallbackReturn storeInputCallback(unsigned key, enum QKeyType ty
 			// oxen
 			else if (STORE_MATT_CATEGORIES[0].items[0].amount == 0)
 			{
-				showAlert("Don't forget, you'll need oxen to pull your wagon.\n\n\n\n");
+				showAlert("Don't forget, you'll need oxen to pull your wagon.\n\n\n");
 				setCursorPos(end.x, end.y);
 				fflush(stdout);
 				return QKEY_CALLBACK_RETURN_IGNORE;
@@ -273,10 +278,13 @@ Coord drawStore(void)
 	lines = addNewline(lines);
 
 	Coord capture;
-	lines = wrapText("Which item would you like to buy? "CONTROL_CHAR_STR"\n\n", DIALOG_CONTENT_WIDTH - INDENT_SIZE, &(struct _WrapLineOptions){
+	byte added_lines_count;
+	lines = wrapText("Which item would you like to buy? "CONTROL_CHAR_STR"\n", DIALOG_CONTENT_WIDTH - INDENT_SIZE, &(struct _WrapLineOptions){
 		.captures = &capture,
-			.lines = lines
+			.lines = lines,
+			.added_count = &added_lines_count
 	});
+	indentLines(cvector_end(lines) - added_lines_count, cvector_end(lines), INDENT_SIZE);
 	addStaticLine(lines, "Press SPACE BAR to leave store", WRAPLINEKIND_CENTER);
 
 	clearStdout();
@@ -287,7 +295,7 @@ Coord drawStore(void)
 	});
 	putsn(ANSI_CURSOR_SAVE);
 
-	capture.x += DIALOG_PADDING_X + 1;
+	capture.x += 1 + DIALOG_PADDING_X + INDENT_SIZE;
 	++capture.y;
 	return capture;
 }

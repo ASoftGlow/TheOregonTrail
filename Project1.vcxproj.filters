@@ -15,7 +15,25 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <Text Include="example.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="input.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="main.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="map.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="state.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="static.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="store.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="tui.c">
@@ -24,42 +42,21 @@
     <ClCompile Include="utils.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="store.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="static.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="state.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="map.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="input.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="example.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="tui.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="utils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="input.h">
+    <ClInclude Include="ansi_codes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="base.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ansi_codes.h">
+    <ClInclude Include="input.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="store.h">
+    <ClInclude Include="map.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="map_data.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="state.h">
@@ -68,13 +65,16 @@
     <ClInclude Include="static.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="store.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="store_data.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="map.h">
+    <ClInclude Include="tui.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="map_data.h">
+    <ClInclude Include="utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

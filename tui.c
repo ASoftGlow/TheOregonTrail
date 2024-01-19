@@ -190,6 +190,7 @@ static enum QKeyCallbackReturn inputCallback(unsigned key, enum QKeyType type, v
 			*cur_pos = -1;
 			setCursorPos(end.x, end.y);
 			putsn(ANSI_CURSOR_SHOW);
+			fflush(stdout);
 		}
 	}
 
@@ -255,7 +256,7 @@ void showChoiceDialogWL(struct WrapLine* lines, const struct ChoiceDialogChoice*
 	cvector_free(lines);
 	free(choices_info);
 
-	if (num != -2)
+	if (num >= 0)
 	{
 		const struct ChoiceDialogChoice* choice = &choices[num];
 		if (choice->callback) (*choice->callback)(choice);
@@ -380,6 +381,7 @@ void drawBoxWL(struct WrapLine* lines, const int width, const enum BorderStyle b
 		if (options->color) putsn(options->color);
 		putchar(BORDER_V);
 		putchar('\n');
+		fflush(stdout);
 	}
 
 	py = options->paddingY;
@@ -517,6 +519,19 @@ void putBlockWLFill(struct WrapLine* lines, byte x, byte y, byte width)
 	}
 
 	cvector_free(lines);
+}
+
+void indentLines(struct WrapLine* begin, struct WrapLine* end, const byte amount)
+{
+	while (begin < end)
+	{
+		assert(begin->length + amount <= sizeof(begin->text));
+		memmove(begin->text + amount, begin->text, begin->length);
+		memset(begin->text, ' ', amount);
+		begin->length += amount;
+		begin->client_length += amount;
+		++begin;
+	}
 }
 
 struct WrapLine* textToLines(const char* text)

@@ -5,7 +5,8 @@
 
 enum QKeyType {
 	QKEY_TYPE_NORMAL,
-	QKEY_TYPE_ARROW
+	QKEY_TYPE_ARROW,
+	QKEY_TYPE_QUIT
 };
 
 enum QArrowKey {
@@ -30,4 +31,6 @@ typedef enum QKeyCallbackReturn(*QKeyCallback)(unsigned, enum QKeyType, va_list)
 int getKeyInput(enum QKeyType* key_type);
 void waitForKey(const int key);
 int getNumberInput(unsigned start, unsigned end, bool erase, const QKeyCallback key_callback, ...);
-void getStringInput(char* buffer, int min_len, int max_len, const QKeyCallback key_callback, ...);
+bool getStringInput(char* buffer, int min_len, int max_len, const QKeyCallback key_callback, ...);
+
+extern bool IS_TTY;

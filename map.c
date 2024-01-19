@@ -124,6 +124,12 @@ void drawMark(struct MapMark* mark, Coord offset)
 
 void showMap(void)
 {
+	if (!state.map_viewed)
+	{
+		showInfoDialog("Map Tips", "Use arrow keys to pan map\nPress m key to enter mark mode\n  Use up/right and down/left arrows to traverse path\n  Press enter key to make a mark\n  Press m key again or escape key to exit mark mode");
+		state.map_viewed = 1;
+	}
+
 	byte path_pos, path_id, path_index;
 	Coord pan_pos = { MAP_VIEWPORT_WIDTH / 2, MAP_VIEWPORT_HEIGHT / 2 };
 	bool marking = 0;
@@ -160,8 +166,9 @@ fflush(stdout);
 	while (1)
 	{
 		int key = getKeyInput(&key_type);
-		if (key_type == QKEY_TYPE_ARROW)
+		switch (key_type)
 		{
+		case QKEY_TYPE_ARROW:
 			if (marking)
 			{
 				switch (key)
@@ -237,9 +244,9 @@ fflush(stdout);
 				fflush(stdout);
 			skip:;
 			}
-		}
-		else
-		{
+			break;
+
+		case QKEY_TYPE_NORMAL:
 			switch (key)
 			{
 			case 'm':
@@ -263,6 +270,9 @@ fflush(stdout);
 				struct MapMark* mark = findMark(path_index, path_pos);
 				if (mark == 0)
 				{
+					// reached max marks TODO: show alert
+					if (state.map_marks_count == _countof(state.map_marks)) break;
+
 					mark = &state.map_marks[state.map_marks_count++];
 					mark->path_index = path_index;
 					mark->pos = path_pos;
@@ -284,6 +294,10 @@ fflush(stdout);
 				putsn(ANSI_CURSOR_STYLE_UNDERLINE ANSI_CURSOR_SHOW);
 				return;
 			}
+			break;
+
+		case QKEY_TYPE_QUIT:
+			return;
 		}
 	}
 }

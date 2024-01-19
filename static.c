@@ -12,6 +12,8 @@ const char MONTHS[][8] = {
 	"July"
 };
 
+const byte MONTH_LENGTHS[] = { 30,30,30,30 }; // TODO
+
 const char WEATHERS[][8] = {
 	"mild",
 	"cold",

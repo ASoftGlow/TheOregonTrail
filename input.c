@@ -6,10 +6,14 @@
 #else
 #include <curses.h>
 #endif
+#include <errno.h>
 
 #include "input.h"
 #include "utils.h"
 #include "ansi_codes.h"
+
+bool IS_TTY;
+bool escape_combo = 0;
 
 int getKeyInput(enum QKeyType* key_type)
 {
@@ -18,16 +22,28 @@ int getKeyInput(enum QKeyType* key_type)
 	{
 	case 3:
 	case 4:
-		putsn(ANSI_CURSOR_RESTORE ANSI_COLOR_RESET ANSI_CURSOR_STYLE_DEFAULT ANSI_CURSOR_SHOW ANSI_WRAP);
-		// TODO: gracefully escape
-		exit(EXIT_FAILURE);
+		*key_type = QKEY_TYPE_QUIT;
+		errno = ENOENT;
+		return 1;
+
+	case ESCAPE_CHAR:
+		if (!escape_combo)
+		{
+			escape_combo = 1;
+			return getKeyInput(key_type);
+		}
+		escape_combo = 0;
+		*key_type = QKEY_TYPE_QUIT;
+		return 0;
 
 	case 0:
 	case 224:
+		escape_combo = 0;
 		*key_type = QKEY_TYPE_ARROW;
 		return _getch();
 
 	default:
+		escape_combo = 0;
 		*key_type = QKEY_TYPE_NORMAL;
 		return key;
 	}
@@ -38,7 +54,7 @@ void waitForKey(const int key)
 	enum QKeyType type;
 	while (1)
 	{
-		if (getKeyInput(&type) == key && type == QKEY_TYPE_NORMAL) break;
+		if ((getKeyInput(&type) == key && type == QKEY_TYPE_NORMAL) || type == QKEY_TYPE_QUIT) break;
 	}
 }
 
@@ -101,12 +117,16 @@ int getNumberInput(unsigned start, unsigned end, bool erase, const QKeyCallback 
 			}
 
 		}
+		else if (type == QKEY_TYPE_QUIT)
+		{
+			return -1;
+		}
 	}
 	if (erase) while (i--) putsn("\b \b");
 	return num;
 }
 
-void getStringInput(char* buffer, int min_len, int max_len, const QKeyCallback key_callback, ...)
+bool getStringInput(char* buffer, int min_len, int max_len, const QKeyCallback key_callback, ...)
 {
 	va_list argptr;
 	va_start(argptr, key_callback);
@@ -140,8 +160,12 @@ void getStringInput(char* buffer, int min_len, int max_len, const QKeyCallback k
 				}
 				break;
 			}
-
+		}
+		else if (type == QKEY_TYPE_QUIT)
+		{
+			return 1;
 		}
 	}
 	buffer[i] = 0;
+	return 0;
 }

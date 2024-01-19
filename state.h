@@ -1,6 +1,8 @@
 #pragma once
 #include "static.h"
 
+#include <stdio.h>
+
 enum WagonMemberHealth
 {
 	HEALTH_GOOD,
@@ -70,6 +72,9 @@ struct MapMark
 	MapMarkDensity density;
 };
 
+void saveState(const char* path);
+void loadState(const char* path);
+
 struct State
 {
 	float money;
@@ -93,10 +98,18 @@ struct State
 	unsigned short progress;
 	struct MapMark map_marks[32];
 	byte map_marks_count;
+	bool map_viewed;
 
 	struct WagonMember wagon_leader[NAME_SIZE + 1];
 	struct WagonMember wagon_members[WAGON_MEMBER_COUNT];
 };
 
+struct Settings
+{
+	bool no_tutorials;
+	char save_path[FILENAME_MAX];
+};
+
 
 extern struct State state;
+extern struct Settings settings;

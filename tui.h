@@ -113,6 +113,7 @@ void showChoiceDialog(const char* text, const struct ChoiceDialogChoice* choices
  * @param options - is optional
  */
 void showChoiceDialogWL(struct WrapLine* lines, const struct ChoiceDialogChoice* choices, const int choices_size, const DialogOptions options);
+// Check for errno afterwards
 void showInfoDialog(const char title[], const char text[]);
 
 /**
@@ -129,6 +130,8 @@ void putBlockWL(struct WrapLine* lines, byte x, byte y, byte width);
  * @brief Draws block of lines at <x> and <y> and fills background with whitespace
  */
 void putBlockWLFill(struct WrapLine* lines, byte x, byte y, byte width);
+
+void indentLines(struct WrapLine* begin, struct WrapLine* end, const byte amount);
 
 struct WrapLine* addNewline(struct WrapLine* lines);
 struct WrapLine* justifyLineWL(struct WrapLine* lines, const char* text1, const char* text2, const byte width);
@@ -168,7 +171,7 @@ do { \
 #define BOX_CHAR_UL     217
 
 #define SCREEN_WIDTH 40
-#define SCREEN_HEIGHT 15
+#define SCREEN_HEIGHT 7
 
 #define DIALOG_PADDING_X 4
 #define DIALOG_PADDING_Y 1

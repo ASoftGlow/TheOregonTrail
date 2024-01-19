@@ -6,6 +6,7 @@
 extern const char WAGON_MEMBER_NAMES[][NAME_SIZE];
 
 extern const char MONTHS[][8];
+extern const byte MONTH_LENGTHS[];
 extern const char WEATHERS[][8];
 extern const char PACES[][8];
 extern const char RATIONS[][8];

@@ -1,7 +1,7 @@
 #pragma once
 
 typedef unsigned char byte;
-typedef int bool;
+typedef byte bool;
 typedef struct {
 	byte x, y;
 } Coord;

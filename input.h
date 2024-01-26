@@ -32,5 +32,6 @@ int getKeyInput(enum QKeyType* key_type);
 void waitForKey(const int key);
 int getNumberInput(unsigned start, unsigned end, bool erase, const QKeyCallback key_callback, ...);
 bool getStringInput(char* buffer, int min_len, int max_len, const QKeyCallback key_callback, ...);
+bool getBooleanInput(const QKeyCallback key_callback);
 
 extern bool IS_TTY;

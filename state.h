@@ -1,7 +1,7 @@
 #pragma once
-#include "static.h"
-
 #include <stdio.h>
+
+#include "static.h"
 
 enum WagonMemberHealth
 {
@@ -72,8 +72,16 @@ struct MapMark
 	MapMarkDensity density;
 };
 
-void saveState(const char* path);
-void loadState(const char* path);
+enum StateStage
+{
+	STATE_STAGE_BEGIN,
+	STATE_STAGE_START
+};
+
+bool saveState(const char* path);
+bool loadState(const char* path);
+bool saveSettings(void);
+bool loadSettings(void);
 
 struct State
 {
@@ -102,13 +110,18 @@ struct State
 
 	struct WagonMember wagon_leader[NAME_SIZE + 1];
 	struct WagonMember wagon_members[WAGON_MEMBER_COUNT];
+
+	enum StateStage stage;
 };
 
 struct Settings
 {
 	bool no_tutorials;
-	char save_path[FILENAME_MAX];
+	bool auto_save;
+	char auto_save_path[FILENAME_MAX];
 };
+
+#define SETTINGS_PATH "settings.dat"
 
 
 extern struct State state;

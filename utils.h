@@ -19,8 +19,6 @@ inline void clearStdout(void)
 }
 
 void setCursorPos(byte x, byte y);
-#ifdef _WIN32
-void setupConsoleWIN();
-#endif
+
 // strlen but ignores ANSI escape codes
-size_t strlen_iae(const char* str);
+size_t _strlen_iae(const char* str);

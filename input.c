@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <ctype.h>
 #ifdef _WIN32
 #include <conio.h>
 #else
@@ -26,24 +25,25 @@ int getKeyInput(enum QKeyType* key_type)
 		errno = ENOENT;
 		return 1;
 
-	case ESCAPE_CHAR:
-		if (!escape_combo)
-		{
-			escape_combo = 1;
-			return getKeyInput(key_type);
-		}
-		escape_combo = 0;
-		*key_type = QKEY_TYPE_QUIT;
-		return 0;
-
 	case 0:
 	case 224:
 		escape_combo = 0;
 		*key_type = QKEY_TYPE_ARROW;
 		return _getch();
 
+	case ESCAPE_CHAR:
+		if (escape_combo)
+		{
+			escape_combo = 0;
+			*key_type = QKEY_TYPE_QUIT;
+			return 0;
+		}
+		escape_combo = 1;
+		goto skip;
+
 	default:
 		escape_combo = 0;
+	skip:
 		*key_type = QKEY_TYPE_NORMAL;
 		return key;
 	}
@@ -138,7 +138,13 @@ bool getStringInput(char* buffer, int min_len, int max_len, const QKeyCallback k
 	while (1)
 	{
 		key = getKeyInput(&type);
-		if (key_callback && !(*key_callback)(key, type, argptr)) continue;
+		if (key_callback)
+		{
+			const enum QKeyCallbackReturn ret = key_callback(key, type, argptr);
+			if (ret == QKEY_CALLBACK_RETURN_IGNORE) continue;
+			if (ret == QKEY_CALLBACK_RETURN_END) break;
+		}
+
 		if (key == '\r' && i >= min_len) break;
 
 		if (type == QKEY_TYPE_NORMAL)
@@ -153,7 +159,7 @@ bool getStringInput(char* buffer, int min_len, int max_len, const QKeyCallback k
 				break;
 
 			default:
-				if ((isalpha(key) || key == ' ' || key == '\'') && i < max_len)
+				if (i < max_len)
 				{
 					buffer[i++] = putchar(key);
 					fflush(stdout);
@@ -168,4 +174,47 @@ bool getStringInput(char* buffer, int min_len, int max_len, const QKeyCallback k
 	}
 	buffer[i] = 0;
 	return 0;
+}
+
+static enum QKeyCallbackReturn booleanInputCallback(unsigned key, enum QKeyType type, va_list args)
+{
+	const QKeyCallback callback = va_arg(args, const QKeyCallback);
+
+	if (type == QKEY_TYPE_NORMAL)
+		switch (key)
+		{
+		case 'y':
+		case 'Y':
+		case 'n':
+		case 'N':
+		case '0':
+		case '1':
+		case 't':
+		case 'T':
+		case 'f':
+		case 'F':
+			//return QKEY_CALLBACK_RETURN_END;
+
+		case '\b':
+		case '\r':
+			return QKEY_CALLBACK_RETURN_NORMAL;
+
+		default:
+			if (callback)
+			{
+				const enum QKeyCallbackReturn ret = callback(key, type, args);
+				if (ret == QKEY_CALLBACK_RETURN_NORMAL) return QKEY_CALLBACK_RETURN_IGNORE;
+				return ret;
+			}
+			return QKEY_CALLBACK_RETURN_IGNORE;
+		}
+	else if (type == QKEY_TYPE_QUIT) return QKEY_CALLBACK_RETURN_END;
+	return QKEY_CALLBACK_RETURN_NORMAL;
+}
+
+bool getBooleanInput(const QKeyCallback key_callback)
+{
+	char key[2];
+	getStringInput(key, 1, 1, &booleanInputCallback, key_callback);
+	return key[0] == 'y' || key[0] == 'Y' || key[0] == '1' || key[0] == 't' || key[0] == 'T';
 }

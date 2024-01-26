@@ -151,9 +151,9 @@ void showMap(void)
 
 	clearStdout();
 	putsn("Map of Oregon Trail");
-	drawMap(MAP_PATHS[path_id][path_pos]);
-	setCursorPos(1, MAP_VIEWPORT_HEIGHT + 1);
-	putsn("Press SPACE to exit" ANSI_CURSOR_RESTORE);
+	drawMap(pan_pos);
+	setCursorPos(0, MAP_VIEWPORT_HEIGHT + 1);
+	putsn("Press SPACE to exit" ANSI_CURSOR_SAVE);
 	putsn(ANSI_CURSOR_STYLE_BLOCK);
 	fflush(stdout);
 

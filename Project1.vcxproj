@@ -142,6 +142,7 @@
     <ClCompile Include="input.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="map.c" />
+    <ClCompile Include="settings.c" />
     <ClCompile Include="state.c" />
     <ClCompile Include="static.c" />
     <ClCompile Include="store.c" />
@@ -152,8 +153,11 @@
     <ClInclude Include="ansi_codes.h" />
     <ClInclude Include="base.h" />
     <ClInclude Include="input.h" />
+    <ClInclude Include="main.h" />
     <ClInclude Include="map.h" />
     <ClInclude Include="map_data.h" />
+    <ClInclude Include="settings.h" />
+    <ClInclude Include="setup.h" />
     <ClInclude Include="state.h" />
     <ClInclude Include="static.h" />
     <ClInclude Include="store.h" />

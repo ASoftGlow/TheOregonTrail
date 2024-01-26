@@ -7,8 +7,8 @@ typedef void (*ChoiceDialogCallback)(const struct ChoiceDialogChoice*, const int
 
 struct ChoiceDialogChoice
 {
-	const char* name, * description;
-	const ChoiceCallback callback;
+	char* name;
+	ChoiceCallback callback;
 };
 
 enum BorderStyle
@@ -65,6 +65,13 @@ struct _ChoiceInfo
 	byte start, end;
 };
 
+enum ConfirmationDialogReturn
+{
+	CONFIRMATION_DIALOG_NO,
+	CONFIRMATION_DIALOG_YES,
+	CONFIRMATION_DIALOG_QUIT = -1
+};
+
 // @param options - is optional
 struct WrapLine* wrapText(const char* text, int width, const WrapLineOptions options);
 
@@ -115,6 +122,10 @@ void showChoiceDialog(const char* text, const struct ChoiceDialogChoice* choices
 void showChoiceDialogWL(struct WrapLine* lines, const struct ChoiceDialogChoice* choices, const int choices_size, const DialogOptions options);
 // Check for errno afterwards
 void showInfoDialog(const char title[], const char text[]);
+void showStoryDialog(const char title[], const char text[]);
+enum ConfirmationDialogReturn showConfirmationDialog(const char* text);
+void showPromptDialog(const char text[], char* buffer, short buffer_size);
+void showErrorDialog(const char* context);
 
 /**
  * @brief Draws block of text at <x> and <y>

@@ -15,15 +15,15 @@ const short MAP_PATH_LENGTHS[] = { _countof(MAP_PATH1_COORDS) };
 #define MAP_WIDTH 53
 const char MAP[][MAP_WIDTH] =
 {
-"     /\\^  @-\\                        yes this is map!",
-"  /\\         \\^ ^        \\___  jdf djfdkf d f e  e ed",
-"              \\                       ___ ff sdfoiwef",
-"     /\\^       `\\                    yes this is map!",
-"  /\\         iI. \\_.  ,---     jdf djfdkf d      e ed",
-"                   \\_/      \\________ ___ ff sdfoiwef",
-"                    `                abcdt    is map!",
-"  /\\            ^        \\___  jdf djfdkf d f e  e ed",
-"                             ________ ___ ff sdfoiwef"
+"1    /\\^  @-\\                        yes this is map!",
+"2 /\\         \\^ ^        \\___  jdf djfdkf d f e  e ed",
+"3             \\                       ___ ff sdfoiwef",
+"4    /\\^       `\\                    yes this is map!",
+"5 /\\         iI. \\_.  ,---     jdf djfdkf d      e ed",
+"6                  \\_/      \\________ ___ ff sdfoiwef",
+"7                   `                abcdt    is map!",
+"8 /\\            ^        \\___  jdf djfdkf d f e  e ed",
+"9                            ________ ___ ff sdfoiwef"
 };
 #define MAP_HEIGHT _countof(MAP)
 #define MAP_VIEWPORT_WIDTH SCREEN_WIDTH

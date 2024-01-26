@@ -1,8 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include "libs/cvector.h"
 
+#include "main.h"
 #include "base.h"
 #include "static.h"
 #include "tui.h"
@@ -11,17 +13,18 @@
 #include "state.h"
 #include "store.h"
 #include "map.h"
+#include "settings.h"
+#include "setup.h"
 
 void showMainMenu(void);
 void showMonth(void);
 void showRole(void);
 void showStore(void);
-void showMain(void);
 void showSavePrompt(void);
 
 void showSavePrompt(void)
 {
-
+	showConfirmationDialog("Would you like to save? "CONTROL_CHAR_STR);
 }
 
 /**
@@ -83,22 +86,9 @@ static declare_choice_callback(trail)
 	fflush(stdout);
 }
 
-static declare_choice_callback(save)
-{
-	saveState("save.dat");
-}
-
-static declare_choice_callback(load)
-{
-	loadState("save.dat");
-	showMain();
-}
-
 const struct ChoiceDialogChoice SETTLEMENT_CHOICES[] = {
 	{.name = "Continue on trail", .callback = choice_callback(trail)},
 	{.name = "Check supplies"},
-	{.name = "Save", .callback = choice_callback(save)},
-	{.name = "Load", .callback = choice_callback(load)},
 	{.name = "Look at map", .callback = choice_callback(map)}
 };
 
@@ -165,6 +155,8 @@ void showStore(void)
 
 	showInfoDialog("Parting with Matt", "Well then, you're ready to go. Good luck! You have a long and difficult journey ahead of you.");
 	if (errno) return;
+	state.stage = STATE_STAGE_START;
+	autoSave();
 	showMain();
 }
 
@@ -172,12 +164,14 @@ static declare_choice_callback_g(month)
 {
 	state.month = index;
 
+	
+
 	char text[256];
 
 	sprintf(text, "Before leaving Independence you should buy equipment and supplies. You have $%.2f in cash, but you don't have to spend it all now.", state.money);
-	showInfoDialog(0, text);
+	showInfoDialog(NULL, text);
 	if (errno) return;
-	showInfoDialog(0, "You can buy whatever you need at Matt's General Store.");
+	showInfoDialog(NULL, "You can buy whatever you need at Matt's General Store.");
 	if (errno) return;
 #define matt_greeting "Hello, I'm Matt. So you're going to Oregon! I can fix you up with what you need:\n\n"
 	showInfoDialog("Meet Matt", matt_greeting TAB"- a team of oxen to pull\n"TAB"  your wagon\n\n"TAB"- clothing for both\n"TAB"  summer and winter");
@@ -219,6 +213,17 @@ static declare_choice_callback(role_learn)
 	showRole();
 }
 
+static enum QKeyCallbackReturn nameInputCallback(unsigned key, enum QKeyType type, va_list args)
+{
+	if (type == QKEY_TYPE_NORMAL)
+	{
+		if (key == '\b' || key == '\r' || isalpha(key) || key == ' ' || key == '\'') return QKEY_CALLBACK_RETURN_NORMAL;
+		return QKEY_CALLBACK_RETURN_IGNORE;
+	}
+	if (type == QKEY_TYPE_QUIT) return QKEY_CALLBACK_RETURN_END;
+	return QKEY_CALLBACK_RETURN_NORMAL;
+}
+
 static declare_choice_callback_g(role)
 {
 	state.role = index;
@@ -233,7 +238,7 @@ static declare_choice_callback_g(role)
 	putsn(ANSI_CURSOR_RESTORE ANSI_CURSOR_SHOW);
 	fflush(stdout);
 
-	if (getStringInput(&state.wagon_leader->name[0], 1, NAME_SIZE, 0)) return;
+	if (getStringInput(&state.wagon_leader->name[0], 1, NAME_SIZE, &nameInputCallback)) return;
 
 	for (int i = 0; i < WAGON_MEMBER_COUNT; i++)
 	{
@@ -261,9 +266,34 @@ static declare_choice_callback(main_start)
 	showRole();
 }
 
+static declare_choice_callback(main_load)
+{
+	char path[FILENAME_MAX];
+	if (IS_TTY || 1)
+	{
+		showPromptDialog("Enter path to previous save file:", &path, sizeof(path));
+	}
+	else
+	{
+		// TODO: showFileDialog
+	}
+	if (!loadState(path))
+	{
+		showErrorDialog("Error loading save");
+		showMainMenu();
+	}
+}
+
+struct Setting main_settings[] = {
+	{.name = "Skip tutorials", .p = (void**)&settings.no_tutorials, .type = SETTING_TYPE_BOOLEAN},
+	{.name = "Auto save", .p = (void**)&settings.auto_save, .type = SETTING_TYPE_BOOLEAN},
+	{.name = "Auto save path", .p = (void**)settings.auto_save_path, .type = SETTING_TYPE_PATH}
+};
+
 static declare_choice_callback(settings)
 {
-
+	showSettings(main_settings, _countof(main_settings));
+	showMainMenu();
 }
 
 static declare_choice_callback(main_learn)
@@ -278,18 +308,11 @@ static declare_choice_callback(main_exit)
 	errno = ENOENT;
 }
 
-static declare_choice_callback(management)
-{
-	showInfoDialog("Compiled "__DATE__, "Recreating The Oregon Trail by MECC with only text.");
-	if (errno) return;
-	showMainMenu();
-}
-
 const struct ChoiceDialogChoice main_choices[] = {
-	{ANSI_COLOR_CYAN "Travel the trail" ANSI_COLOR_RESET,.callback = choice_callback(main_start)},
+	{ANSI_COLOR_CYAN"Start traveling trail"ANSI_COLOR_RESET,.callback = choice_callback(main_start)},
+	{"Continue traveling trail",.callback = choice_callback(main_load)},
 	{"Learn about the trail", .callback = choice_callback(main_learn)},
 	{"Change settings", .callback = choice_callback(settings)},
-	{"Choose Management Options", .callback = choice_callback(management)},
 	{"Exit",.callback = choice_callback(main_exit)}
 };
 void showMainMenu(void)
@@ -299,26 +322,24 @@ void showMainMenu(void)
 	});
 }
 
+const struct ChoiceDialogChoice tutorial_choices[] = {
+	{"Press one then enter"},
+	{"Or up or down arrows, then enter"},
+	{"Page up and down also work while selecting"}
+};
+
 int main(void)
 {
-#ifdef _WIN32
-	setupConsoleWIN();
-	IS_TTY = 0;
-#elif __APPLE__
-	// assume false
-	IS_TTY = 0;
-#else
-	IS_TTY = getenv("DISPLAY") != 0;
-#endif
+	setup();
 
-	// make stdout fully buffered
-	setvbuf(stdout, NULL, _IOFBF, (size_t)1 << 12);
+	loadSettings();
 
-	// style console
-	putsn(
-		ANSI_CURSOR_STYLE_UNDERLINE ANSI_CURSOR_SHOW ANSI_WINDOW_TITLE("Oregon Trail")
-		ANSI_WINDOW_SIZE(TOKENXSTR(SCREEN_WIDTH + 2), "") ANSI_NO_WRAP
-	);
+	if (!settings.no_tutorials)
+	{
+		showChoiceDialog("Here is a choice dialog:\n\nPress escape once to exit selection mode, and twice to exit a game.", tutorial_choices, _countof(tutorial_choices), NULL);
+		settings.no_tutorials = 1;
+		saveSettings();
+	}
 
 	while (1)
 	{

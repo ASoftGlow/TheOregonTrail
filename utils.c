@@ -32,22 +32,7 @@ void setCursorPos(byte x, byte y)
 	putchar('H');
 }
 
-#ifdef _WIN32
-#include <Windows.h>
-void setupConsoleWIN()
-{
-	// enable ANSI escape codes
-	// TODO: allow reading cursor position
-	HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-	DWORD dwMode = 0;
-	GetConsoleMode(hOut, &dwMode);
-	dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-	SetConsoleMode(hOut, dwMode);
-	SetConsoleOutputCP(437);
-}
-#endif
-
-size_t strlen_iae(const char* str)
+size_t _strlen_iae(const char* str)
 {
 	size_t len = 0, pos = 0;
 

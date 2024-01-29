@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-#include "libs/cvector.h"
+#include "cvector.h"
 
 #include "main.h"
 #include "base.h"
@@ -352,6 +352,5 @@ int main(void)
 		showSavePrompt();
 	}
 
-	putsn(ANSI_CURSOR_RESTORE ANSI_COLOR_RESET ANSI_CURSOR_STYLE_DEFAULT ANSI_CURSOR_SHOW ANSI_WRAP);
-	fflush(stdout);
+	setdown();
 }

@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include "libs/cvector.h"
+#include "cvector.h"
 
 #include "tui.h"
 #include "utils.h"

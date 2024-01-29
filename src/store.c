@@ -1,6 +1,6 @@
 
 #include <ctype.h>
-#include "libs/cvector.h"
+#include "cvector.h"
 
 #include "store.h"
 #include "tui.h"

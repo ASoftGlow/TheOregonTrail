@@ -1,6 +1,9 @@
 #include <malloc.h>
 #include <assert.h>
 #include <string.h>
+#ifndef TOT_TTY
+#include "nfd.h"
+#endif
 
 #include "settings.h"
 #include "input.h"
@@ -78,10 +81,27 @@ void settingCallback(const struct ChoiceDialogChoice* choice, const int index)
 
 	case SETTING_TYPE_PATH:
 	{
-		// TODO: open file dialog for GUI
-		char buffer[FILENAME_MAX];
-		if (getStringInput(&buffer, 0, sizeof(buffer), settingInputCallback)) goto skip;
-		memcpy(gp_settings[index].p, buffer, sizeof(buffer));
+		if (IS_TTY)
+		{
+			char buffer[FILENAME_MAX];
+			if (getStringInput(&buffer, 0, sizeof(buffer), settingInputCallback)) goto skip;
+			memcpy(gp_settings[index].p, buffer, sizeof(buffer));
+		}
+		else
+		{
+			nfdchar_t* out_path;
+			nfdfilteritem_t filter_items[1] = { { "Binary data", "dat" } };
+			nfdresult_t result = NFD_SaveDialog(&out_path, filter_items, 1, NULL, "save");
+			if (result == NFD_OKAY)
+			{
+				strcpy_s((char*)gp_settings[index].p, FILENAME_MAX, out_path);
+				NFD_FreePath(out_path);
+			}
+			else
+			{
+				goto skip;
+			}
+		}
 	}
 	break;
 

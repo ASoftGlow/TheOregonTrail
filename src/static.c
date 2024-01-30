@@ -4,15 +4,19 @@
 
 const char WAGON_MEMBER_NAMES[][NAME_SIZE] = { "John", "Sara", "Henry", "Jed" };
 
-const char MONTHS[][8] = {
+const char MONTHS[][16] = {
 	"March",
 	"April",
 	"May",
 	"June",
-	"July"
+	"July",
+	"August",
+	"September",
+	"October",
+	"November"
 };
 
-const byte MONTH_LENGTHS[] = { 30,30,30,30 }; // TODO
+const byte MONTH_LENGTHS[] = { 31,30,31,30,31,31,30,30,30 };
 
 const char WEATHERS[][8] = {
 	"mild",
@@ -34,8 +38,3 @@ const byte DISEASE_DURATIONS[] = { 0 };
 const byte DISEASE_CHANCES[] = { 0 };
 const byte INJURY_DURATIONS[] = { 20, 30 };
 const byte INJURY_CHANCES[] = { 20, 30 };
-
-const char* getRandomName(void)
-{
-	return WAGON_MEMBER_NAMES[rand() % _countof(WAGON_MEMBER_NAMES)];
-}

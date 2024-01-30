@@ -3,6 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "cvector.h"
+#include "nfd.h"
 
 #include "main.h"
 #include "base.h"
@@ -24,7 +25,35 @@ void showSavePrompt(void);
 
 void showSavePrompt(void)
 {
-	showConfirmationDialog("Would you like to save? "CONTROL_CHAR_STR);
+	switch (showConfirmationDialog("Would you like to save? "CONTROL_CHAR_STR))
+	{
+	case CONFIRMATION_DIALOG_QUIT:
+	case CONFIRMATION_DIALOG_NO:
+		return;
+
+	case CONFIRMATION_DIALOG_YES:
+		if (IS_TTY)
+		{
+			char path[FILENAME_MAX];
+			clearStdout();
+			puts("Enter a path:");
+			fflush(stdout);
+			if (getStringInput(&path, 0, sizeof(path), NULL)) return;
+			if (path) saveState(path);
+		}
+		else
+		{
+			nfdchar_t* out_path;
+			nfdfilteritem_t filter_items[1] = { { "Binary data", "dat" } };
+			nfdresult_t result = NFD_SaveDialog(&out_path, filter_items, 1, NULL, "save");
+			if (result == NFD_OKAY)
+			{
+				saveState(out_path);
+				NFD_FreePath(out_path);
+			}
+		}
+		break;
+	}
 }
 
 /**
@@ -164,7 +193,7 @@ static declare_choice_callback_g(month)
 {
 	state.month = index;
 
-	
+
 
 	char text[256];
 
@@ -240,9 +269,17 @@ static declare_choice_callback_g(role)
 
 	if (getStringInput(&state.wagon_leader->name[0], 1, NAME_SIZE, &nameInputCallback)) return;
 
-	for (int i = 0; i < WAGON_MEMBER_COUNT; i++)
+	// pick 4 random names without repeats
+	char taken_names[WAGON_MEMBER_COUNT] = { 0 };
+	for (byte i = 0; i < WAGON_MEMBER_COUNT; i++)
 	{
-		strcpy(state.wagon_members[i].name, getRandomName());
+		byte rand_i;
+		do
+		{
+			rand_i = rand() % _countof(WAGON_MEMBER_NAMES);
+		} while (taken_names[rand_i]);
+		taken_names[rand_i] = 1;
+		strcpy(state.wagon_members[i].name, WAGON_MEMBER_NAMES[rand_i]);
 	}
 
 	showMonth();
@@ -269,16 +306,33 @@ static declare_choice_callback(main_start)
 static declare_choice_callback(main_load)
 {
 	char path[FILENAME_MAX];
-	if (IS_TTY || 1)
+	if (IS_TTY)
 	{
 		showPromptDialog("Enter path to previous save file:", &path, sizeof(path));
 	}
 	else
 	{
-		// TODO: showFileDialog
+		nfdchar_t* out_path;
+		nfdfilteritem_t filter_items[1] = { { "Binary data", "dat" } };
+		nfdresult_t result = NFD_OpenDialog(&out_path, filter_items, 1, NULL);
+		if (result == NFD_OKAY)
+		{
+			strcpy_s(path, sizeof(path), out_path);
+			NFD_FreePath(out_path);
+		}
+		else if (result == NFD_CANCEL)
+		{
+			showMainMenu();
+			return;
+		}
+		else
+		{
+			goto error;
+		}
 	}
 	if (!loadState(path))
 	{
+	error:
 		showErrorDialog("Error loading save");
 		showMainMenu();
 	}
@@ -349,7 +403,11 @@ int main(void)
 		//showMain();
 
 		if (errno) break;
-		showSavePrompt();
+		if (state.stage)
+		{
+			showSavePrompt();
+			state.stage = STATE_STAGE_NONE;
+		}
 	}
 
 	setdown();

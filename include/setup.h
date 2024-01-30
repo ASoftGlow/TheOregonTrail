@@ -1,5 +1,6 @@
 #pragma once
 #include <stdio.h>
+#include <time.h>
 #ifndef TOT_TTY
 #include "nfd.h"
 #endif
@@ -48,7 +49,7 @@ void setup(void)
 #ifdef TOT_TTY
 	IS_TTY = 1;
 #endif
-	
+
 	if (!IS_TTY)
 	{
 		if (!NFD_Init())
@@ -57,6 +58,8 @@ void setup(void)
 			IS_TTY = 1;
 		}
 	}
+
+	srand((unsigned)time(NULL));
 
 	// make stdout fully buffered
 	setvbuf(stdout, NULL, _IOFBF, (size_t)1 << 12);

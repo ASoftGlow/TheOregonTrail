@@ -9,7 +9,10 @@ struct State state = {
 	.location = "Missing"
 };
 
-struct Settings settings = { 0 };
+struct Settings settings = {
+	0,
+	.auto_save_path = "save.dat"
+};
 
 bool saveSettings(void)
 {
@@ -56,7 +59,6 @@ bool loadState(const char* path)
 		showMain();
 		break;
 
-	case STATE_STAGE_BEGIN:
 	default:
 		return 0;
 		break;

@@ -124,6 +124,8 @@ struct WrapLine* justifyLineWL(struct WrapLine* lines, const char* text1, const 
 
 static enum QKeyCallbackReturn inputCallback(unsigned key, enum QKeyType type, va_list args)
 {
+	if (type == QKEY_TYPE_QUIT) return QKEY_CALLBACK_RETURN_END;
+
 	int* cur_pos = va_arg(args, int*);
 	const int choices_size = va_arg(args, const int);
 	const struct ChoiceDialogChoice* choices = va_arg(args, const struct ChoiceDialogChoice*);
@@ -133,7 +135,26 @@ static enum QKeyCallbackReturn inputCallback(unsigned key, enum QKeyType type, v
 	const Coord end = va_arg(args, const Coord);
 	va_end(args);
 
-	if (type == QKEY_TYPE_ARROW)
+	if (type == QKEY_TYPE_NORMAL)
+	{
+		if (key == '\r' && *cur_pos != -1)
+		{
+			putsn(ANSI_CURSOR_SHOW);
+			const struct ChoiceDialogChoice* choice = &choices[*cur_pos];
+			if (choice->callback) (*choice->callback)(choice);
+			else if (callback) (*callback)(choice, *cur_pos);
+			return QKEY_CALLBACK_RETURN_END;
+		}
+		else if (key == ESCAPE_CHAR && *cur_pos > -1)
+		{
+			drawChoice(choices, lines, choices_info, *cur_pos, 0);
+			*cur_pos = -1;
+			setCursorPos(end.x, end.y);
+			putsn(ANSI_CURSOR_SHOW);
+			fflush(stdout);
+		}
+	}
+	else
 	{
 		switch (key)
 		{
@@ -172,25 +193,6 @@ static enum QKeyCallbackReturn inputCallback(unsigned key, enum QKeyType type, v
 			*cur_pos = 0;
 			drawChoice(choices, lines, choices_info, *cur_pos, 1);
 			break;
-		}
-	}
-	else
-	{
-		if (key == '\r' && *cur_pos != -1)
-		{
-			putsn(ANSI_CURSOR_SHOW);
-			const struct ChoiceDialogChoice* choice = &choices[*cur_pos];
-			if (choice->callback) (*choice->callback)(choice);
-			else if (callback) (*callback)(choice, *cur_pos);
-			return QKEY_CALLBACK_RETURN_END;
-		}
-		else if (key == ESCAPE_CHAR && *cur_pos > -1)
-		{
-			drawChoice(choices, lines, choices_info, *cur_pos, 0);
-			*cur_pos = -1;
-			setCursorPos(end.x, end.y);
-			putsn(ANSI_CURSOR_SHOW);
-			fflush(stdout);
 		}
 	}
 
@@ -448,6 +450,7 @@ void showStoryDialog(const char title[], const char text[])
 enum ConfirmationDialogReturn showConfirmationDialog(const char* text)
 {
 	Coord capture;
+	clearStdout();
 	drawBox(text, DIALOG_WIDTH, BORDER_DOUBLE, &(struct _BoxOptions){
 		.color = ANSI_COLOR_RED,
 			.paddingX = DIALOG_PADDING_X,

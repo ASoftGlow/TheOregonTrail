@@ -13,9 +13,11 @@ enum SettingType
 
 struct Setting
 {
-	const char name[16];
+	const char name[32];
 	void** p;
 	const enum SettingType type;
+	void (*callback)(void);
+	unsigned min, max;
 };
 
 void showSettings(struct Setting* settings, byte settings_count);

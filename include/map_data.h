@@ -1,5 +1,4 @@
 #pragma once
-#include <stdlib.h>
 
 #include "base.h"
 #include "ansi_codes.h"
@@ -19,22 +18,20 @@ const char MAP[][MAP_WIDTH] =
 "2 /\\         \\^ ^        \\___  jdf djfdkf d f e  e ed",
 "3             \\                       ___ ff sdfoiwef",
 "4    /\\^       `\\                    yes this is map!",
-"5 /\\         iI. \\_.  ,---     jdf djfdkf d      e ed",
+"5 /\\         iI. \\_.  ,---         djfdkf d      e ed",
 "6                  \\_/      \\________ ___ ff sdfoiwef",
 "7                   `                abcdt    is map!",
 "8 /\\            ^        \\___  jdf djfdkf d f e  e ed",
 "9                            ________ ___ ff sdfoiwef"
 };
 #define MAP_HEIGHT _countof(MAP)
-#define MAP_VIEWPORT_WIDTH SCREEN_WIDTH
-#define MAP_VIEWPORT_HEIGHT SCREEN_HEIGHT - 2
 
 byte map_paths_order[] = { 0 };
 
 const char DENSITY_INDICATORS[][12] = {
 	"x",
 	"\33[1m""x""\33[21m",
-	"²"
+	"ï¿½"
 };
 
 #define INDICATOR(ch) ANSI_COLOR_GREEN ch ANSI_COLOR_RESET

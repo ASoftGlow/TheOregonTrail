@@ -6,7 +6,6 @@
 #endif
 
 #include "ansi_codes.h"
-// TODO: allow reading cursor position
 
 #ifdef _WIN32
 #include <Windows.h>

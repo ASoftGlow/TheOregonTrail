@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 set(CMAKE_SUPPRESS_REGENERATION true)
-project(TheOregonTrail)
+project(TheOregonTrail C)
 
 option(TOT_TTY "Build assuming TTY" False)
 
@@ -17,7 +17,10 @@ target_include_directories(tot PUBLIC "${PROJECT_SOURCE_DIR}/include"
 target_link_libraries(tot "${PROJECT_SOURCE_DIR}/lib/csfml-audio.lib"
 )
 
-if(NOT ${TOT_TTY})
-  target_link_libraries(tot   "${PROJECT_SOURCE_DIR}/lib/nfd.lib"
-  )
+if (NOT ${TOT_TTY})
+  if (WIN32)
+  target_link_libraries(tot "${PROJECT_SOURCE_DIR}/lib/nfd.lib")
+  elseif (UNIX)
+  target_link_libraries(tot "${PROJECT_SOURCE_DIR}/lib/libnfd.a")
+  endif (WIN32)
 endif()

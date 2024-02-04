@@ -13,7 +13,7 @@ static inline int putsn(const char* str)
 // strcat but single char
 char* _strcat_ch(char* dst, const char src);
 
-inline void clearStdout(void)
+static inline void clearStdout(void)
 {
 	putsn(ANSI_CURSOR_ZERO "\033[2J");
 }

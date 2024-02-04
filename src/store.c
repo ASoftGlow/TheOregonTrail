@@ -1,5 +1,5 @@
-
 #include <ctype.h>
+#include <errno.h>
 #include "cvector.h"
 
 #include "store.h"
@@ -142,102 +142,100 @@ static void showAlert(char text[])
 	fflush(stdout);
 }
 
-static enum QKeyCallbackReturn storeInputCallback(unsigned key, enum QKeyType type, va_list args)
+static enum QKeyCallbackReturn storeInputCallback(int key, va_list args)
 {
 	char* cur_pos = va_arg(args, char*);
 	Coord end = va_arg(args, Coord);
 	va_end(args);
 
-	if (type == QKEY_TYPE_ARROW)
+	switch (key)
 	{
-		switch (key)
-		{
-		case QARROW_DOWN:
-			if (*cur_pos == _countof(STORE_MATT_CATEGORIES) - 1) break;
-			if (*cur_pos != -1)
-				drawChoiceStore(*cur_pos, 0);
-			else
-				putsn(ANSI_CURSOR_HIDE);
-
-			drawChoiceStore(++*cur_pos, 1);
-			break;
-
-		case QARROW_UP:
-			if (*cur_pos == 0) break;
-			if (*cur_pos != -1)
-				drawChoiceStore(*cur_pos, 0);
-			else
-			{
-				*cur_pos = _countof(STORE_MATT_CATEGORIES);
-				putsn(ANSI_CURSOR_HIDE);
-			}
-			drawChoiceStore(--*cur_pos, 1);
-			break;
-
-		case QARROW_PAGE_DOWN:
-			if (*cur_pos == -1 || *cur_pos == _countof(STORE_MATT_CATEGORIES) - 1) break;
+	case KEY_ARROW_DOWN:
+		if (*cur_pos == _countof(STORE_MATT_CATEGORIES) - 1) break;
+		if (*cur_pos != -1)
 			drawChoiceStore(*cur_pos, 0);
-			*cur_pos = _countof(STORE_MATT_CATEGORIES) - 1;
-			drawChoiceStore(*cur_pos, 1);
-			break;
+		else
+			putsn(ANSI_CURSOR_HIDE);
 
-		case QARROW_PAGE_UP:
-			if (*cur_pos <= 0) break;
+		drawChoiceStore(++*cur_pos, 1);
+		break;
+
+	case KEY_ARROW_UP:
+		if (*cur_pos == 0) break;
+		if (*cur_pos != -1)
 			drawChoiceStore(*cur_pos, 0);
-			*cur_pos = 0;
-			drawChoiceStore(*cur_pos, 1);
-			break;
-		}
-	}
-	else
-	{
-		if (key == ' ')
+		else
 		{
-			if (*cur_pos != -1)
-			{
-				drawChoiceStore(*cur_pos, 0);
-				*cur_pos = -1;
-			}
-			if (state.money < total_bill)
-			{
-				char text[116];
-				sprintf(text, "Okay, that comes to a total of $%.2f, but I see you only have $%.2f. We'd better go over the list again.\n", total_bill, state.money);
-				showAlert(text);
-				setCursorPos(end.x, end.y);
-				fflush(stdout);
-				return QKEY_CALLBACK_RETURN_IGNORE;
-			}
-			// oxen
-			else if (STORE_MATT_CATEGORIES[0].items[0].amount == 0)
-			{
-				showAlert("Don't forget, you'll need oxen to pull your wagon.\n\n\n");
-				setCursorPos(end.x, end.y);
-				fflush(stdout);
-				return QKEY_CALLBACK_RETURN_IGNORE;
-			}
-			else
-			{
-				state.money -= total_bill;
-
-				state.oxen = STORE_MATT_CATEGORIES[0].items[0].amount * 2;
-				state.food = STORE_MATT_CATEGORIES[1].items[0].amount + STORE_MATT_CATEGORIES[1].items[1].amount;
-				state.clothing_sets = STORE_MATT_CATEGORIES[2].items[0].amount;
-				state.bullets = STORE_MATT_CATEGORIES[3].items[0].amount * 20;
-				state.wagon_axles = STORE_MATT_CATEGORIES[4].items[0].amount;
-				state.wagon_wheels = STORE_MATT_CATEGORIES[4].items[1].amount;
-				state.wagon_torques = STORE_MATT_CATEGORIES[4].items[2].amount;
-
-				return QKEY_CALLBACK_RETURN_END;
-			}
+			*cur_pos = _countof(STORE_MATT_CATEGORIES);
+			putsn(ANSI_CURSOR_HIDE);
 		}
-		if (key == '\r' && *cur_pos != -1)
+		drawChoiceStore(--*cur_pos, 1);
+		break;
+
+	case KEY_PAGE_DOWN:
+		if (*cur_pos == -1 || *cur_pos == _countof(STORE_MATT_CATEGORIES) - 1) break;
+		drawChoiceStore(*cur_pos, 0);
+		*cur_pos = _countof(STORE_MATT_CATEGORIES) - 1;
+		drawChoiceStore(*cur_pos, 1);
+		break;
+
+	case KEY_PAGE_UP:
+		if (*cur_pos <= 0) break;
+		drawChoiceStore(*cur_pos, 0);
+		*cur_pos = 0;
+		drawChoiceStore(*cur_pos, 1);
+		break;
+
+	case ' ':
+		if (*cur_pos != -1)
+		{
+			drawChoiceStore(*cur_pos, 0);
+			*cur_pos = -1;
+		}
+		if (state.money < total_bill)
+		{
+			char text[116];
+			sprintf(text, "Okay, that comes to a total of $%.2f, but I see you only have $%.2f. We'd better go over the list again.\n", total_bill, state.money);
+			showAlert(text);
+			setCursorPos(end.x, end.y);
+			fflush(stdout);
+			return QKEY_CALLBACK_RETURN_IGNORE;
+		}
+		// oxen
+		else if (STORE_MATT_CATEGORIES[0].items[0].amount == 0)
+		{
+			showAlert("Don't forget, you'll need oxen to pull your wagon.\n\n\n");
+			setCursorPos(end.x, end.y);
+			fflush(stdout);
+			return QKEY_CALLBACK_RETURN_IGNORE;
+		}
+		else
+		{
+			state.money -= total_bill;
+
+			state.oxen = STORE_MATT_CATEGORIES[0].items[0].amount * 2;
+			state.food = STORE_MATT_CATEGORIES[1].items[0].amount + STORE_MATT_CATEGORIES[1].items[1].amount;
+			state.clothing_sets = STORE_MATT_CATEGORIES[2].items[0].amount;
+			state.bullets = STORE_MATT_CATEGORIES[3].items[0].amount * 20;
+			state.wagon_axles = STORE_MATT_CATEGORIES[4].items[0].amount;
+			state.wagon_wheels = STORE_MATT_CATEGORIES[4].items[1].amount;
+			state.wagon_torques = STORE_MATT_CATEGORIES[4].items[2].amount;
+
+			return QKEY_CALLBACK_RETURN_END;
+		}
+
+	case '\r':
+		if (*cur_pos != -1)
 		{
 			drawChoiceStore(*cur_pos, 0);
 			putsn(ANSI_CURSOR_SHOW);
 			showStoreCategoryMenu(&STORE_MATT_CATEGORIES[*cur_pos], *cur_pos, end);
 			return QKEY_CALLBACK_RETURN_END;
 		}
-		else if (key == ESCAPE_CHAR && *cur_pos > -1)
+		break;
+
+	case ESC_CHAR:
+		if (*cur_pos > -1)
 		{
 			drawChoiceStore(*cur_pos, 0);
 			*cur_pos = -1;
@@ -245,6 +243,7 @@ static enum QKeyCallbackReturn storeInputCallback(unsigned key, enum QKeyType ty
 			putsn(ANSI_CURSOR_SHOW);
 			fflush(stdout);
 		}
+		break;
 	}
 	return *cur_pos == -1 ? QKEY_CALLBACK_RETURN_NORMAL : QKEY_CALLBACK_RETURN_IGNORE;
 }

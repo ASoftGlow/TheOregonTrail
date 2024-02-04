@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
 #include "cvector.h"
 #include "nfd.h"
 
@@ -23,6 +24,8 @@ void showRole(void);
 void showStore(void);
 void showSavePrompt(void);
 
+#define DEBUG_SAVE_PATH "../../resources/save.dat"
+
 void showSavePrompt(void)
 {
 	switch (showConfirmationDialog("Would you like to save? "CONTROL_CHAR_STR))
@@ -32,13 +35,16 @@ void showSavePrompt(void)
 		return;
 
 	case CONFIRMATION_DIALOG_YES:
+#ifdef _DEBUG
+		saveState(DEBUG_SAVE_PATH);
+#else
 		if (IS_TTY)
 		{
 			char path[FILENAME_MAX];
 			clearStdout();
 			puts("Enter a path:");
 			fflush(stdout);
-			if (getStringInput(&path, 0, sizeof(path), NULL)) return;
+			if (getStringInput(path, 0, sizeof(path), NULL)) return;
 			if (path) saveState(path);
 		}
 		else
@@ -52,6 +58,7 @@ void showSavePrompt(void)
 				NFD_FreePath(out_path);
 			}
 		}
+#endif
 		break;
 	}
 }
@@ -80,7 +87,7 @@ static void formatDate(char* buffer)
 	byte len = (byte)strlen(MONTHS[state.month]);
 	memcpy(buffer, MONTHS[state.month], len);
 	buffer[len] = ' ';
-	_itoa(state.day, buffer + len + 1, 10);
+	sprintf(buffer + len + 1, "%d", state.day);
 	strcat(buffer, ", 1868");
 }
 
@@ -164,7 +171,6 @@ void showMain(void)
 	lines = addNewline(lines);
 
 	lines = addQuickInfo(lines);
-	addStaticLine(lines, "Work in progress from here on", 0);
 
 	showChoiceDialogWL(lines, &SETTLEMENT_CHOICES[0], _countof(SETTLEMENT_CHOICES), &(struct _DialogOptions){
 		.title = state.location,
@@ -242,15 +248,12 @@ static declare_choice_callback(role_learn)
 	showRole();
 }
 
-static enum QKeyCallbackReturn nameInputCallback(unsigned key, enum QKeyType type, va_list args)
+static enum QKeyCallbackReturn nameInputCallback(int key, va_list args)
 {
-	if (type == QKEY_TYPE_NORMAL)
-	{
-		if (key == '\b' || key == '\r' || isalpha(key) || key == ' ' || key == '\'') return QKEY_CALLBACK_RETURN_NORMAL;
-		return QKEY_CALLBACK_RETURN_IGNORE;
-	}
-	if (type == QKEY_TYPE_QUIT) return QKEY_CALLBACK_RETURN_END;
-	return QKEY_CALLBACK_RETURN_NORMAL;
+	if (KEY_IS_TERMINATING(key)) return QKEY_CALLBACK_RETURN_END;
+
+	if (key == '\b' || key == '\r' || key == DEL_CHAR || key == ' ' || key == '\'' || (KEY_IS_NORMAL(key) && isalpha(key))) return QKEY_CALLBACK_RETURN_NORMAL;
+	return QKEY_CALLBACK_RETURN_IGNORE;
 }
 
 static declare_choice_callback_g(role)
@@ -260,7 +263,7 @@ static declare_choice_callback_g(role)
 	state.money = (float[]){ 1600.f, 800.f, 400.f } [index] ;
 
 	clearStdout();
-	drawBox(&("What is the first name of the wagon leader? " ANSI_CURSOR_SAVE)[0], DIALOG_WIDTH, BORDER_DOUBLE, &(struct _BoxOptions){
+	drawBox(&("What is the first name of the wagon leader?\n" ANSI_CURSOR_SAVE)[0], DIALOG_WIDTH, BORDER_DOUBLE, &(struct _BoxOptions){
 		.height = 8,
 			.color = ANSI_COLOR_YELLOW
 	});
@@ -306,9 +309,12 @@ static declare_choice_callback(main_start)
 static declare_choice_callback(main_load)
 {
 	char path[FILENAME_MAX];
+#ifdef _DEBUG
+	strcpy(path, DEBUG_SAVE_PATH);
+#else
 	if (IS_TTY)
 	{
-		showPromptDialog("Enter path to previous save file:", &path, sizeof(path));
+		showPromptDialog("Enter path to previous save file:", path, sizeof(path));
 	}
 	else
 	{
@@ -317,7 +323,7 @@ static declare_choice_callback(main_load)
 		nfdresult_t result = NFD_OpenDialog(&out_path, filter_items, 1, NULL);
 		if (result == NFD_OKAY)
 		{
-			strcpy_s(path, sizeof(path), out_path);
+			strcpy(path, out_path);
 			NFD_FreePath(out_path);
 		}
 		else if (result == NFD_CANCEL)
@@ -330,6 +336,7 @@ static declare_choice_callback(main_load)
 			goto error;
 		}
 	}
+#endif
 	if (!loadState(path))
 	{
 	error:
@@ -341,7 +348,10 @@ static declare_choice_callback(main_load)
 struct Setting main_settings[] = {
 	{.name = "Skip tutorials", .p = (void**)&settings.no_tutorials, .type = SETTING_TYPE_BOOLEAN},
 	{.name = "Auto save", .p = (void**)&settings.auto_save, .type = SETTING_TYPE_BOOLEAN},
-	{.name = "Auto save path", .p = (void**)settings.auto_save_path, .type = SETTING_TYPE_PATH}
+	{.name = "Auto save path", .p = (void**)settings.auto_save_path, .type = SETTING_TYPE_PATH},
+	{.name = "Auto screen size", .p = (void**)&settings.auto_screen_size, .type = SETTING_TYPE_BOOLEAN, .callback = &updateScreenSize},
+	{.name = "Screen width", .p = (void**)&settings.screen_width, .type = SETTING_TYPE_NUMBER, .callback = &updateScreenSize, .min = 30},
+	{.name = "Screen height", .p = (void**)&settings.screen_height, .type = SETTING_TYPE_NUMBER, .callback = &updateScreenSize, .min = 10}
 };
 
 static declare_choice_callback(settings)

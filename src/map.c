@@ -8,6 +8,7 @@ struct MapMark* findMark(byte path_id, byte pos);
 void drawMap(Coord focus);
 void drawMark(struct MapMark* mark, Coord offset);
 
+byte MAP_VIEWPORT_HEIGHT;
 Coord last_offset;
 
 void drawMap(Coord focus)
@@ -23,7 +24,7 @@ void drawMap(Coord focus)
 	if (MAP_HEIGHT > MAP_VIEWPORT_HEIGHT)
 	{
 		overflow_up = focus.y > MAP_VIEWPORT_HEIGHT / 2;
-		overflow_down = focus.y < MAP_HEIGHT - MAP_VIEWPORT_HEIGHT / 2;
+		overflow_down = focus.y < MAP_HEIGHT - MAP_VIEWPORT_HEIGHT / 2 - 1;
 		height = MAP_VIEWPORT_HEIGHT;
 		if (overflow_up)
 			if (focus.y > MAP_HEIGHT - MAP_VIEWPORT_HEIGHT / 2)
@@ -157,148 +158,132 @@ void showMap(void)
 	putsn(ANSI_CURSOR_STYLE_BLOCK);
 	fflush(stdout);
 
-#define markingDrawMap() \
-drawMap(MAP_PATHS[path_id][path_pos]); \
-putsn(ANSI_CURSOR_SHOW); \
-fflush(stdout);
-
-	enum QKeyType key_type;
 	while (1)
 	{
-		int key = getKeyInput(&key_type);
-		switch (key_type)
+		int key = getKeyInput();
+
+		if (KEY_IS_TERMINATING(key)) return;
+		if (KEY_IS_ARROW(key) && marking)
 		{
-		case QKEY_TYPE_ARROW:
+			switch (key)
+			{
+			case KEY_ARROW_UP:
+			case KEY_ARROW_RIGHT:
+				if (path_pos + 1 < MAP_PATH_LENGTHS[path_id])
+				{
+					++path_pos;
+				}
+				else if (path_index < _countof(map_paths_order) - 1)
+				{
+					path_id = map_paths_order[++path_index];
+					path_pos = 0;
+				}
+				else continue;
+				break;
+
+			case KEY_ARROW_DOWN:
+			case KEY_ARROW_LEFT:
+				if (path_pos)
+				{
+					--path_pos;
+				}
+				else if (path_index)
+				{
+					path_id = map_paths_order[--path_index];
+					path_pos = MAP_PATH_LENGTHS[path_id] - 1;
+				}
+				else continue;
+				break;
+
+			case KEY_PAGE_UP:
+				path_id = _countof(MAP_PATHS) - 1;
+				path_pos = MAP_PATH_LENGTHS[path_id] - 1;
+				break;
+
+			case KEY_PAGE_DOWN:
+				path_id = 0;
+				path_pos = 0;
+				break;
+			}
+			drawMap(MAP_PATHS[path_id][path_pos]);
+			putsn(ANSI_CURSOR_SHOW);
+			fflush(stdout);
+			continue;
+		}
+
+		switch (key)
+		{
+		case 'm':
+			if (!marking)
+			{
+				marking = 1;
+				drawMap(MAP_PATHS[path_id][path_pos]);
+				putsn(ANSI_CURSOR_SHOW);
+				fflush(stdout);
+				break;
+			}
+
+		case ESC_CHAR:
 			if (marking)
 			{
-				switch (key)
-				{
-				case QARROW_UP:
-				case QARROW_RIGHT:
-					if (path_pos + 1 < MAP_PATH_LENGTHS[path_id])
-					{
-						++path_pos;
-						markingDrawMap();
-					}
-					else if (path_index < _countof(map_paths_order) - 1)
-					{
-						path_id = map_paths_order[++path_index];
-						path_pos = 0;
-						markingDrawMap();
-					}
-					break;
+				marking = 0;
+				putsn(ANSI_CURSOR_HIDE);
+			}
+			break;
 
-				case QARROW_DOWN:
-				case QARROW_LEFT:
-					if (path_pos)
-					{
-						--path_pos;
-						markingDrawMap();
-					}
-					else if (path_index)
-					{
-						path_id = map_paths_order[--path_index];
-						path_pos = MAP_PATH_LENGTHS[path_id] - 1;
-						markingDrawMap();
-					}
-					break;
+		case '\r':
+			if (!marking) break;
+			struct MapMark* mark = findMark(path_index, path_pos);
+			if (mark == 0)
+			{
+				// reached max marks TODO: show alert
+				if (state.map_marks_count == _countof(state.map_marks)) break;
 
-				case QARROW_PAGE_UP:
-					path_id = _countof(MAP_PATHS) - 1;
-					path_pos = MAP_PATH_LENGTHS[path_id] - 1;
-					markingDrawMap();
-					break;
-
-				case QARROW_PAGE_DOWN:
-					path_id = 0;
-					path_pos = 0;
-					markingDrawMap();
-					break;
-				}
+				mark = &state.map_marks[state.map_marks_count++];
+				mark->path_index = path_index;
+				mark->pos = path_pos;
 			}
 			else
 			{
-				switch (key)
-				{
-				case QARROW_DOWN:
-					if (pan_pos.y >= MAP_HEIGHT - MAP_VIEWPORT_HEIGHT / 2) goto skip;
-					++pan_pos.y;
-					break;
-
-				case QARROW_UP:
-					if (pan_pos.y <= MAP_VIEWPORT_HEIGHT / 2) goto skip;
-					--pan_pos.y;
-					break;
-
-				case QARROW_RIGHT:
-					if (pan_pos.x >= MAP_WIDTH - MAP_VIEWPORT_WIDTH / 2) goto skip;
-					++pan_pos.x;
-					break;
-
-				case QARROW_LEFT:
-					if (pan_pos.x <= MAP_VIEWPORT_WIDTH / 2) goto skip;
-					--pan_pos.x;
-					break;
-				}
-				drawMap(pan_pos);
-				fflush(stdout);
-			skip:;
-			}
-			break;
-
-		case QKEY_TYPE_NORMAL:
-			switch (key)
-			{
-			case 'm':
-				if (!marking)
-				{
-					marking = 1;
-					markingDrawMap();
-					break;
-				}
-
-			case ESCAPE_CHAR:
-				if (marking)
-				{
-					marking = 0;
-					putsn(ANSI_CURSOR_HIDE);
-				}
-				break;
-
-			case '\r':
-				if (!marking) break;
-				struct MapMark* mark = findMark(path_index, path_pos);
-				if (mark == 0)
-				{
-					// reached max marks TODO: show alert
-					if (state.map_marks_count == _countof(state.map_marks)) break;
-
-					mark = &state.map_marks[state.map_marks_count++];
-					mark->path_index = path_index;
-					mark->pos = path_pos;
-				}
+				if (mark->density < _countof(DENSITY_INDICATORS) - 1)
+					++mark->density;
 				else
-				{
-					if (mark->density < _countof(DENSITY_INDICATORS) - 1)
-						++mark->density;
-					else
-						break;
-				}
-				putsn(ANSI_COLOR_MAGENTA);
-				drawMark(mark, last_offset);
-				putsn("\b"ANSI_COLOR_RESET);
-				fflush(stdout);
-				break;
-
-			case ' ':
-				putsn(ANSI_CURSOR_STYLE_UNDERLINE ANSI_CURSOR_SHOW);
-				return;
+					break;
 			}
+			putsn(ANSI_COLOR_MAGENTA);
+			drawMark(mark, last_offset);
+			putsn("\b"ANSI_COLOR_RESET);
+			fflush(stdout);
 			break;
 
-		case QKEY_TYPE_QUIT:
+		case ' ':
+			putsn(ANSI_CURSOR_STYLE_UNDERLINE ANSI_CURSOR_SHOW);
 			return;
+
+		case KEY_ARROW_DOWN:
+			if (pan_pos.y >= MAP_HEIGHT - MAP_VIEWPORT_HEIGHT / 2 - 1) break;
+			++pan_pos.y;
+			goto map;
+
+		case KEY_ARROW_UP:
+			if (pan_pos.y <= MAP_VIEWPORT_HEIGHT / 2) break;
+			--pan_pos.y;
+			goto map;
+
+		case KEY_ARROW_RIGHT:
+			if (pan_pos.x >= MAP_WIDTH - MAP_VIEWPORT_WIDTH / 2) break;
+			++pan_pos.x;
+			goto map;
+
+		case KEY_ARROW_LEFT:
+			if (pan_pos.x <= MAP_VIEWPORT_WIDTH / 2) break;
+			--pan_pos.x;
+			goto map;
 		}
+		continue;
+	map:
+		drawMap(pan_pos);
+		fflush(stdout);
 	}
 }
 

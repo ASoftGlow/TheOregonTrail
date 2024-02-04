@@ -3,33 +3,37 @@
 
 #include "base.h"
 
-enum QKeyType {
-	QKEY_TYPE_NORMAL,
-	QKEY_TYPE_ARROW,
-	QKEY_TYPE_QUIT
-};
+#define KEY_ARROW_UP 256
+#define KEY_ARROW_DOWN 257
+#define KEY_ARROW_RIGHT 258
+#define KEY_ARROW_LEFT 259
 
-enum QArrowKey {
-	QARROW_UP = 72,
-	QARROW_DOWN = 80,
-	QARROW_RIGHT = 77,
-	QARROW_LEFT = 75,
-	QARROW_PAGE_UP = 73,
-	QARROW_PAGE_DOWN = 81
-};
+#define KEY_PAGE_UP 260
+#define KEY_PAGE_DOWN 261
 
-enum QKeyCallbackReturn {
+#define KEY_QUIT -1
+#define KEY_QUIT_ALL -2
+
+#define KEY_IS_ARROWS(key) (key >= KEY_ARROW_UP && key <= KEY_PAGE_DOWN)
+#define KEY_IS_ARROW(key) (key >= KEY_ARROW_UP && key <= KEY_ARROW_LEFT)
+#define KEY_IS_TERMINATING(key) (key < 0)
+#define KEY_IS_NORMAL(key) (key >= 0 && key < KEY_ARROW_UP)
+
+enum QKeyCallbackReturn
+{
 	QKEY_CALLBACK_RETURN_NORMAL,
 	QKEY_CALLBACK_RETURN_IGNORE,
 	QKEY_CALLBACK_RETURN_END
 };
 
-typedef enum QKeyCallbackReturn(*QKeyCallback)(unsigned, enum QKeyType, va_list);
+typedef enum QKeyCallbackReturn(*QKeyCallback)(int, va_list);
 
-#define ESCAPE_CHAR 27
+#define ESC_CHAR 27
+#define DEL_CHAR 127
 
-int getKeyInput(enum QKeyType* key_type);
-void waitForKey(const int key);
+Coord getScreenSize(void);
+int getKeyInput(void);
+void waitForKey(int key);
 int getNumberInput(unsigned start, unsigned end, bool erase, const QKeyCallback key_callback, ...);
 bool getStringInput(char* buffer, int min_len, int max_len, const QKeyCallback key_callback, ...);
 bool getBooleanInput(const QKeyCallback key_callback);

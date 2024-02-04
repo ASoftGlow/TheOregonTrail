@@ -46,9 +46,9 @@ struct _DialogOptions dialog_options = {
 		.callback = &settingCallback
 };
 
-static enum QKeyCallbackReturn settingInputCallback(unsigned key, enum QKeyType type, va_list args)
+static enum QKeyCallbackReturn settingInputCallback(int key, va_list args)
 {
-	if (type == QKEY_TYPE_NORMAL && key == ESCAPE_CHAR)
+	if (key == ESC_CHAR)
 	{
 		do_exit = 1;
 		return QKEY_CALLBACK_RETURN_END;
@@ -68,8 +68,8 @@ void settingCallback(const struct ChoiceDialogChoice* choice, const int index)
 	switch (gp_settings[index].type)
 	{
 	case SETTING_TYPE_NUMBER:
-		int num = getNumberInput(0, -1, 1, settingInputCallback);
-		if (num >= 0) goto skip;
+		int num = getNumberInput(gp_settings[index].min, elvis(gp_settings[index].max, -1), 1, settingInputCallback);
+		if (num < 0) goto skip;
 		*(int*)gp_settings[index].p = num;
 		break;
 
@@ -94,7 +94,7 @@ void settingCallback(const struct ChoiceDialogChoice* choice, const int index)
 			nfdresult_t result = NFD_SaveDialog(&out_path, filter_items, 1, NULL, "save");
 			if (result == NFD_OKAY)
 			{
-				strcpy_s((char*)gp_settings[index].p, FILENAME_MAX, out_path);
+				strcpy((char*)gp_settings[index].p, out_path);
 				NFD_FreePath(out_path);
 			}
 			else
@@ -112,6 +112,7 @@ void settingCallback(const struct ChoiceDialogChoice* choice, const int index)
 		*(bool*)gp_settings[index].p = b;
 		break;
 	}
+	if (gp_settings[index].callback) gp_settings[index].callback();
 	saveSettings();
 skip:
 	showChoiceDialog("Compiled "__DATE__, gp_dialog_choices, gp_dialog_choices_count, &dialog_options);

@@ -22,10 +22,11 @@ typedef struct _BoxOptions
 	const char* title;
 	const int height;
 	const char* color;
-	const int paddingX;
-	const int paddingY;
+	const byte paddingX;
+	const byte paddingY;
 	Coord* captures;
-	bool do_not_free;
+	byte captures_count;
+	const bool do_not_free;
 } *BoxOptions;
 
 typedef struct _DialogOptions
@@ -54,6 +55,7 @@ typedef struct _WrapLineOptions
 {
 	int height;
 	Coord* captures;
+	byte captures_count;
 	struct WrapLine* lines;
 	byte* added_count;
 	WrapLineKind kind;
@@ -181,13 +183,14 @@ do { \
 #define BOX_CHAR_UR     192
 #define BOX_CHAR_UL     217
 
-#define SCREEN_WIDTH 40
-#define SCREEN_HEIGHT 7
+extern byte SCREEN_WIDTH;
+extern byte SCREEN_HEIGHT;
+
+extern byte DIALOG_CONTENT_WIDTH;
 
 #define DIALOG_PADDING_X 4
 #define DIALOG_PADDING_Y 1
 #define DIALOG_WIDTH SCREEN_WIDTH
-#define DIALOG_CONTENT_WIDTH DIALOG_WIDTH - DIALOG_PADDING_X * 2
 #define INDENT_SIZE DIALOG_PADDING_X
 
 // @brief Signifies a position to capture

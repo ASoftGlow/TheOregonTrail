@@ -2,6 +2,9 @@
 
 #include "state.h"
 #include "main.h"
+#include "tui.h"
+#include "map.h"
+#include "input.h"
 
 struct State state = {
 	.water = -1,
@@ -11,7 +14,9 @@ struct State state = {
 
 struct Settings settings = {
 	0,
-	.auto_save_path = "save.dat"
+	.auto_save_path = "save.dat",
+	.screen_width = 40,
+	.screen_height = 7
 };
 
 bool saveSettings(void)
@@ -24,14 +29,21 @@ bool saveSettings(void)
 	return 1;
 }
 
+static bool postSettings(bool ret)
+{
+	updateScreenSize();
+	return ret;
+}
+
 bool loadSettings(void)
 {
 	errno = 0;
 	FILE* f = fopen(SETTINGS_PATH, "rb");
-	if (errno) return 0;
+	if (errno) return postSettings(0);
 	fread(&settings, 1, sizeof(settings), f);
 	fclose(f);
-	return 1;
+
+	return postSettings(1);
 }
 
 bool saveState(const char* path)
@@ -64,4 +76,24 @@ bool loadState(const char* path)
 		break;
 	}
 	return 1;
+}
+
+void updateScreenSize()
+{
+	if (settings.auto_screen_size)
+	{
+		Coord size = getScreenSize();
+		settings.screen_width = size.x;
+		settings.screen_height = size.y;
+	}
+
+	if (settings.screen_width < MIN_SCREEN_WIDTH) settings.screen_width = MIN_SCREEN_WIDTH;
+	if (settings.screen_width > MAX_SCREEN_WIDTH) settings.screen_width = MAX_SCREEN_WIDTH;
+	if (settings.screen_height < MIN_SCREEN_HEIGHT) settings.screen_height = MIN_SCREEN_HEIGHT;
+	if (settings.screen_height > MAX_SCREEN_HEIGHT) settings.screen_height = MAX_SCREEN_HEIGHT;
+
+	SCREEN_WIDTH = settings.screen_width;
+	SCREEN_HEIGHT = settings.screen_height;
+	DIALOG_CONTENT_WIDTH = DIALOG_WIDTH - DIALOG_PADDING_X * 2;
+	MAP_VIEWPORT_HEIGHT = SCREEN_HEIGHT - 2;
 }

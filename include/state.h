@@ -82,6 +82,7 @@ bool saveState(const char* path);
 bool loadState(const char* path);
 bool saveSettings(void);
 bool loadSettings(void);
+void updateScreenSize(void);
 
 struct State
 {
@@ -119,9 +120,17 @@ struct Settings
 	bool no_tutorials;
 	bool auto_save;
 	char auto_save_path[FILENAME_MAX];
+	bool auto_screen_size;
+	int screen_width;
+	int screen_height;
 };
 
 #define SETTINGS_PATH "settings.dat"
+
+#define MIN_SCREEN_WIDTH 30
+#define MAX_SCREEN_WIDTH 100
+#define MIN_SCREEN_HEIGHT 8
+#define MAX_SCREEN_HEIGHT 60
 
 
 extern struct State state;

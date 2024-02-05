@@ -1,6 +1,7 @@
 #pragma once
 #include <stdio.h>
 #include <time.h>
+#include <locale.h>
 #ifndef TOT_TTY
 #include "nfd.h"
 #endif
@@ -18,7 +19,7 @@ static inline void setupWin(void)
 	GetConsoleMode(hOut, &dwMode);
 	dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
 	SetConsoleMode(hOut, dwMode);
-	SetConsoleOutputCP(437);
+	SetConsoleOutputCP(CP_UTF8);
 }
 
 #elif __APPLE__
@@ -65,9 +66,11 @@ void setup(void)
 
 	// style console
 	putsn(
-		ANSI_CURSOR_STYLE_UNDERLINE ANSI_CURSOR_SHOW ANSI_WINDOW_TITLE("Oregon Trail")
-		ANSI_WINDOW_SIZE(TOKENXSTR(SCREEN_WIDTH + 2), "") ANSI_NO_WRAP
+		ANSI_CURSOR_STYLE_UNDERLINE ANSI_CURSOR_SHOW ANSI_WINDOW_TITLE("Oregon Trail") ANSI_NO_WRAP
 	);
+
+	// unicode
+	setlocale(LC_CTYPE, "");
 }
 
 void setdown(void)

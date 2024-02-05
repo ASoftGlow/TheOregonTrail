@@ -92,6 +92,8 @@ void updateScreenSize()
 	if (settings.screen_height < MIN_SCREEN_HEIGHT) settings.screen_height = MIN_SCREEN_HEIGHT;
 	if (settings.screen_height > MAX_SCREEN_HEIGHT) settings.screen_height = MAX_SCREEN_HEIGHT;
 
+	// TODO: ANSI_WINDOW_SIZE(TOKENXSTR(SCREEN_WIDTH + 2), "")
+
 	SCREEN_WIDTH = settings.screen_width;
 	SCREEN_HEIGHT = settings.screen_height;
 	DIALOG_CONTENT_WIDTH = DIALOG_WIDTH - DIALOG_PADDING_X * 2;

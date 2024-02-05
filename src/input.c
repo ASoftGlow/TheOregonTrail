@@ -35,6 +35,13 @@ Coord getScreenSize(void)
 	return size;
 }
 
+void sleep(unsigned long ms)
+{
+	nanosleep((const struct timespec[]) {
+		{0, ms * 1000000L}
+	}, NULL);
+}
+
 #elif _WIN32
 #include <windows.h>
 Coord getScreenSize(void)
@@ -46,6 +53,11 @@ Coord getScreenSize(void)
 	size.x = csbi.srWindow.Right - csbi.srWindow.Left - 1;
 	size.y = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
 	return size;
+}
+
+void sleep(unsigned long ms)
+{
+	Sleep(ms);
 }
 #endif
 

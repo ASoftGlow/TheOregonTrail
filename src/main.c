@@ -392,9 +392,13 @@ const struct ChoiceDialogChoice tutorial_choices[] = {
 	{"Page up and down also work while selecting"}
 };
 
+#include "blackjack/game.h"
 int main(void)
 {
 	setup();
+	state.money = 30.f;
+	enum BlackjackGameResult result = playBlackjack();
+	getchar();
 
 	loadSettings();
 

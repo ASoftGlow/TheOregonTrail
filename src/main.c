@@ -35,7 +35,7 @@ void showSavePrompt(void)
 		return;
 
 	case CONFIRMATION_DIALOG_YES:
-#ifdef _DEBUG
+#ifndef _DEBUG
 		saveState(DEBUG_SAVE_PATH);
 #else
 		if (IS_TTY)

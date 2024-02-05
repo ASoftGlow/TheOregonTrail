@@ -15,7 +15,20 @@
 bool IS_TTY;
 bool escape_combo = 0;
 
-#ifdef __UNIX__
+#ifdef _WIN32
+#include <windows.h>
+Coord getScreenSize(void)
+{
+	Coord size = { 0,0 };
+	CONSOLE_SCREEN_BUFFER_INFO csbi;
+
+	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+	size.x = csbi.srWindow.Right - csbi.srWindow.Left - 1;
+	size.y = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+	return size;
+}
+
+#else
 #include <sys/ioctl.h>
 #include <unistd.h>
 Coord getScreenSize(void)
@@ -32,19 +45,6 @@ Coord getScreenSize(void)
 	size.x = ts.ws_col;
 	size.y = ts.ws_row;
 #endif
-	return size;
-}
-
-#elif _WIN32
-#include <windows.h>
-Coord getScreenSize(void)
-{
-	Coord size = { 0,0 };
-	CONSOLE_SCREEN_BUFFER_INFO csbi;
-
-	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-	size.x = csbi.srWindow.Right - csbi.srWindow.Left - 1;
-	size.y = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
 	return size;
 }
 #endif

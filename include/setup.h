@@ -29,9 +29,21 @@ static inline void setupMacOS(void)
 }
 
 #else
-static inline void setupUnix(void)
+#include <termios.h>
+#include <unistd.h>
+
+struct termios oldt;
+
+static inline void setupLinux(void)
 {
 	IS_TTY = getenv("DISPLAY") != 0;
+
+	struct termios newt;
+
+	tcgetattr(STDIN_FILENO, &oldt);
+	newt = oldt;
+	newt.c_lflag &= ~(ICANON | ECHO);
+	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 }
 #endif
 
@@ -43,7 +55,7 @@ void setup(void)
 #elif __APPLE__
 	setupMacOS();
 #else
-	setupUnix();
+	setupLinux();
 #endif
 #ifdef TOT_TTY
 	IS_TTY = 1;
@@ -75,5 +87,6 @@ void setdown(void)
 	putsn(ANSI_CURSOR_RESTORE ANSI_COLOR_RESET ANSI_CURSOR_STYLE_DEFAULT ANSI_CURSOR_SHOW ANSI_WRAP);
 	fflush(stdout);
 
+	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 	NFD_Quit();
 }

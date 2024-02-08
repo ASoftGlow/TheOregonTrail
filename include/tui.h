@@ -2,14 +2,14 @@
 #include "base.h"
 #include "ansi_codes.h"
 
-typedef void (*ChoiceCallback)(const struct ChoiceDialogChoice*);
-typedef void (*ChoiceDialogCallback)(const struct ChoiceDialogChoice*, const int);
-
 struct ChoiceDialogChoice
 {
 	char* name;
-	ChoiceCallback callback;
+	void (*callback)(const struct ChoiceDialogChoice*);
 };
+
+typedef void (*ChoiceCallback)(const struct ChoiceDialogChoice*);
+typedef void (*ChoiceDialogCallback)(const struct ChoiceDialogChoice*, const int);
 
 enum BorderStyle
 {
@@ -170,18 +170,41 @@ do { \
 } while (0)
 
  // box drawing chars
-#define BOX_CHAR_D_DR   201
-#define BOX_CHAR_D_DL   187
-#define BOX_CHAR_D_H    205
-#define BOX_CHAR_D_V    186
-#define BOX_CHAR_D_UR   200
-#define BOX_CHAR_D_UL   188
-#define BOX_CHAR_DR     218
-#define BOX_CHAR_DL     191
-#define BOX_CHAR_H      196
-#define BOX_CHAR_V      179
-#define BOX_CHAR_UR     192
-#define BOX_CHAR_UL     217
+ #ifdef TOT_ASCII
+#define BOX_CHAR_D_DR   '@'
+#define BOX_CHAR_D_DL   '@'
+#define BOX_CHAR_D_H    '='
+#define BOX_CHAR_D_V    '|'
+#define BOX_CHAR_D_UR   '@'
+#define BOX_CHAR_D_UL   '@'
+#define BOX_CHAR_DR     '+'
+#define BOX_CHAR_DL     '+'
+#define BOX_CHAR_H      '-'
+#define BOX_CHAR_V      '|'
+#define BOX_CHAR_UR     '+'
+#define BOX_CHAR_UL     '+'
+
+typedef char box_char_t;
+
+#define putBoxChar(ascii) putchar(ascii)
+#else
+#define BOX_CHAR_D_DR   "\u2554"
+#define BOX_CHAR_D_DL   "\u2557"
+#define BOX_CHAR_D_H    "\u2550"
+#define BOX_CHAR_D_V    "\u2551"
+#define BOX_CHAR_D_UR   "\u255A"
+#define BOX_CHAR_D_UL   "\u255D"
+#define BOX_CHAR_DR     "\u250C"
+#define BOX_CHAR_DL     "\u2510"
+#define BOX_CHAR_H      "\u2500"
+#define BOX_CHAR_V      "\u2502"
+#define BOX_CHAR_UR     "\u2514"
+#define BOX_CHAR_UL     "\u2518"
+
+typedef char* box_char_t;
+
+#define putBoxChar(utf8) putsn(utf8)
+#endif
 
 extern byte SCREEN_WIDTH;
 extern byte SCREEN_HEIGHT;

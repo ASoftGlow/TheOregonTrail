@@ -75,7 +75,7 @@ void settingCallback(const struct ChoiceDialogChoice* choice, const int index)
 
 	case SETTING_TYPE_STRING:
 		char buffer[32];
-		if (getStringInput(&buffer, 0, sizeof(buffer), settingInputCallback)) goto skip;
+		if (getStringInput(buffer, 0, sizeof(buffer), settingInputCallback)) goto skip;
 		memcpy(gp_settings[index].p, buffer, sizeof(buffer));
 		break;
 
@@ -84,7 +84,7 @@ void settingCallback(const struct ChoiceDialogChoice* choice, const int index)
 		if (IS_TTY)
 		{
 			char buffer[FILENAME_MAX];
-			if (getStringInput(&buffer, 0, sizeof(buffer), settingInputCallback)) goto skip;
+			if (getStringInput(buffer, 0, sizeof(buffer), settingInputCallback)) goto skip;
 			memcpy(gp_settings[index].p, buffer, sizeof(buffer));
 		}
 		else
@@ -126,7 +126,7 @@ void showSettings(struct Setting* settings, byte settings_count)
 	assert(choices);
 	for (byte i = 0; i < settings_count; i++)
 	{
-		choices[i].name = settings[i].name;
+		choices[i].name = (char*)settings[i].name;
 		choices[i].callback = NULL;
 	}
 	choices[settings_count].name = "Back";

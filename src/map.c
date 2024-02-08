@@ -231,7 +231,7 @@ void showMap(void)
 			}
 			break;
 
-		case '\r':
+		case ETR_CHAR:
 			if (!marking) break;
 			struct MapMark* mark = findMark(path_index, path_pos);
 			if (mark == 0)

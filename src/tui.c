@@ -141,11 +141,10 @@ static enum QKeyCallbackReturn inputCallback(int key, va_list args)
 	const struct _ChoiceInfo* choices_info = va_arg(args, const struct _ChoiceInfo*);
 	const Coord offset = va_arg(args, const Coord);
 	const Coord end = va_arg(args, const Coord);
-	va_end(args);
 
 	switch (key)
 	{
-	case '\r':
+	case ETR_CHAR:
 		if (*cur_pos != -1)
 		{
 			putsn(ANSI_CURSOR_SHOW);
@@ -307,20 +306,21 @@ void drawBoxWL(struct WrapLine* lines, const int width, const enum BorderStyle b
 	if (options && options->title) assert(*options->title && strlen(options->title) + 2 <= width);
 	int w = width;
 
-	const char BORDER_V = border ? BOX_CHAR_D_V : BOX_CHAR_V;
-	const char BORDER_H = border ? BOX_CHAR_D_H : BOX_CHAR_H;
-	const char BORDER_DR = border ? BOX_CHAR_D_DR : BOX_CHAR_DR;
-	const char BORDER_DL = border ? BOX_CHAR_D_DL : BOX_CHAR_DL;
-	const char BORDER_UR = border ? BOX_CHAR_D_UR : BOX_CHAR_UR;
-	const char BORDER_UL = border ? BOX_CHAR_D_UL : BOX_CHAR_UL;
+	const box_char_t
+		BORDER_V = border ? BOX_CHAR_D_V : BOX_CHAR_V,
+		BORDER_H = border ? BOX_CHAR_D_H : BOX_CHAR_H,
+		BORDER_DR = border ? BOX_CHAR_D_DR : BOX_CHAR_DR,
+		BORDER_DL = border ? BOX_CHAR_D_DL : BOX_CHAR_DL,
+		BORDER_UR = border ? BOX_CHAR_D_UR : BOX_CHAR_UR,
+		BORDER_UL = border ? BOX_CHAR_D_UL : BOX_CHAR_UL;
 
 	if (options && options->color) putsn(options->color);
-	putchar(BORDER_DR);
+	putBoxChar(BORDER_DR);
 	if (options && options->title)
 	{
 		const int l = width - (int)strlen(options->title) - 2;
 		const int seg = w = (int)(l / 2);
-		while (w--) putchar(BORDER_H);
+		while (w--) putBoxChar(BORDER_H);
 		putchar(' ');
 		if (options->color) putsn(ANSI_COLOR_RESET);
 		putsn(options->title);
@@ -328,28 +328,28 @@ void drawBoxWL(struct WrapLine* lines, const int width, const enum BorderStyle b
 		putchar(' ');
 		w = seg;
 		if (l % 2) w++;
-		while (w--) putchar(BORDER_H);
+		while (w--) putBoxChar(BORDER_H);
 	}
 	else
-		while (w--) putchar(BORDER_H);
-	putchar(BORDER_DL);
+		while (w--) putBoxChar(BORDER_H);
+	putBoxChar(BORDER_DL);
 	putchar('\n');
 
 	byte py = options ? options->paddingY : 0;
 	while (py--)
 	{
-		putchar(BORDER_V);
+		putBoxChar(BORDER_V);
 		if (options && options->color) putsn(ANSI_COLOR_RESET);
 		w = width;
 		while (w--) putchar(' ');
 		if (options && options->color) putsn(options->color);
-		putchar(BORDER_V);
+		putBoxChar(BORDER_V);
 		putchar('\n');
 	}
 
 	for (byte l = 0; l < cvector_size(lines); l++)
 	{
-		putchar(BORDER_V);
+		putBoxChar(BORDER_V);
 		if (options && options->color) putsn(ANSI_COLOR_RESET);
 		int p;
 		switch (lines[l].kind)
@@ -390,7 +390,7 @@ void drawBoxWL(struct WrapLine* lines, const int width, const enum BorderStyle b
 		}
 
 		if (options && options->color) putsn(options->color);
-		putchar(BORDER_V);
+		putBoxChar(BORDER_V);
 		putchar('\n');
 		fflush(stdout);
 	}
@@ -398,19 +398,19 @@ void drawBoxWL(struct WrapLine* lines, const int width, const enum BorderStyle b
 	py = options ? options->paddingY : 0;
 	while (py--)
 	{
-		putchar(BORDER_V);
+		putBoxChar(BORDER_V);
 		if (options && options->color) putsn(ANSI_COLOR_RESET);
 		w = width;
 		while (w--) putchar(' ');
 		if (options && options->color) putsn(options->color);
-		putchar(BORDER_V);
+		putBoxChar(BORDER_V);
 		putchar('\n');
 	}
 
-	putchar(BORDER_UR);
+	putBoxChar(BORDER_UR);
 	w = width;
-	while (w--) putchar(BORDER_H);
-	putchar(BORDER_UL);
+	while (w--) putBoxChar(BORDER_H);
+	putBoxChar(BORDER_UL);
 	if (options && options->color) putsn(ANSI_COLOR_RESET);
 	putchar('\n');
 
@@ -645,7 +645,7 @@ struct WrapLine* addBar(struct WrapLine* lines)
 {
 	char buf[64] = ANSI_COLOR_CYAN;
 	byte l = min(DIALOG_CONTENT_WIDTH, 40);
-	memset(buf + sizeof(ANSI_COLOR_CYAN) - 1, BOX_CHAR_H, l);
+	memset(buf + sizeof(ANSI_COLOR_CYAN) - 1, '-', l);
 	buf[sizeof(ANSI_COLOR_CYAN) + l] = 0;
 	return addLine(lines, buf, WRAPLINEKIND_LTR);
 }

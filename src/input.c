@@ -31,6 +31,7 @@ Coord getScreenSize(void)
 #else
 #include <sys/ioctl.h>
 #include <unistd.h>
+#include <termios.h>
 Coord getScreenSize(void)
 {
 	Coord size = { 0,0 };
@@ -46,6 +47,17 @@ Coord getScreenSize(void)
 	size.y = ts.ws_row;
 #endif
 	return size;
+}
+
+extern struct termios newtw, newti;
+
+static inline void enableInputWait(void)
+{
+	tcsetattr(STDIN_FILENO, TCSANOW, &newtw);
+}
+static inline void disableInputWait(void)
+{
+	tcsetattr(STDIN_FILENO, TCSANOW, &newti);
 }
 #endif
 
@@ -90,6 +102,38 @@ int getKeyInput(void)
 		}
 
 	case ESC_CHAR:
+#ifndef _WIN32
+		disableInputWait();
+		int ret = -1;
+		if (getchar() > 0)
+		{
+			switch (getchar())
+			{
+			case 'A':
+				ret = KEY_ARROW_UP;
+				break;
+			case 'B':
+				ret = KEY_ARROW_DOWN;
+				break;
+			case 'C':
+				ret = KEY_ARROW_RIGHT;
+				break;
+			case 'D':
+				ret = KEY_ARROW_LEFT;
+				break;
+			case 53:
+				ret = KEY_PAGE_UP;
+				break;
+			case 54:
+				ret = KEY_PAGE_DOWN;
+				break;
+			}
+		}
+		else
+			clearerr(stdin);
+		enableInputWait();
+		if (ret > 0) return ret;
+#endif
 		if (escape_combo)
 		{
 			escape_combo = 0;
@@ -116,9 +160,6 @@ void waitForKey(int key)
 // @returns a negative number if cancelled
 int getNumberInput(unsigned start, unsigned end, bool erase, const QKeyCallback key_callback, ...)
 {
-	va_list argptr;
-	va_start(argptr, key_callback);
-
 	unsigned num = 0;
 	byte i = 0;
 	unsigned buffer[8];
@@ -129,7 +170,10 @@ int getNumberInput(unsigned start, unsigned end, bool erase, const QKeyCallback 
 		key = getKeyInput();
 		if (key_callback)
 		{
+			va_list argptr;
+			va_start(argptr, key_callback);
 			enum QKeyCallbackReturn result = ((*key_callback)(key, argptr));
+			va_end(argptr);
 			if (result == QKEY_CALLBACK_RETURN_IGNORE) continue;
 			if (result == QKEY_CALLBACK_RETURN_END)
 			{
@@ -139,7 +183,7 @@ int getNumberInput(unsigned start, unsigned end, bool erase, const QKeyCallback 
 			}
 		}
 		// enter pressed
-		if (key == '\r' && i) break;
+		if (key == ETR_CHAR && i) break;
 		if (KEY_IS_TERMINATING(key)) return -1;
 
 		switch (key)
@@ -183,9 +227,6 @@ int getNumberInput(unsigned start, unsigned end, bool erase, const QKeyCallback 
 
 bool getStringInput(char* buffer, int min_len, int max_len, const QKeyCallback key_callback, ...)
 {
-	va_list argptr;
-	va_start(argptr, key_callback);
-
 	int i = 0;
 
 	int key;
@@ -194,12 +235,15 @@ bool getStringInput(char* buffer, int min_len, int max_len, const QKeyCallback k
 		key = getKeyInput();
 		if (key_callback)
 		{
+			va_list argptr;
+			va_start(argptr, key_callback);
 			const enum QKeyCallbackReturn ret = key_callback(key, argptr);
+			va_end(argptr);
 			if (ret == QKEY_CALLBACK_RETURN_IGNORE) continue;
 			if (ret == QKEY_CALLBACK_RETURN_END) break;
 		}
 
-		if (key == '\r' && i >= min_len) break;
+		if (key == ETR_CHAR && i >= min_len) break;
 		if (KEY_IS_TERMINATING(key)) return -1;
 
 		switch (key)
@@ -252,7 +296,7 @@ static enum QKeyCallbackReturn booleanInputCallback(int key, va_list args)
 	case 'F':
 
 	case '\b':
-	case '\r':
+	case '\n':
 	case DEL_CHAR:
 		return QKEY_CALLBACK_RETURN_NORMAL;
 

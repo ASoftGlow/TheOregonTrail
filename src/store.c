@@ -146,7 +146,6 @@ static enum QKeyCallbackReturn storeInputCallback(int key, va_list args)
 {
 	char* cur_pos = va_arg(args, char*);
 	Coord end = va_arg(args, Coord);
-	va_end(args);
 
 	switch (key)
 	{
@@ -224,7 +223,7 @@ static enum QKeyCallbackReturn storeInputCallback(int key, va_list args)
 			return QKEY_CALLBACK_RETURN_END;
 		}
 
-	case '\r':
+	case ETR_CHAR:
 		if (*cur_pos != -1)
 		{
 			drawChoiceStore(*cur_pos, 0);

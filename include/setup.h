@@ -1,10 +1,12 @@
 #pragma once
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 #ifndef TOT_TTY
 #include "nfd.h"
 #endif
 
+#include "utils.h"
 #include "ansi_codes.h"
 
 #ifdef _WIN32
@@ -18,7 +20,9 @@ static inline void setupWin(void)
 	GetConsoleMode(hOut, &dwMode);
 	dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
 	SetConsoleMode(hOut, dwMode);
-	SetConsoleOutputCP(437);
+#ifndef TOT_ASCII
+	SetConsoleOutputCP(CP_UTF8);
+#endif
 }
 
 #elif __APPLE__
@@ -33,17 +37,19 @@ static inline void setupMacOS(void)
 #include <unistd.h>
 
 struct termios oldt;
+struct termios newtw, newti;
 
 static inline void setupLinux(void)
 {
-	IS_TTY = getenv("DISPLAY") != 0;
-
-	struct termios newt;
+	IS_TTY = getenv("DISPLAY") == 0;
 
 	tcgetattr(STDIN_FILENO, &oldt);
-	newt = oldt;
-	newt.c_lflag &= ~(ICANON | ECHO);
-	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+	newtw = oldt;
+	newtw.c_lflag &= ~(ICANON | ECHO);
+	newti = newtw;
+	newti.c_cc[VTIME] = 0;
+	newti.c_cc[VMIN] = 0;
+	tcsetattr(STDIN_FILENO, TCSANOW, &newtw);
 }
 #endif
 
@@ -77,8 +83,7 @@ void setup(void)
 
 	// style console
 	putsn(
-		ANSI_CURSOR_STYLE_UNDERLINE ANSI_CURSOR_SHOW ANSI_WINDOW_TITLE("Oregon Trail")
-		ANSI_WINDOW_SIZE(TOKENXSTR(SCREEN_WIDTH + 2), "") ANSI_NO_WRAP
+		ANSI_CURSOR_STYLE_UNDERLINE ANSI_CURSOR_SHOW ANSI_WINDOW_TITLE("Oregon Trail") ANSI_NO_WRAP
 	);
 }
 
@@ -87,6 +92,8 @@ void setdown(void)
 	putsn(ANSI_CURSOR_RESTORE ANSI_COLOR_RESET ANSI_CURSOR_STYLE_DEFAULT ANSI_CURSOR_SHOW ANSI_WRAP);
 	fflush(stdout);
 
+#ifndef _WIN32
 	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+#endif
 	NFD_Quit();
 }

@@ -252,7 +252,7 @@ static enum QKeyCallbackReturn nameInputCallback(int key, va_list args)
 {
 	if (KEY_IS_TERMINATING(key)) return QKEY_CALLBACK_RETURN_END;
 
-	if (key == '\b' || key == '\r' || key == DEL_CHAR || key == ' ' || key == '\'' || (KEY_IS_NORMAL(key) && isalpha(key))) return QKEY_CALLBACK_RETURN_NORMAL;
+	if (key == '\b' || key == ETR_CHAR || key == DEL_CHAR || key == ' ' || key == '\'' || (KEY_IS_NORMAL(key) && isalpha(key))) return QKEY_CALLBACK_RETURN_NORMAL;
 	return QKEY_CALLBACK_RETURN_IGNORE;
 }
 

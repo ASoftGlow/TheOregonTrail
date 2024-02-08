@@ -21,3 +21,9 @@ typedef struct {
 #define TOKENPASTE2(x, y) TOKENPASTE(x, y)
 #define TOKENSTR(x) #x
 #define TOKENXSTR(x) TOKENSTR(x)
+
+#ifdef _WIN32
+#define ETR_CHAR '\r'
+#else
+#define ETR_CHAR '\n'
+#endif

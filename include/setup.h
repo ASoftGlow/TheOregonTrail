@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <locale.h>
 #ifndef TOT_TTY
 #include "nfd.h"
 #endif
@@ -86,9 +85,6 @@ void setup(void)
 	putsn(
 		ANSI_CURSOR_STYLE_UNDERLINE ANSI_CURSOR_SHOW ANSI_WINDOW_TITLE("Oregon Trail") ANSI_NO_WRAP
 	);
-
-	// unicode
-	setlocale(LC_CTYPE, "");
 }
 
 void setdown(void)

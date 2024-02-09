@@ -408,9 +408,6 @@ int main(void)
 	while (1)
 	{
 		showMainMenu();
-		//showStore();
-		//showMap();
-		//showMain();
 
 		if (errno) break;
 		if (state.stage)

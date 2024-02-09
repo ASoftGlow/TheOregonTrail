@@ -8,4 +8,6 @@ static.c
 store.c
 tui.c
 utils.c
+blackjack/game.c
+blackjack/card.c
 )

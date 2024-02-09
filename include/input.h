@@ -31,6 +31,7 @@ typedef enum QKeyCallbackReturn(*QKeyCallback)(int, va_list);
 #define ESC_CHAR 27
 #define DEL_CHAR 127
 
+void sleep(unsigned long ms);
 Coord getScreenSize(void);
 int getKeyInput(void);
 void waitForKey(int key);

@@ -28,6 +28,10 @@ Coord getScreenSize(void)
 	return size;
 }
 
+void sleep(unsigned long ms)
+{
+	Sleep(ms);
+}
 #else
 #include <sys/ioctl.h>
 #include <unistd.h>
@@ -47,6 +51,13 @@ Coord getScreenSize(void)
 	size.y = ts.ws_row;
 #endif
 	return size;
+}
+
+void sleep(unsigned long ms)
+{
+	nanosleep((const struct timespec[]) {
+		{0, ms * 1000000L}
+	}, NULL);
 }
 
 extern struct termios newtw, newti;

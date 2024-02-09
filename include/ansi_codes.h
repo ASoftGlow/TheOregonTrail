@@ -7,6 +7,7 @@
 #define ANSI_COLOR_MAGENTA     "\33[35m"
 #define ANSI_COLOR_CYAN        "\33[36m"
 #define ANSI_COLOR_BROWN       "\33[38;5;94m"
+#define ANSI_COLOR_GRAY        "\33[38;5;8m"
 #define ANSI_SELECTED	       "\33[30;47m"
 #define ANSI_COLOR_RESET       "\33[0m"
 #define ANSI_BG_RESET          "\33[40m"

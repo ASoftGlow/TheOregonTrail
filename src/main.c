@@ -21,8 +21,8 @@
 void showMainMenu(void);
 void showMonth(void);
 void showRole(void);
-void showStore(void);
 void showSavePrompt(void);
+void ShowStory(struct StoryPage* pages, size_t count);
 
 #define DEBUG_SAVE_PATH "../../resources/save.dat"
 
@@ -93,9 +93,7 @@ static void formatDate(char* buffer)
 
 static declare_choice_callback(map)
 {
-	putsn(ANSI_SB_ALT);
 	showMap();
-	putsn(ANSI_SB_MAIN);
 	showMain();
 }
 
@@ -122,9 +120,14 @@ static declare_choice_callback(trail)
 	fflush(stdout);
 }
 
+static declare_choice_callback(supplies)
+{
+	// TODO
+}
+
 const struct ChoiceDialogChoice SETTLEMENT_CHOICES[] = {
 	{.name = "Continue on trail", .callback = choice_callback(trail)},
-	{.name = "Check supplies"},
+	{.name = "Check supplies", .callback = choice_callback(supplies)},
 	{.name = "Look at map", .callback = choice_callback(map)}
 };
 
@@ -172,27 +175,10 @@ void showMain(void)
 
 	lines = addQuickInfo(lines);
 
-	showChoiceDialogWL(lines, &SETTLEMENT_CHOICES[0], _countof(SETTLEMENT_CHOICES), &(struct _DialogOptions){
+	showChoiceDialogWL(lines, &SETTLEMENT_CHOICES[0], countof(SETTLEMENT_CHOICES), &(struct _DialogOptions){
 		.title = state.location,
 			.noPaddingY = 1
 	});
-}
-
-void showStore(void)
-{
-	// set location
-	strcpy(state.location, "Independence, Missouri");
-
-	const Coord capture = drawStore();
-	putsn(ANSI_CURSOR_SHOW);
-	fflush(stdout);
-	workStore(capture);
-
-	showInfoDialog("Parting with Matt", "Well then, you're ready to go. Good luck! You have a long and difficult journey ahead of you.");
-	if (errno) return;
-	state.stage = STATE_STAGE_START;
-	autoSave();
-	showMain();
 }
 
 static declare_choice_callback_g(month)
@@ -214,7 +200,17 @@ static declare_choice_callback_g(month)
 	showInfoDialog("Meet Matt", matt_greeting TAB"- plenty of food for the\n"TAB"  trip\n\n"TAB"- ammunition for your\n"TAB"  rifles\n\n"TAB"- spare parts for your\n"TAB"  wagon");
 	if (errno) return;
 #undef matt_greeting
+	
+	// set location
+	strcpy(state.location, "Independence, Missouri");
+
 	showStore();
+
+	showInfoDialog("Parting with Matt", "Well then, you're ready to go. Good luck! You have a long and difficult journey ahead of you.");
+	if (errno) return;
+	state.stage = STATE_STAGE_START;
+	autoSave();
+	showMain();
 }
 
 static declare_choice_callback(month_advice)
@@ -236,7 +232,7 @@ void showMonth(void)
 {
 	const char text[] = "It is 1848. Your jumping off place for Oregon is Independence, Missouri. You must decide which month to leave Independence.";
 
-	showChoiceDialog(text, month_choices, _countof(month_choices), &(struct _DialogOptions){
+	showChoiceDialog(text, month_choices, countof(month_choices), &(struct _DialogOptions){
 		.callback = choice_callback(month)
 	});
 }
@@ -265,7 +261,7 @@ static declare_choice_callback_g(role)
 	clearStdout();
 	drawBox(&("What is the first name of the wagon leader?\n" ANSI_CURSOR_SAVE)[0], DIALOG_WIDTH, BORDER_DOUBLE, &(struct _BoxOptions){
 		.height = 8,
-			.color = ANSI_COLOR_YELLOW
+			.color = COLOR_YELLOW
 	});
 	putsn(ANSI_CURSOR_RESTORE ANSI_CURSOR_SHOW);
 	fflush(stdout);
@@ -279,7 +275,7 @@ static declare_choice_callback_g(role)
 		byte rand_i;
 		do
 		{
-			rand_i = rand() % _countof(WAGON_MEMBER_NAMES);
+			rand_i = rand() % countof(WAGON_MEMBER_NAMES);
 		} while (taken_names[rand_i]);
 		taken_names[rand_i] = 1;
 		strcpy(state.wagon_members[i].name, WAGON_MEMBER_NAMES[rand_i]);
@@ -296,7 +292,7 @@ const struct ChoiceDialogChoice role_choices[] = {
 };
 void showRole(void)
 {
-	showChoiceDialog("Many kinds of people made the trip to Oregon.\n\nYou may:", role_choices, _countof(role_choices), &(struct _DialogOptions){
+	showChoiceDialog("Many kinds of people made the trip to Oregon.\n\nYou may:", role_choices, countof(role_choices), &(struct _DialogOptions){
 		.callback = choice_callback(role)
 	});
 }
@@ -356,7 +352,7 @@ struct Setting main_settings[] = {
 
 static declare_choice_callback(settings)
 {
-	showSettings(main_settings, _countof(main_settings));
+	showSettings(main_settings, countof(main_settings));
 	showMainMenu();
 }
 
@@ -381,9 +377,22 @@ const struct ChoiceDialogChoice main_choices[] = {
 };
 void showMainMenu(void)
 {
-	showChoiceDialog("You may:", main_choices, _countof(main_choices), &(struct _DialogOptions){
+	showChoiceDialog("You may:", main_choices, countof(main_choices), &(struct _DialogOptions){
 		.title = "Welcome to Oregon Trail"
 	});
+}
+
+void ShowStory(struct StoryPage* pages, size_t count)
+{
+	for (size_t i = 0; i < count; i++)
+	{
+		if (pages[i].music_path)
+		{
+			//musicStop(current_music);
+			//musicStart(pages[i].music_path);
+		}
+		showLongInfoDialog(pages[i].title, pages[i].text, pages[i].border_color);
+	}
 }
 
 const struct ChoiceDialogChoice tutorial_choices[] = {
@@ -398,11 +407,15 @@ int main(void)
 
 	loadSettings();
 
+	//showLongInfoDialog("test", "How shall I write of my mother? She is so near to me that it almost seems indelicate to speak of her.  For a long time I regarded my little sister as an intruder. I knew that I had ceased to be my mother's only darling, and the thought filled me with jealousy. She sat in my mother's lap constantly, where I used to sit, and seemed to take up all her care and time. One day something happened which seemed to me to be adding insult to injury.  At that time I had a much-petted, much-abused doll, which I afterward named Nancy. She was, alas, the helpless victim of my outbursts of temper and of affection, so that she became much the worse for wear. I had dolls which talked, and cried, and opened and shut their eyes; yet I never loved one of them as I loved poor Nancy. She had a cradle, and I often spent an hour or more rocking her. I guarded both doll and cradle with the most jealous care; but once I discovered my little sister sleeping peacefully in the cradle. At this presumption on the part of one to whom as yet no tie of love bound me I grew angry. I rushed upon the cradle and over-turned it, and the baby might have been killed had my mother not caught her as she fell. Thus it is that when we walk in the valley of twofold solitude we know little of the tender affections that grow out of endearing words and actions and companionship. But afterward, when I was restored to my human heritage, Mildred and I grew into each other's hearts, so that we were content to go hand-in-hand wherever caprice led us, although she could not understand my finger language, nor I her childish prattle.", 0);
+
 	if (!settings.no_tutorials)
 	{
-		showChoiceDialog("Here is a choice dialog:\n\nPress escape once to exit selection mode, and twice to exit a game.", tutorial_choices, _countof(tutorial_choices), NULL);
+		state.stage = STATE_STAGE_TUTORIAL;
+		showChoiceDialog("Here is a choice dialog:\n\nPress escape once to exit selection mode, and twice to exit a game.", tutorial_choices, countof(tutorial_choices), NULL);
 		settings.no_tutorials = 1;
 		saveSettings();
+		state.stage = STATE_STAGE_NONE;
 	}
 
 	while (1)

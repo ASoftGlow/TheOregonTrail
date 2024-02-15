@@ -40,7 +40,7 @@ static void dealCard(void)
 
 static void dealCardToDealer(bool hidden)
 {
-	sleep(300);
+	tot_sleep(300);
 	dealer_hand[++dealer_hand_i] = deck[++deck_i];
 	if (hidden)
 		drawCardBack(PL + 3 * dealer_hand_i, PTD);
@@ -81,7 +81,7 @@ enum BlackjackGameResult playBlackjack(void)
 	// deal cards
 	dealCard();
 	dealCardToDealer(1);
-	sleep(300);
+	tot_sleep(300);
 	dealCard();
 	dealCardToDealer(0);
 
@@ -144,7 +144,7 @@ input_loop:
 	// reveal first card
 	drawCard(dealer_hand[0], PL, PTD);
 	fflush(stdout);
-	sleep(300);
+	tot_sleep(300);
 
 	while (1)
 	{
@@ -160,7 +160,7 @@ input_loop:
 			if (points == dealer_points)
 			{
 				grayOptions();
-				sleep(1000);
+				tot_sleep(1000);
 				return BLACKJACK_GAME_PUSH;
 			}
 			if (points < dealer_points)
@@ -168,20 +168,20 @@ input_loop:
 			lost:
 				state.money -= bet;
 				grayOptions();
-				sleep(1000);
+				tot_sleep(1000);
 				return BLACKJACK_GAME_LOST;
 			}
 			if (points == 21)
 			{
 				state.money += bet * 1.5f; // fixme
 				grayOptions();
-				sleep(1000);
+				tot_sleep(1000);
 				return BLACKJACK_GAME_BLACKJACK;
 			}
 		won:
 			state.money += bet;
 			grayOptions();
-			sleep(800);
+			tot_sleep(800);
 			return BLACKJACK_GAME_WON;
 		}
 	}

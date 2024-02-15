@@ -65,10 +65,12 @@ void drawMap(Coord focus)
 	byte h = 0, w;
 	if (overflow_up)
 	{
+		putsn(INDICATOR_COLOR);
 		putsn(overflow_left ? INDICATOR_SLANT_LEFT : INDICATOR_UP);
 		byte i = MAP_VIEWPORT_WIDTH - 2;
 		while (i--) putsn(INDICATOR_UP);
 		puts(overflow_right ? INDICATOR_SLANT_RIGHT : INDICATOR_UP);
+		putsn(ANSI_COLOR_RESET);
 		++h;
 	}
 
@@ -96,10 +98,12 @@ void drawMap(Coord focus)
 
 	if (overflow_down)
 	{
+		putsn(INDICATOR_COLOR);
 		putsn(overflow_left ? INDICATOR_SLANT_RIGHT : INDICATOR_DOWN);
 		byte i = MAP_VIEWPORT_WIDTH - 2;
 		while (i--) putsn(INDICATOR_DOWN);
 		puts(overflow_right ? INDICATOR_SLANT_LEFT : INDICATOR_DOWN);
+		putsn(ANSI_COLOR_RESET);
 		--h;
 	}
 
@@ -173,7 +177,7 @@ void showMap(void)
 				{
 					++path_pos;
 				}
-				else if (path_index < _countof(map_paths_order) - 1)
+				else if (path_index < countof(map_paths_order) - 1)
 				{
 					path_id = map_paths_order[++path_index];
 					path_pos = 0;
@@ -196,7 +200,7 @@ void showMap(void)
 				break;
 
 			case KEY_PAGE_UP:
-				path_id = _countof(MAP_PATHS) - 1;
+				path_id = countof(MAP_PATHS) - 1;
 				path_pos = MAP_PATH_LENGTHS[path_id] - 1;
 				break;
 
@@ -237,7 +241,7 @@ void showMap(void)
 			if (mark == 0)
 			{
 				// reached max marks TODO: show alert
-				if (state.map_marks_count == _countof(state.map_marks)) break;
+				if (state.map_marks_count == countof(state.map_marks)) break;
 
 				mark = &state.map_marks[state.map_marks_count++];
 				mark->path_index = path_index;
@@ -245,7 +249,7 @@ void showMap(void)
 			}
 			else
 			{
-				if (mark->density < _countof(DENSITY_INDICATORS) - 1)
+				if (mark->density < countof(DENSITY_INDICATORS) - 1)
 					++mark->density;
 				else
 					break;

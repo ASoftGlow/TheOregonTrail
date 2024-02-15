@@ -41,7 +41,7 @@ byte gp_dialog_choices_count;
 bool do_exit;
 
 struct _DialogOptions dialog_options = {
-	.color = ANSI_COLOR_GREEN,
+	.color = COLOR_GREEN,
 		.title = "Settings",
 		.callback = &settingCallback
 };

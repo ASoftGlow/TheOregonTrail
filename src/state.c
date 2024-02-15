@@ -92,7 +92,7 @@ void updateScreenSize()
 	if (settings.screen_height < MIN_SCREEN_HEIGHT) settings.screen_height = MIN_SCREEN_HEIGHT;
 	if (settings.screen_height > MAX_SCREEN_HEIGHT) settings.screen_height = MAX_SCREEN_HEIGHT;
 
-	// TODO: ANSI_WINDOW_SIZE(TOKENXSTR(SCREEN_WIDTH + 2), "")
+	printf("\33[8;%i;%it", SCREEN_HEIGHT, SCREEN_WIDTH);
 
 	SCREEN_WIDTH = settings.screen_width;
 	SCREEN_HEIGHT = settings.screen_height;

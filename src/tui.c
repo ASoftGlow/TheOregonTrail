@@ -246,7 +246,7 @@ void showChoiceDialogWL(struct WrapLine* lines, const struct ChoiceDialogChoice*
 	clearStdout();
 	drawBoxWL(lines, DIALOG_WIDTH, BORDER_DOUBLE, &(struct _BoxOptions) {
 		.title = options ? options->title : NULL,
-			.color = options && options->color ? options->color : ANSI_COLOR_YELLOW,
+			.color = options && options->color ? options->color : COLOR_YELLOW,
 			.paddingX = DIALOG_PADDING_X,
 			.paddingY = padding_y,
 			.do_not_free = 1
@@ -314,7 +314,7 @@ void drawBoxWL(struct WrapLine* lines, const int width, const enum BorderStyle b
 		BORDER_UR = border ? BOX_CHAR_D_UR : BOX_CHAR_UR,
 		BORDER_UL = border ? BOX_CHAR_D_UL : BOX_CHAR_UL;
 
-	if (options && options->color) putsn(options->color);
+	if (options && options->color) putsn(ANSI_COLORS[options->color]);
 	putBoxChar(BORDER_DR);
 	if (options && options->title)
 	{
@@ -324,7 +324,7 @@ void drawBoxWL(struct WrapLine* lines, const int width, const enum BorderStyle b
 		putchar(' ');
 		if (options->color) putsn(ANSI_COLOR_RESET);
 		putsn(options->title);
-		if (options->color) putsn(options->color);
+		if (options->color) putsn(ANSI_COLORS[options->color]);
 		putchar(' ');
 		w = seg;
 		if (l % 2) w++;
@@ -342,7 +342,7 @@ void drawBoxWL(struct WrapLine* lines, const int width, const enum BorderStyle b
 		if (options && options->color) putsn(ANSI_COLOR_RESET);
 		w = width;
 		while (w--) putchar(' ');
-		if (options && options->color) putsn(options->color);
+		if (options && options->color) putsn(ANSI_COLORS[options->color]);
 		putBoxChar(BORDER_V);
 		putchar('\n');
 	}
@@ -389,7 +389,7 @@ void drawBoxWL(struct WrapLine* lines, const int width, const enum BorderStyle b
 			break;
 		}
 
-		if (options && options->color) putsn(options->color);
+		if (options && options->color) putsn(ANSI_COLORS[options->color]);
 		putBoxChar(BORDER_V);
 		putchar('\n');
 		fflush(stdout);
@@ -402,7 +402,7 @@ void drawBoxWL(struct WrapLine* lines, const int width, const enum BorderStyle b
 		if (options && options->color) putsn(ANSI_COLOR_RESET);
 		w = width;
 		while (w--) putchar(' ');
-		if (options && options->color) putsn(options->color);
+		if (options && options->color) putsn(ANSI_COLORS[options->color]);
 		putBoxChar(BORDER_V);
 		putchar('\n');
 	}
@@ -430,7 +430,7 @@ void showInfoDialog(const char title[], const char text[])
 {
 	struct _BoxOptions options = {
 		.title = title,
-			.color = ANSI_COLOR_YELLOW,
+			.color = COLOR_YELLOW,
 			.paddingX = DIALOG_PADDING_X,
 			.paddingY = DIALOG_PADDING_Y
 	};
@@ -455,11 +455,115 @@ void showInfoDialog(const char title[], const char text[])
 	putsn(ANSI_CURSOR_SHOW);
 }
 
+static void drawEmptyBox(byte width, byte height, enum BorderStyle border, enum Color color)
+{
+	int w = width;
+
+	const box_char_t
+		BORDER_V = border ? BOX_CHAR_D_V : BOX_CHAR_V,
+		BORDER_H = border ? BOX_CHAR_D_H : BOX_CHAR_H,
+		BORDER_DR = border ? BOX_CHAR_D_DR : BOX_CHAR_DR,
+		BORDER_DL = border ? BOX_CHAR_D_DL : BOX_CHAR_DL,
+		BORDER_UR = border ? BOX_CHAR_D_UR : BOX_CHAR_UR,
+		BORDER_UL = border ? BOX_CHAR_D_UL : BOX_CHAR_UL;
+
+	if (color) putsn(ANSI_COLORS[color]);
+	putBoxChar(BORDER_DR);
+	while (w--) putBoxChar(BORDER_H);
+	putBoxChar(BORDER_DL);
+	putchar('\n');
+
+	while (height-- > 2)
+	{
+		putBoxChar(BORDER_V);
+		if (color) putsn(ANSI_COLOR_RESET);
+		w = width;
+		while (w--) putchar(' ');
+		if (color) putsn(ANSI_COLORS[color]);
+		putBoxChar(BORDER_V);
+		putchar('\n');
+	}
+
+	putBoxChar(BORDER_UR);
+	w = width;
+	while (w--) putBoxChar(BORDER_H);
+	putBoxChar(BORDER_UL);
+	if (color) putsn(ANSI_COLOR_RESET);
+	putchar('\n');
+}
+
+void showLongInfoDialog(const char title[], const char text[], enum Color border_color)
+{
+	struct WrapLine* lines = wrapText(text, SCREEN_WIDTH - 2, NULL);
+	lines = addNewline(lines);
+	addStaticLine(lines, ANSI_COLOR_YELLOW"Press space to continue"ANSI_COLOR_RESET, WRAPLINEKIND_CENTER);
+
+	putsn(ANSI_CURSOR_HIDE);
+	clearStdout();
+
+	drawEmptyBox(SCREEN_WIDTH, SCREEN_HEIGHT, BORDER_SINGLE, border_color);
+	putBlockWLFill(lines, SCREEN_HEIGHT - 2, 2, 1, SCREEN_WIDTH - 2);
+
+	fflush(stdout);
+
+	int max_scroll = (int)cvector_size(lines) - SCREEN_HEIGHT + 2;
+	int scroll = 0;
+	int key;
+	while (key = getKeyInput())
+	{
+		if (key == ' ') break;
+		switch (key)
+		{
+		case KEY_ARROW_DOWN:
+			if (scroll < max_scroll)
+			{
+				++scroll;
+				break;
+			}
+			continue;
+
+		case KEY_ARROW_UP:
+			if (scroll)
+			{
+				--scroll;
+				break;
+			}
+			continue;
+
+		case KEY_PAGE_UP:
+			if (scroll)
+			{
+				scroll -= SCREEN_HEIGHT - 4;
+				if (scroll < 0) scroll = 0;
+				break;
+			}
+			continue;
+
+		case KEY_PAGE_DOWN:
+			if (scroll < max_scroll)
+			{
+				scroll += SCREEN_HEIGHT - 4;
+				if (scroll > max_scroll) scroll = max_scroll;
+				break;
+			}
+			continue;
+
+		default:
+			continue;
+		}
+
+		// update
+		putBlockWLFill(lines + scroll, SCREEN_HEIGHT - 2, 2, 1, SCREEN_WIDTH - 2);
+		fflush(stdout);
+	}
+	cvector_free(lines);
+}
+
 void showStoryDialog(const char title[], const char text[])
 {
 	drawBox(text, DIALOG_WIDTH, BORDER_SINGLE, &(struct _BoxOptions){
 		.title = title,
-			.color = ANSI_COLOR_YELLOW,
+			.color = COLOR_YELLOW,
 			.paddingX = DIALOG_PADDING_X,
 			.paddingY = DIALOG_PADDING_Y
 	});
@@ -470,7 +574,7 @@ enum ConfirmationDialogReturn showConfirmationDialog(const char* text)
 	Coord capture;
 	clearStdout();
 	struct _BoxOptions options = {
-		.color = ANSI_COLOR_RED,
+		.color = COLOR_RED,
 			.paddingX = DIALOG_PADDING_X,
 			.paddingY = DIALOG_PADDING_Y,
 			.captures = &capture
@@ -495,7 +599,7 @@ void showPromptDialog(const char text[], char* buffer, short buffer_size)
 
 	Coord capture;
 	drawBox(_text, DIALOG_WIDTH, BORDER_DOUBLE, &(struct _BoxOptions){
-		.color = ANSI_COLOR_YELLOW,
+		.color = COLOR_YELLOW,
 			.captures = &capture
 	});
 	setCursorPos(capture.x, capture.y);
@@ -559,9 +663,9 @@ void putBlockWL(struct WrapLine* lines, byte x, byte y, byte width)
 	cvector_free(lines);
 }
 
-void putBlockWLFill(struct WrapLine* lines, byte x, byte y, byte width)
+void putBlockWLFill(struct WrapLine* lines, byte count, byte x, byte y, byte width)
 {
-	for (byte i = 0; i < (byte)cvector_size(lines); i++)
+	for (byte i = 0; i < count; i++)
 	{
 		setCursorPos(x, y + i);
 		byte p;
@@ -594,8 +698,6 @@ void putBlockWLFill(struct WrapLine* lines, byte x, byte y, byte width)
 			break;
 		}
 	}
-
-	cvector_free(lines);
 }
 
 void indentLines(struct WrapLine* begin, struct WrapLine* end, const byte amount)

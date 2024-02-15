@@ -8,6 +8,7 @@ static.c
 store.c
 tui.c
 utils.c
+ansi_codes.c
 blackjack/game.c
 blackjack/card.c
 )

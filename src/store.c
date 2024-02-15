@@ -20,11 +20,10 @@ static struct WrapLine* showStoreCategory(struct WrapLine* lines, const struct S
 	return justifyLineWL(lines, text, text2, DIALOG_CONTENT_WIDTH);
 }
 
-static void showStoreCategoryMenu(struct StoreCategory* category, byte index, Coord input_pos)
+static void showStoreCategoryMenu(struct StoreCategory* category, byte index)
 {
 	struct StoreItem* item = category->items;
 	const struct StoreItem* items_end = &category->items[category->items_count];
-	float last_total_bill = total_bill - category->spent;
 	category->spent = 0;
 
 	const char question_start[] = "\n\nHow many "CONTROL_CHAR_STR;
@@ -57,11 +56,11 @@ static void showStoreCategoryMenu(struct StoreCategory* category, byte index, Co
 	sprintf(text2, "Bill so far: $%.2f", total_bill);
 	lines = addLine(lines, text2, WRAPLINEKIND_CENTER);
 
-	putsn(ANSI_SB_ALT);
+	
 	clearStdout();
 	drawBoxWL(lines, DIALOG_WIDTH, BORDER_DOUBLE, &(struct _BoxOptions){
 		.title = "Matt's General Store",
-			.color = ANSI_COLOR_BLUE,
+			.color = COLOR_BLUE,
 			.paddingX = DIALOG_PADDING_X
 	});
 	setCursorPos(captures[1].x + DIALOG_PADDING_X + 1, captures[1].y + DIALOG_PADDING_Y);
@@ -86,18 +85,7 @@ static void showStoreCategoryMenu(struct StoreCategory* category, byte index, Co
 		category->spent += item->price * item->amount;
 	}
 
-	putsn(ANSI_SB_MAIN);
-	// redraw
-	sprintf(text2, "   $%.2f", category->spent);
-	setCursorPos(5 + DIALOG_CONTENT_WIDTH - (int)strlen(text2), 5 + index);
-	putsn(text2);
-
-	total_bill = last_total_bill + category->spent;
-	sprintf(text2, "    Total bill: $%.2f", total_bill);
-	setCursorPos(5 + DIALOG_CONTENT_WIDTH - (int)strlen(text2), 6 + _countof(STORE_MATT_CATEGORIES));
-	putsn(text2);
-
-	workStore(input_pos);
+	showStore();
 }
 
 static void drawChoiceStore(byte index, bool selected)
@@ -117,7 +105,8 @@ static void showAlert(char text[])
 
 	addStaticLine(lines, "Press SPACE BAR to continue", WRAPLINEKIND_CENTER);
 
-	putBlockWLFill(lines, 5, 8 + _countof(STORE_MATT_CATEGORIES), DIALOG_CONTENT_WIDTH);
+	putBlockWLFill(lines, (byte)cvector_size(lines), 5, 8 + countof(STORE_MATT_CATEGORIES), DIALOG_CONTENT_WIDTH);
+	cvector_free(lines);
 	putsn(ANSI_CURSOR_HIDE);
 	fflush(stdout);
 	waitForKey(' ');
@@ -137,9 +126,10 @@ static void showAlert(char text[])
 	});
 	indentLines(cvector_end(lines) - added_lines_count, cvector_end(lines), INDENT_SIZE);
 	addStaticLine(lines, "Press SPACE BAR to leave store", WRAPLINEKIND_CENTER);
-	putBlockWLFill(lines, 5, 8 + _countof(STORE_MATT_CATEGORIES), DIALOG_CONTENT_WIDTH);
+	putBlockWLFill(lines, (byte)cvector_size(lines), 5, 8 + countof(STORE_MATT_CATEGORIES), DIALOG_CONTENT_WIDTH);
 	putsn(ANSI_CURSOR_SHOW);
 	fflush(stdout);
+	cvector_free(lines);
 }
 
 static enum QKeyCallbackReturn storeInputCallback(int key, va_list args)
@@ -150,7 +140,7 @@ static enum QKeyCallbackReturn storeInputCallback(int key, va_list args)
 	switch (key)
 	{
 	case KEY_ARROW_DOWN:
-		if (*cur_pos == _countof(STORE_MATT_CATEGORIES) - 1) break;
+		if (*cur_pos == countof(STORE_MATT_CATEGORIES) - 1) break;
 		if (*cur_pos != -1)
 			drawChoiceStore(*cur_pos, 0);
 		else
@@ -165,16 +155,16 @@ static enum QKeyCallbackReturn storeInputCallback(int key, va_list args)
 			drawChoiceStore(*cur_pos, 0);
 		else
 		{
-			*cur_pos = _countof(STORE_MATT_CATEGORIES);
+			*cur_pos = countof(STORE_MATT_CATEGORIES);
 			putsn(ANSI_CURSOR_HIDE);
 		}
 		drawChoiceStore(--*cur_pos, 1);
 		break;
 
 	case KEY_PAGE_DOWN:
-		if (*cur_pos == -1 || *cur_pos == _countof(STORE_MATT_CATEGORIES) - 1) break;
+		if (*cur_pos == -1 || *cur_pos == countof(STORE_MATT_CATEGORIES) - 1) break;
 		drawChoiceStore(*cur_pos, 0);
-		*cur_pos = _countof(STORE_MATT_CATEGORIES) - 1;
+		*cur_pos = countof(STORE_MATT_CATEGORIES) - 1;
 		drawChoiceStore(*cur_pos, 1);
 		break;
 
@@ -228,7 +218,7 @@ static enum QKeyCallbackReturn storeInputCallback(int key, va_list args)
 		{
 			drawChoiceStore(*cur_pos, 0);
 			putsn(ANSI_CURSOR_SHOW);
-			showStoreCategoryMenu(&STORE_MATT_CATEGORIES[*cur_pos], *cur_pos, end);
+			showStoreCategoryMenu(&STORE_MATT_CATEGORIES[*cur_pos], *cur_pos);
 			return QKEY_CALLBACK_RETURN_END;
 		}
 		break;
@@ -247,7 +237,7 @@ static enum QKeyCallbackReturn storeInputCallback(int key, va_list args)
 	return *cur_pos == -1 ? QKEY_CALLBACK_RETURN_NORMAL : QKEY_CALLBACK_RETURN_IGNORE;
 }
 
-Coord drawStore(void)
+void showStore(void)
 {
 	struct WrapLine* lines = NULL;
 	cvector_init(lines, 0, NULL);
@@ -261,7 +251,7 @@ Coord drawStore(void)
 
 	byte i = 0;
 	total_bill = 0.f;
-	while (i != _countof(STORE_MATT_CATEGORIES))
+	while (i != countof(STORE_MATT_CATEGORIES))
 	{
 		total_bill += STORE_MATT_CATEGORIES[i].spent;
 		lines = showStoreCategory(lines, &STORE_MATT_CATEGORIES[0], &i);
@@ -289,21 +279,18 @@ Coord drawStore(void)
 	drawBoxWL(lines, DIALOG_WIDTH, BORDER_DOUBLE, &(struct _BoxOptions){
 		.title = "Matt's General Store",
 			.paddingX = DIALOG_PADDING_X,
-			.color = "\033[38;5;94m"
+			.color = COLOR_CYAN//"\033[38;5;94m"
 	});
-	putsn(ANSI_CURSOR_SAVE);
 
 	capture.x += 1 + DIALOG_PADDING_X + INDENT_SIZE;
 	++capture.y;
-	return capture;
-}
-
-void workStore(Coord input_pos)
-{
-	setCursorPos(input_pos.x, input_pos.y);
+	
+	// work store
+	setCursorPos(capture.x, capture.y);
+	putsn(ANSI_CURSOR_SHOW);
 	fflush(stdout);
 	char cur_pos = -1;
-	const int choice = getNumberInput(1, _countof(STORE_MATT_CATEGORIES), 1, &storeInputCallback, &cur_pos, input_pos) - 1;
+	const int choice = getNumberInput(1, countof(STORE_MATT_CATEGORIES), 1, &storeInputCallback, &cur_pos, capture) - 1;
 	if (choice >= 0)
-		showStoreCategoryMenu(&STORE_MATT_CATEGORIES[choice], choice, input_pos);
+		showStoreCategoryMenu(&STORE_MATT_CATEGORIES[choice], choice);
 }

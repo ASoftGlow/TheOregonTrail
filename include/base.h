@@ -8,9 +8,7 @@ typedef struct {
 #ifndef NULL
 #define NULL ((void *)0)
 #endif
-#ifndef _countof
-#define _countof(a) (sizeof(a)/sizeof(a[0]))
-#endif
+#define countof(a) (sizeof(a)/sizeof(a[0]))
 #ifndef min
 #define min(a,b) (((a)<(b))?(a):(b))
 #define max(a,b) (((a)>(b))?(a):(b))

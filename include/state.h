@@ -74,6 +74,7 @@ struct MapMark
 
 enum StateStage
 {
+	STATE_STAGE_TUTORIAL = -1,
 	STATE_STAGE_NONE,
 	STATE_STAGE_START
 };

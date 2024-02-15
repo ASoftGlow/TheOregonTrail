@@ -1,15 +1,7 @@
 #pragma once
 #include "base.h"
 
-/*
- * @param input_pos - position to place cursor for input
- */
-void workStore(Coord input_pos);
-
-/*
- * @returns position to place cursor for input
- */
-Coord drawStore(void);
+void showStore(void);
 
 struct StoreItem
 {

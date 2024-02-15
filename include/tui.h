@@ -21,7 +21,7 @@ typedef struct _BoxOptions
 {
 	const char* title;
 	const int height;
-	const char* color;
+	const enum Color color;
 	const byte paddingX;
 	const byte paddingY;
 	Coord* captures;
@@ -33,7 +33,7 @@ typedef struct _DialogOptions
 {
 	const char* title;
 	const ChoiceDialogCallback callback;
-	const char* color;
+	const enum Color color;
 	const bool noPaddingY;
 } *DialogOptions;
 
@@ -72,6 +72,14 @@ enum ConfirmationDialogReturn
 	CONFIRMATION_DIALOG_NO,
 	CONFIRMATION_DIALOG_YES,
 	CONFIRMATION_DIALOG_QUIT = -1
+};
+
+struct StoryPage
+{
+	const char* title;
+	const char* text;
+	const char* music_path;
+	const enum Color border_color;
 };
 
 // @param options - is optional
@@ -124,6 +132,7 @@ void showChoiceDialog(const char* text, const struct ChoiceDialogChoice* choices
 void showChoiceDialogWL(struct WrapLine* lines, const struct ChoiceDialogChoice* choices, const int choices_size, const DialogOptions options);
 // Check for errno afterwards
 void showInfoDialog(const char title[], const char text[]);
+void showLongInfoDialog(const char title[], const char text[], enum Color border_color);
 void showStoryDialog(const char title[], const char text[]);
 enum ConfirmationDialogReturn showConfirmationDialog(const char* text);
 void showPromptDialog(const char text[], char* buffer, short buffer_size);
@@ -142,7 +151,7 @@ void putBlockWL(struct WrapLine* lines, byte x, byte y, byte width);
 /**
  * @brief Draws block of lines at <x> and <y> and fills background with whitespace
  */
-void putBlockWLFill(struct WrapLine* lines, byte x, byte y, byte width);
+void putBlockWLFill(struct WrapLine* lines, byte count, byte x, byte y, byte width);
 
 void indentLines(struct WrapLine* begin, struct WrapLine* end, const byte amount);
 
@@ -163,7 +172,7 @@ struct WrapLine* addLine(struct WrapLine* lines, const char* text, WrapLineKind 
 #define addStaticLine(lines, _text, _kind) \
 do { \
 	cvector_push_back_struct(lines); \
-	cvector_last(lines).client_length = (byte)sizeof(_text) - (byte)1; \
+	cvector_last(lines).client_length = (byte)_strlen_iae(_text); \
 	cvector_last(lines).length = (byte)sizeof(_text) - (byte)1; \
 	cvector_last(lines).kind = (_kind); \
 	memcpy(cvector_last(lines).text, (_text), sizeof(_text)); \

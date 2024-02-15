@@ -11,6 +11,7 @@
 #include "input.h"
 #include "utils.h"
 #include "ansi_codes.h"
+#include "state.h"
 
 bool IS_TTY;
 bool escape_combo = 0;
@@ -28,7 +29,7 @@ Coord getScreenSize(void)
 	return size;
 }
 
-void sleep(unsigned long ms)
+void tot_sleep(unsigned long ms)
 {
 	Sleep(ms);
 }
@@ -53,7 +54,7 @@ Coord getScreenSize(void)
 	return size;
 }
 
-void sleep(unsigned long ms)
+void tot_sleep(unsigned long ms)
 {
 	nanosleep((const struct timespec[]) {
 		{0, ms * 1000000L}
@@ -145,7 +146,8 @@ int getKeyInput(void)
 		enableInputWait();
 		if (ret > 0) return ret;
 #endif
-		if (escape_combo)
+		// TODO: consume escape
+		if (escape_combo && state.stage > 0)
 		{
 			escape_combo = 0;
 			return KEY_QUIT;
@@ -307,7 +309,7 @@ static enum QKeyCallbackReturn booleanInputCallback(int key, va_list args)
 	case 'F':
 
 	case '\b':
-	case '\n':
+	case ETR_CHAR:
 	case DEL_CHAR:
 		return QKEY_CALLBACK_RETURN_NORMAL;
 

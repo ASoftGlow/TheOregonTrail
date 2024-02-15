@@ -9,7 +9,7 @@ const Coord MAP_PATH1_COORDS[] = {
 };
 
 const Coord* MAP_PATHS[] = { &MAP_PATH1_COORDS[0] };
-const short MAP_PATH_LENGTHS[] = { _countof(MAP_PATH1_COORDS) };
+const short MAP_PATH_LENGTHS[] = { countof(MAP_PATH1_COORDS) };
 
 #define MAP_WIDTH 53
 const char MAP[][MAP_WIDTH] =
@@ -24,21 +24,31 @@ const char MAP[][MAP_WIDTH] =
 "8 /\\            ^        \\___  jdf djfdkf d f e  e ed",
 "9                            ________ ___ ff sdfoiwef"
 };
-#define MAP_HEIGHT _countof(MAP)
+#define MAP_HEIGHT countof(MAP)
 
 byte map_paths_order[] = { 0 };
 
-const char DENSITY_INDICATORS[][12] = {
+const char* DENSITY_INDICATORS[] = {
 	"x",
-	"\33[1m""x""\33[21m",
-	"�"
+	ANSI_BOLD"x"ANSI_NO_BOLD,
+	ANSI_BOLD"#"ANSI_NO_BOLD
 };
 
-#define INDICATOR(ch) ANSI_COLOR_GREEN ch ANSI_COLOR_RESET
+#define INDICATOR_COLOR ANSI_COLOR_GRAY
+#define INDICATOR(ch) INDICATOR_COLOR ch ANSI_COLOR_RESET
 const char
-* INDICATOR_UP = INDICATOR("^"),
-* INDICATOR_DOWN = INDICATOR("v"),
+#ifdef TOT_ASCII
+* INDICATOR_UP = "^",
+* INDICATOR_DOWN = "v",
 * INDICATOR_LEFT = INDICATOR("<"),
 * INDICATOR_RIGHT = INDICATOR(">"),
-* INDICATOR_SLANT_LEFT = INDICATOR("\\"),
-* INDICATOR_SLANT_RIGHT = INDICATOR("/");
+* INDICATOR_SLANT_LEFT = " ",
+* INDICATOR_SLANT_RIGHT = " ";
+#else
+* INDICATOR_UP = "\u2191",
+* INDICATOR_DOWN = "\u2193",
+* INDICATOR_LEFT = INDICATOR("\u2190"),
+* INDICATOR_RIGHT = INDICATOR("\u2192"),
+* INDICATOR_SLANT_LEFT = " ",
+* INDICATOR_SLANT_RIGHT = " ";
+#endif

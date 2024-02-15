@@ -1,5 +1,20 @@
 #pragma once
 
+enum Color
+{
+	COLOR_DEFAULT,
+	COLOR_RED,
+	COLOR_GREEN,
+	COLOR_YELLOW,
+	COLOR_BLUE,
+	COLOR_MAGENTA,
+	COLOR_CYAN,
+	COLOR_GRAY,
+	__COLOR_END
+};
+
+extern const char* ANSI_COLORS[__COLOR_END];
+
 #define ANSI_COLOR_RED         "\33[31m"
 #define ANSI_COLOR_GREEN       "\33[32m"
 #define ANSI_COLOR_YELLOW      "\33[33m"
@@ -23,6 +38,8 @@
 #define ANSI_BG_BROWN    "\33[48;5;94m"
 #define ANSI_DIM "\33[2m"
 #define ANSI_NO_DIM "\33[22m"
+#define ANSI_BOLD "\33[1m"
+#define ANSI_NO_BOLD "\33[21m"
 #define ANSI_UNDERLINE "\33[4m"
 #define ANSI_NO_UNDERLINE "\33[22m"
 #define ANSI_WINDOW_TITLE(title) "\33]0;"title"\33\\"

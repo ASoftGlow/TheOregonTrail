@@ -36,7 +36,10 @@ Coord getScreenSize(void);
 int getKeyInput(void);
 void waitForKey(int key);
 int getNumberInput(unsigned start, unsigned end, bool erase, const QKeyCallback key_callback, ...);
+// returns zero if success
 bool getStringInput(char* buffer, int min_len, int max_len, const QKeyCallback key_callback, ...);
 bool getBooleanInput(const QKeyCallback key_callback);
 
 extern bool IS_TTY;
+// Make sure to set back to false consume action and prevent double-escape combo from occurring early.
+extern bool escape_combo;

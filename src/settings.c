@@ -9,30 +9,34 @@
 #include "input.h"
 #include "utils.h"
 
-const char SETTING_TYPE_NAMES[][8] = {
+static const char SETTING_TYPE_NAMES[][8] = {
 	"number",
 	"boolean",
 	"string",
 	"path"
 };
 
+const nfdfilteritem_t SAVE_FILE_NFD_FILTER_ITEM = { "Binary data", "dat" };
+
 static void printFormattedSetting(struct Setting* setting)
 {
+	putsn(ANSI_BOLD);
 	switch (setting->type)
 	{
 	case SETTING_TYPE_NUMBER:
-		printf("%i\n", *(int*)setting->p);
+		printf("%i", *(int*)setting->p);
 		break;
 
 	case SETTING_TYPE_BOOLEAN:
-		puts(*(bool*)setting->p ? "True" : "False");
+		putsn(*(bool*)setting->p ? ANSI_COLOR_GREEN"True" : ANSI_COLOR_RED"False");
 		break;
 
 	case SETTING_TYPE_STRING:
 	case SETTING_TYPE_PATH:
-		puts(*(char*)setting->p ? (char*)setting->p : ANSI_COLOR_RED"Empty"ANSI_COLOR_RESET);
+		putsn(*(char*)setting->p ? (char*)setting->p : ANSI_COLOR_GRAY"Empty");
 		break;
 	}
+	puts(ANSI_COLOR_RESET);
 }
 
 struct Setting* gp_settings;
@@ -51,6 +55,7 @@ static enum QKeyCallbackReturn settingInputCallback(int key, va_list args)
 	if (key == ESC_CHAR)
 	{
 		do_exit = 1;
+		escape_combo = 0;
 		return QKEY_CALLBACK_RETURN_END;
 	}
 	return QKEY_CALLBACK_RETURN_NORMAL;
@@ -87,11 +92,14 @@ void settingCallback(const struct ChoiceDialogChoice* choice, const int index)
 			if (getStringInput(buffer, 0, sizeof(buffer), settingInputCallback)) goto skip;
 			memcpy(gp_settings[index].p, buffer, sizeof(buffer));
 		}
+#ifndef TOT_TTY
 		else
 		{
 			nfdchar_t* out_path;
-			nfdfilteritem_t filter_items[1] = { { "Binary data", "dat" } };
-			nfdresult_t result = NFD_SaveDialog(&out_path, filter_items, 1, NULL, "save");
+			putsn(ANSI_CURSOR_HIDE);
+			fflush(stdout);
+			nfdresult_t result = NFD_SaveDialog(&out_path, &SAVE_FILE_NFD_FILTER_ITEM, 1, NULL, "save");
+			putsn(ANSI_CURSOR_SHOW);
 			if (result == NFD_OKAY)
 			{
 				strcpy((char*)gp_settings[index].p, out_path);
@@ -102,12 +110,14 @@ void settingCallback(const struct ChoiceDialogChoice* choice, const int index)
 				goto skip;
 			}
 		}
+#endif
 	}
 	break;
 
 	case SETTING_TYPE_BOOLEAN:
 		do_exit = 0;
 		bool b = getBooleanInput(settingInputCallback);
+		if (HALT) return;
 		if (do_exit) break;
 		*(bool*)gp_settings[index].p = b;
 		break;
@@ -115,6 +125,7 @@ void settingCallback(const struct ChoiceDialogChoice* choice, const int index)
 	if (gp_settings[index].callback) gp_settings[index].callback();
 	saveSettings();
 skip:
+	if (HALT) return;
 	showChoiceDialog("Compiled "__DATE__, gp_dialog_choices, gp_dialog_choices_count, &dialog_options);
 }
 

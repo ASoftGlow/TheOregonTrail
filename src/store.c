@@ -1,5 +1,4 @@
 #include <ctype.h>
-#include <errno.h>
 #include "cvector.h"
 
 #include "store.h"
@@ -56,7 +55,7 @@ static void showStoreCategoryMenu(struct StoreCategory* category, byte index)
 	sprintf(text2, "Bill so far: $%.2f", total_bill);
 	lines = addLine(lines, text2, WRAPLINEKIND_CENTER);
 
-	
+
 	clearStdout();
 	drawBoxWL(lines, DIALOG_WIDTH, BORDER_DOUBLE, &(struct _BoxOptions){
 		.title = "Matt's General Store",
@@ -81,7 +80,7 @@ static void showStoreCategoryMenu(struct StoreCategory* category, byte index)
 
 	get_input:
 		item->amount = getNumberInput(item->min, item->max, 1, NULL);
-		if (item->amount < 0) return;
+		if (item->amount == (unsigned)-1) return;
 		category->spent += item->price * item->amount;
 	}
 
@@ -110,7 +109,7 @@ static void showAlert(char text[])
 	putsn(ANSI_CURSOR_HIDE);
 	fflush(stdout);
 	waitForKey(' ');
-	if (errno) return;
+	if (HALT) return;
 
 	lines = NULL;
 	cvector_init(lines, 0, 0);
@@ -186,6 +185,7 @@ static enum QKeyCallbackReturn storeInputCallback(int key, va_list args)
 			char text[116];
 			sprintf(text, "Okay, that comes to a total of $%.2f, but I see you only have $%.2f. We'd better go over the list again.\n", total_bill, state.money);
 			showAlert(text);
+			if (HALT) return QKEY_CALLBACK_RETURN_END;
 			setCursorPos(end.x, end.y);
 			fflush(stdout);
 			return QKEY_CALLBACK_RETURN_IGNORE;
@@ -194,6 +194,7 @@ static enum QKeyCallbackReturn storeInputCallback(int key, va_list args)
 		else if (STORE_MATT_CATEGORIES[0].items[0].amount == 0)
 		{
 			showAlert("Don't forget, you'll need oxen to pull your wagon.\n\n\n");
+			if (HALT) return QKEY_CALLBACK_RETURN_END;
 			setCursorPos(end.x, end.y);
 			fflush(stdout);
 			return QKEY_CALLBACK_RETURN_IGNORE;
@@ -216,7 +217,6 @@ static enum QKeyCallbackReturn storeInputCallback(int key, va_list args)
 	case ETR_CHAR:
 		if (*cur_pos != -1)
 		{
-			drawChoiceStore(*cur_pos, 0);
 			putsn(ANSI_CURSOR_SHOW);
 			showStoreCategoryMenu(&STORE_MATT_CATEGORIES[*cur_pos], *cur_pos);
 			return QKEY_CALLBACK_RETURN_END;
@@ -231,6 +231,7 @@ static enum QKeyCallbackReturn storeInputCallback(int key, va_list args)
 			setCursorPos(end.x, end.y);
 			putsn(ANSI_CURSOR_SHOW);
 			fflush(stdout);
+			escape_combo = 0;
 		}
 		break;
 	}
@@ -284,13 +285,13 @@ void showStore(void)
 
 	capture.x += 1 + DIALOG_PADDING_X + INDENT_SIZE;
 	++capture.y;
-	
+
 	// work store
 	setCursorPos(capture.x, capture.y);
 	putsn(ANSI_CURSOR_SHOW);
 	fflush(stdout);
 	char cur_pos = -1;
 	const int choice = getNumberInput(1, countof(STORE_MATT_CATEGORIES), 1, &storeInputCallback, &cur_pos, capture) - 1;
-	if (choice >= 0)
-		showStoreCategoryMenu(&STORE_MATT_CATEGORIES[choice], choice);
+	if (choice < 0) return;
+	showStoreCategoryMenu(&STORE_MATT_CATEGORIES[choice], choice);
 }

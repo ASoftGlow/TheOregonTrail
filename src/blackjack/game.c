@@ -126,6 +126,8 @@ input_loop:
 		fflush(stdout);
 		goto input_loop;
 
+	case KEY_QUIT:
+	case KEY_QUIT_ALL:
 	case 'q':
 	case 'Q':
 		return BLACKJACK_GAME_QUIT;

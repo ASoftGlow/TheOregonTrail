@@ -16,9 +16,9 @@ struct Settings settings = {
 	0,
 	.auto_save_path = "save.dat",
 	.screen_width = 40,
-	.screen_height = 7
+	.screen_height = 16
 };
-
+	
 bool saveSettings(void)
 {
 	errno = 0;
@@ -92,10 +92,12 @@ void updateScreenSize()
 	if (settings.screen_height < MIN_SCREEN_HEIGHT) settings.screen_height = MIN_SCREEN_HEIGHT;
 	if (settings.screen_height > MAX_SCREEN_HEIGHT) settings.screen_height = MAX_SCREEN_HEIGHT;
 
+	fflush(stdout);
 	printf("\33[8;%i;%it", SCREEN_HEIGHT, SCREEN_WIDTH);
+	fflush(stdout);
 
 	SCREEN_WIDTH = settings.screen_width;
 	SCREEN_HEIGHT = settings.screen_height;
-	DIALOG_CONTENT_WIDTH = DIALOG_WIDTH - DIALOG_PADDING_X * 2;
+	DIALOG_CONTENT_WIDTH = DIALOG_WIDTH - DIALOG_PADDING_X * 2 - 2;
 	MAP_VIEWPORT_HEIGHT = SCREEN_HEIGHT - 2;
 }

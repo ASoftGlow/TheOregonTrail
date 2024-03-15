@@ -20,6 +20,8 @@ struct Setting
 	unsigned min, max;
 };
 
+extern const nfdfilteritem_t SAVE_FILE_NFD_FILTER_ITEM;
+
 void showSettings(struct Setting* settings, byte settings_count);
 void settingCallback(const struct ChoiceDialogChoice* choice, const int index);
 void autoSave(void);

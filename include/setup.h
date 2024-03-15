@@ -5,6 +5,9 @@
 #ifndef TOT_TTY
 #include "nfd.h"
 #endif
+#ifndef TOT_MUTE
+#include "music.h"
+#endif
 
 #include "utils.h"
 #include "ansi_codes.h"
@@ -54,7 +57,7 @@ static inline void setupLinux(void)
 #endif
 
 
-void setup(void)
+bool setup(void)
 {
 #ifdef _WIN32
 	setupWin();
@@ -65,8 +68,7 @@ void setup(void)
 #endif
 #ifdef TOT_TTY
 	IS_TTY = 1;
-#endif
-
+#else
 	if (!IS_TTY)
 	{
 		if (!NFD_Init())
@@ -75,6 +77,11 @@ void setup(void)
 			IS_TTY = 1;
 		}
 	}
+#endif
+
+#ifndef TOT_MUTE
+	if (music_setup()) return 1;
+#endif
 
 	srand((unsigned)time(NULL));
 
@@ -86,6 +93,7 @@ void setup(void)
 		ANSI_SB_ALT
 		ANSI_CURSOR_STYLE_UNDERLINE ANSI_CURSOR_SHOW ANSI_WINDOW_TITLE("Oregon Trail") ANSI_NO_WRAP
 	);
+	return 0;
 }
 
 void setdown(void)
@@ -96,5 +104,12 @@ void setdown(void)
 #ifndef _WIN32
 	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 #endif
+#ifndef TOT_TTY
 	NFD_Quit();
+#endif
+#ifndef TOT_MUTE
+	music_setdown();
+#endif
+
+	if (EXIT_MSG) puts(EXIT_MSG);
 }

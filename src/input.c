@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <errno.h>
 #ifdef _WIN32
 #include <conio.h>
 #define tot_getchar() _getch()
@@ -11,7 +10,6 @@
 #include "input.h"
 #include "utils.h"
 #include "ansi_codes.h"
-#include "state.h"
 
 bool IS_TTY;
 bool escape_combo = 0;
@@ -81,6 +79,7 @@ int getKeyInput(void)
 	// EOF
 	if (key < 0)
 	{
+		HALT = HALT_QUIT;
 		return KEY_QUIT_ALL;
 	}
 
@@ -88,7 +87,7 @@ int getKeyInput(void)
 	{
 	case 3:
 	case 4:
-		errno = ECANCELED;
+		HALT = HALT_QUIT;
 		return KEY_QUIT_ALL;
 
 	case 0:
@@ -146,10 +145,10 @@ int getKeyInput(void)
 		enableInputWait();
 		if (ret > 0) return ret;
 #endif
-		// TODO: consume escape
-		if (escape_combo && state.stage > 0)
+		if (escape_combo)
 		{
 			escape_combo = 0;
+			HALT = HALT_GAME;
 			return KEY_QUIT;
 		}
 		escape_combo = 1;
@@ -181,6 +180,7 @@ int getNumberInput(unsigned start, unsigned end, bool erase, const QKeyCallback 
 	while (1)
 	{
 		key = getKeyInput();
+		if (KEY_IS_TERMINATING(key)) return -1;
 		if (key_callback)
 		{
 			va_list argptr;
@@ -197,7 +197,6 @@ int getNumberInput(unsigned start, unsigned end, bool erase, const QKeyCallback 
 		}
 		// enter pressed
 		if (key == ETR_CHAR && i) break;
-		if (KEY_IS_TERMINATING(key)) return -1;
 
 		switch (key)
 		{
@@ -246,6 +245,7 @@ bool getStringInput(char* buffer, int min_len, int max_len, const QKeyCallback k
 	while (1)
 	{
 		key = getKeyInput();
+		if (KEY_IS_TERMINATING(key)) return -1;
 		if (key_callback)
 		{
 			va_list argptr;
@@ -256,8 +256,11 @@ bool getStringInput(char* buffer, int min_len, int max_len, const QKeyCallback k
 			if (ret == QKEY_CALLBACK_RETURN_END) break;
 		}
 
-		if (key == ETR_CHAR && i >= min_len) break;
-		if (KEY_IS_TERMINATING(key)) return -1;
+		if (key == ETR_CHAR)
+		{
+			if (i >= min_len) break;
+			continue;
+		}
 
 		switch (key)
 		{
@@ -292,7 +295,6 @@ static enum QKeyCallbackReturn booleanInputCallback(int key, va_list args)
 {
 	const QKeyCallback callback = va_arg(args, const QKeyCallback);
 
-	if (KEY_IS_TERMINATING(key)) return QKEY_CALLBACK_RETURN_END;
 	if (KEY_IS_ARROWS(key)) return QKEY_CALLBACK_RETURN_NORMAL;
 
 	switch (key)

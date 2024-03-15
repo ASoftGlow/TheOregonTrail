@@ -2,9 +2,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-#include <errno.h>
 #include "cvector.h"
+#ifndef TOT_TTY
 #include "nfd.h"
+#endif
 
 #include "main.h"
 #include "base.h"
@@ -22,19 +23,15 @@ void showMainMenu(void);
 void showMonth(void);
 void showRole(void);
 void showSavePrompt(void);
-void ShowStory(struct StoryPage* pages, size_t count);
 
 #define DEBUG_SAVE_PATH "../../resources/save.dat"
 
 void showSavePrompt(void)
 {
-	switch (showConfirmationDialog("Would you like to save? "CONTROL_CHAR_STR))
+	bool result = showConfirmationDialog("Would you like to save? "CONTROL_CHAR_STR);
+	if (HALT) return;
+	if (result)
 	{
-	case CONFIRMATION_DIALOG_QUIT:
-	case CONFIRMATION_DIALOG_NO:
-		return;
-
-	case CONFIRMATION_DIALOG_YES:
 #ifndef _DEBUG
 		saveState(DEBUG_SAVE_PATH);
 #else
@@ -47,11 +44,11 @@ void showSavePrompt(void)
 			if (getStringInput(path, 0, sizeof(path), NULL)) return;
 			if (path) saveState(path);
 		}
+#ifndef TOT_TTY
 		else
 		{
 			nfdchar_t* out_path;
-			nfdfilteritem_t filter_items[1] = { { "Binary data", "dat" } };
-			nfdresult_t result = NFD_SaveDialog(&out_path, filter_items, 1, NULL, "save");
+			nfdresult_t result = NFD_SaveDialog(&out_path, &SAVE_FILE_NFD_FILTER_ITEM, 1, NULL, "save");
 			if (result == NFD_OKAY)
 			{
 				saveState(out_path);
@@ -59,7 +56,7 @@ void showSavePrompt(void)
 			}
 		}
 #endif
-		break;
+#endif
 	}
 }
 
@@ -94,6 +91,7 @@ static void formatDate(char* buffer)
 static declare_choice_callback(map)
 {
 	showMap();
+	if (HALT) return;
 	showMain();
 }
 
@@ -181,33 +179,45 @@ void showMain(void)
 	});
 }
 
+const struct StoryPage intro_story[] = {
+	{.title = "Dim morning", .text = "You wander into Independence as the weak sun breaks the horizon, horse in toe. The journey has here was tiresome, but in reality, this was just the beginning. Ahead, a stout man leans against a post beside the road."},
+	{.title = "Meeting", .text = "\"Ho!\" exclaims the man, \"What brings you to Independence?\""}
+};
+
 static declare_choice_callback_g(month)
 {
 	state.month = index;
 
-
+	showStoryDialog(intro_story, countof(intro_story));
+	if (HALT) return;
+	struct ChoiceDialogChoice choices[] = {
+		{.name = (char[32]){0}},
+		{.name = "\"Mind your own hoppin' business!\""}
+	};
+	sprintf(choices[0].name, "\"My name is %s.\"", state.wagon_leader->name);
+	putsn(ANSI_CURSOR_SHOW);
+	showChoiceDialog("What are you doing?", choices, countof(choices), NULL);
+	if (HALT) return;
 
 	char text[256];
 
 	sprintf(text, "Before leaving Independence you should buy equipment and supplies. You have $%.2f in cash, but you don't have to spend it all now.", state.money);
 	showInfoDialog(NULL, text);
-	if (errno) return;
+	if (HALT) return;
 	showInfoDialog(NULL, "You can buy whatever you need at Matt's General Store.");
-	if (errno) return;
-#define matt_greeting "Hello, I'm Matt. So you're going to Oregon! I can fix you up with what you need:\n\n"
-	showInfoDialog("Meet Matt", matt_greeting TAB"- a team of oxen to pull\n"TAB"  your wagon\n\n"TAB"- clothing for both\n"TAB"  summer and winter");
-	if (errno) return;
-	showInfoDialog("Meet Matt", matt_greeting TAB"- plenty of food for the\n"TAB"  trip\n\n"TAB"- ammunition for your\n"TAB"  rifles\n\n"TAB"- spare parts for your\n"TAB"  wagon");
-	if (errno) return;
+	if (HALT) return;
+	showLongInfoDialog("Meet Matt", "Hello, I'm Matt. So you're going to Oregon! I can fix you up with what you need:\n\n" TAB"- plenty of food for the\n"TAB"  trip\n\n"TAB"- ammunition for your\n"TAB"  rifles\n\n"TAB"- spare parts for your\n"TAB"  wagon\n"TAB"- a team of oxen to pull\n"TAB"  your wagon\n\n"TAB"- clothing for both\n"TAB"  summer and winter", COLOR_YELLOW);
+	if (HALT) return;
 #undef matt_greeting
-	
+
 	// set location
 	strcpy(state.location, "Independence, Missouri");
 
 	showStore();
+	if (HALT) return;
 
 	showInfoDialog("Parting with Matt", "Well then, you're ready to go. Good luck! You have a long and difficult journey ahead of you.");
-	if (errno) return;
+	if (HALT) return;
 	state.stage = STATE_STAGE_START;
 	autoSave();
 	showMain();
@@ -216,7 +226,7 @@ static declare_choice_callback_g(month)
 static declare_choice_callback(month_advice)
 {
 	showInfoDialog("Month Info", "You attend a public meeting held for \"folks with the California - Oregon fever.\" You're told:\n\nIf you leave too early, there won't be any grass for your oxen to eat. If you leave too late, you may not get to Oregon before winter comes. If you leave at just the right time, there will be green grass and the weather will still be cool.");
-	if (errno) return;
+	if (HALT) return;
 	showMonth();
 }
 
@@ -239,15 +249,13 @@ void showMonth(void)
 
 static declare_choice_callback(role_learn)
 {
-	showInfoDialog("Role Info", "Traveling to Oregon isn't easy! But if you're a banker, you'll have more money for supplies and services than a carpenter or a farmer.\n\nHowever, the harder you have to try, the more points you deserve! Therefore, the farmer earns the greatest number of points and the banker earns the least.");
-	if (errno) return;
+	showLongInfoDialog("Role Info", "Traveling to Oregon isn't easy! But if you're a banker, you'll have more money for supplies and services than a carpenter or a farmer.\n\nHowever, the harder you have to try, the more points you deserve! Therefore, the farmer earns the greatest number of points and the banker earns the least.", COLOR_DEFAULT);
+	if (HALT) return;
 	showRole();
 }
 
 static enum QKeyCallbackReturn nameInputCallback(int key, va_list args)
 {
-	if (KEY_IS_TERMINATING(key)) return QKEY_CALLBACK_RETURN_END;
-
 	if (key == '\b' || key == ETR_CHAR || key == DEL_CHAR || key == ' ' || key == '\'' || (KEY_IS_NORMAL(key) && isalpha(key))) return QKEY_CALLBACK_RETURN_NORMAL;
 	return QKEY_CALLBACK_RETURN_IGNORE;
 }
@@ -312,11 +320,11 @@ static declare_choice_callback(main_load)
 	{
 		showPromptDialog("Enter path to previous save file:", path, sizeof(path));
 	}
+#ifndef TOT_TTY
 	else
 	{
 		nfdchar_t* out_path;
-		nfdfilteritem_t filter_items[1] = { { "Binary data", "dat" } };
-		nfdresult_t result = NFD_OpenDialog(&out_path, filter_items, 1, NULL);
+		nfdresult_t result = NFD_OpenDialog(&out_path, &SAVE_FILE_NFD_FILTER_ITEM, 1, NULL);
 		if (result == NFD_OKAY)
 		{
 			strcpy(path, out_path);
@@ -333,9 +341,12 @@ static declare_choice_callback(main_load)
 		}
 	}
 #endif
+#endif
 	if (!loadState(path))
 	{
-	error:
+#ifndef _DEBUG
+		error :
+#endif
 		showErrorDialog("Error loading save");
 		showMainMenu();
 	}
@@ -353,19 +364,20 @@ struct Setting main_settings[] = {
 static declare_choice_callback(settings)
 {
 	showSettings(main_settings, countof(main_settings));
+	if (HALT == HALT_QUIT) return;
 	showMainMenu();
 }
 
 static declare_choice_callback(main_learn)
 {
 	showInfoDialog("Oregon Trail Info", "idk lol\n\n\n");
-	if (errno) return;
+	if (HALT == HALT_QUIT) return;
 	showMainMenu();
 }
 
 static declare_choice_callback(main_exit)
 {
-	errno = ENOENT;
+	HALT = HALT_QUIT;
 }
 
 const struct ChoiceDialogChoice main_choices[] = {
@@ -382,53 +394,49 @@ void showMainMenu(void)
 	});
 }
 
-void ShowStory(struct StoryPage* pages, size_t count)
-{
-	for (size_t i = 0; i < count; i++)
-	{
-		if (pages[i].music_path)
-		{
-			//musicStop(current_music);
-			//musicStart(pages[i].music_path);
-		}
-		showLongInfoDialog(pages[i].title, pages[i].text, pages[i].border_color);
-	}
-}
-
 const struct ChoiceDialogChoice tutorial_choices[] = {
 	{"Press one then enter"},
 	{"Or up or down arrows, then enter"},
 	{"Page up and down also work while selecting"}
 };
 
+
+
 int main(void)
 {
-	setup();
+	if (setup()) goto error;
 
 	loadSettings();
-
-	//showLongInfoDialog("test", "How shall I write of my mother? She is so near to me that it almost seems indelicate to speak of her.  For a long time I regarded my little sister as an intruder. I knew that I had ceased to be my mother's only darling, and the thought filled me with jealousy. She sat in my mother's lap constantly, where I used to sit, and seemed to take up all her care and time. One day something happened which seemed to me to be adding insult to injury.  At that time I had a much-petted, much-abused doll, which I afterward named Nancy. She was, alas, the helpless victim of my outbursts of temper and of affection, so that she became much the worse for wear. I had dolls which talked, and cried, and opened and shut their eyes; yet I never loved one of them as I loved poor Nancy. She had a cradle, and I often spent an hour or more rocking her. I guarded both doll and cradle with the most jealous care; but once I discovered my little sister sleeping peacefully in the cradle. At this presumption on the part of one to whom as yet no tie of love bound me I grew angry. I rushed upon the cradle and over-turned it, and the baby might have been killed had my mother not caught her as she fell. Thus it is that when we walk in the valley of twofold solitude we know little of the tender affections that grow out of endearing words and actions and companionship. But afterward, when I was restored to my human heritage, Mildred and I grew into each other's hearts, so that we were content to go hand-in-hand wherever caprice led us, although she could not understand my finger language, nor I her childish prattle.", 0);
 
 	if (!settings.no_tutorials)
 	{
 		state.stage = STATE_STAGE_TUTORIAL;
-		showChoiceDialog("Here is a choice dialog:\n\nPress escape once to exit selection mode, and twice to exit a game.", tutorial_choices, countof(tutorial_choices), NULL);
+		showChoiceDialog("Here is a choice dialog:\n\nPress escape once to exit choice selection mode, and twice to exit a game.", tutorial_choices, countof(tutorial_choices), NULL);
+		if (HALT == HALT_QUIT) goto error;
 		settings.no_tutorials = 1;
 		saveSettings();
 		state.stage = STATE_STAGE_NONE;
 	}
 
+	//if (music_play("C:/Users/hankv/Code/C/Project1/resources/sample.wav")) goto error;
+
 	while (1)
 	{
 		showMainMenu();
 
-		if (errno) break;
-		if (state.stage)
+		if (HALT == HALT_QUIT) break;
+		if (HALT == HALT_GAME)
 		{
-			showSavePrompt();
+			HALT = HALT_NONE;
 			state.stage = STATE_STAGE_NONE;
+			if (state.stage)
+			{
+				showSavePrompt();
+				if (HALT == HALT_QUIT) break;
+			}
 		}
 	}
 
+error:
 	setdown();
 }

@@ -33,4 +33,5 @@ cmake --build .
 
 ## Static Libraries
 - [Native File Dialog Extended](https://github.com/btzy/nativefiledialog-extended) ([dependencies](https://github.com/btzy/nativefiledialog-extended?tab=readme-ov-file#dependencies))
-- [SFML](https://github.com/SFML/CSFML) ([dependencies](https://www.sfml-dev.org/tutorials/2.6/compile-with-cmake.php#installing-dependencies))
+- [PortAudio](https://github.com/PortAudio/portaudio)
+- [libsnfile](https://github.com/libsndfile/libsndfile)

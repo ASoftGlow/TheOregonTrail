@@ -22,10 +22,16 @@
 #define DECK_SIZE 52
 #define LARGEST_HAND 11
 
+#define SUIT_COLOR_RED "\33[31;47m"
+#define SUIT_COLOR_BLACK "\33[30;47m"
+
 typedef struct
 {
 	byte type, suit;
 } Card;
 
+typedef byte CardBackStyle;
+
 void drawCard(Card card, byte x, byte y);
-void drawCardBack(byte x, byte y);
+void drawCardBack(byte x, byte y, CardBackStyle style);
+CardBackStyle chooseCardBackStyle(void);

@@ -48,15 +48,3 @@ size_t _strlen_iae(const char* str)
 	}
 	return len;
 }
-
-// https://benpfaff.org/writings/clc/shuffle.html
-void shuffle(short* array, int size)
-{
-	for (int i = 0; i < size - 1; i++)
-	{
-		int j = i + rand() / (RAND_MAX / (size - i) + 1);
-		short t = array[j];
-		array[j] = array[i];
-		array[i] = t;
-	}
-}

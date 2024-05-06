@@ -1,6 +1,14 @@
 [submodule "lib/nativefiledialog-extended"]
 	path = lib/nativefiledialog-extended
 	url = https://github.com/btzy/nativefiledialog-extended.git
-[submodule "lib/CSFML"]
-	path = lib/CSFML
-	url = https://github.com/SFML/CSFML.git
+[submodule "lib/portaudio"]
+	path = lib/portaudio
+	url = https://github.com/PortAudio/portaudio.git
+[submodule "lib/libsndfile"]
+	path = lib/libsndfile
+	url = https://github.com/libsndfile/libsndfile.git
+[submodule "lib/discord-rpc"]
+	path = lib/discord-rpc
+	url = https://github.com/ASoftGlow/discord-rpc.git
+[submodule "lib\\discord-rpc"]
+	url = https://github.com/ASoftGlow/discord-rpc.git

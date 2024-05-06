@@ -1,4 +1,6 @@
 #pragma once
+#include <stddef.h>
+
 #include "base.h"
 #include "ansi_codes.h"
 
@@ -20,21 +22,21 @@ enum BorderStyle
 typedef struct _BoxOptions
 {
 	const char* title;
-	const int height;
-	const enum Color color;
-	const byte paddingX;
-	const byte paddingY;
+	int height;
+	enum Color color;
+	byte paddingX;
+	byte paddingY;
 	Coord* captures;
 	byte captures_count;
-	const bool do_not_free;
+	bool do_not_free;
 } *BoxOptions;
 
 typedef struct _DialogOptions
 {
-	const char* title;
-	const ChoiceDialogCallback callback;
-	const enum Color color;
-	const bool noPaddingY;
+	char* title;
+	ChoiceDialogCallback callback;
+	enum Color color;
+	bool noPaddingY;
 } *DialogOptions;
 
 typedef byte WrapLineKind;
@@ -67,13 +69,6 @@ struct _ChoiceInfo
 	byte start, end;
 };
 
-enum ConfirmationDialogReturn
-{
-	CONFIRMATION_DIALOG_NO,
-	CONFIRMATION_DIALOG_YES,
-	CONFIRMATION_DIALOG_QUIT = -1
-};
-
 struct StoryPage
 {
 	const char* title;
@@ -83,7 +78,7 @@ struct StoryPage
 };
 
 // @param options - is optional
-struct WrapLine* wrapText(const char* text, int width, const WrapLineOptions options);
+struct WrapLine* wrapText(const char* text, int width, WrapLineOptions options);
 
 /**
  * @brief Convert a string to a single line
@@ -103,38 +98,37 @@ struct WrapLine* textToLinesWL(struct WrapLine* lines, const char* text);
  * @param options - is optional
  * @returns a new cvector of lines
  */
-struct WrapLine* wrapBox(const char* text, const int width, const BoxOptions options);
+struct WrapLine* wrapBox(const char* text, int width, const BoxOptions options);
 
 /**
  * @brief Wraps <text>, applies a border, and draws it
  * @param border - possible values: BORDER_SINGLE, BORDER_DOUBLE
  * @param options - is optional
  */
-void drawBox(const char* text, const int width, const enum BorderStyle border, const BoxOptions options);
+void drawBox(char* text, int width, enum BorderStyle border, BoxOptions options);
 
 /**
  * @brief Applies a border to <lines> and draws it
  * @param border - possible values: BORDER_SINGLE, BORDER_DOUBLE
  * @param options - is optional
  */
-void drawBoxWL(struct WrapLine* lines, const int width, const enum BorderStyle border, const BoxOptions options);
+void drawBoxWL(struct WrapLine* lines, int width, enum BorderStyle border, BoxOptions options);
 
 /**
  * @brief Wraps <text>
  * @param options - is optional
  */
-void showChoiceDialog(const char* text, const struct ChoiceDialogChoice* choices, const int choices_size, const DialogOptions options);
+void showChoiceDialog(const char* text, const struct ChoiceDialogChoice* choices, int choices_size, DialogOptions options);
 
 /**
  * @brief Uses cvector of lines
  * @param options - is optional
  */
-void showChoiceDialogWL(struct WrapLine* lines, const struct ChoiceDialogChoice* choices, const int choices_size, const DialogOptions options);
-// Check for errno afterwards
+void showChoiceDialogWL(struct WrapLine* lines, const struct ChoiceDialogChoice* choices, int choices_size, DialogOptions options);
 void showInfoDialog(const char title[], const char text[]);
 void showLongInfoDialog(const char title[], const char text[], enum Color border_color);
-void showStoryDialog(const char title[], const char text[]);
-enum ConfirmationDialogReturn showConfirmationDialog(const char* text);
+void showStoryDialog(const struct StoryPage* const pages, size_t count);
+bool showConfirmationDialog(char* text);
 void showPromptDialog(const char text[], char* buffer, short buffer_size);
 void showErrorDialog(const char* context);
 
@@ -179,7 +173,7 @@ do { \
 } while (0)
 
  // box drawing chars
- #ifdef TOT_ASCII
+#ifdef TOT_ASCII
 #define BOX_CHAR_D_DR   '@'
 #define BOX_CHAR_D_DL   '@'
 #define BOX_CHAR_D_H    '='

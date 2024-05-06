@@ -1,10 +1,22 @@
 #pragma once
 
+#include <stdbool.h>
+#include <assert.h>
+
 typedef unsigned char byte;
-typedef byte bool;
 typedef struct {
 	byte x, y;
 } Coord;
+enum HaltType
+{
+	HALT_NONE,
+	HALT_GAME,
+	HALT_QUIT
+};
+
+extern enum HaltType HALT;
+extern const char* EXIT_MSG;
+
 #ifndef NULL
 #define NULL ((void *)0)
 #endif

@@ -1,15 +1,17 @@
+#include <stdlib.h>
+
 #include "blackjack/game.h"
 #include "blackjack/card.h"
-#include "utils.h"
 #include "input.h"
 #include "tui.h"
 #include "state.h"
+#include "utils.h"
 
 #define PTD 2
 #define PTH 5
 #define PL 2
 
-static const byte CARD_POINTS[] = {
+const byte CARD_POINTS[] = {
 	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10
 };
 
@@ -19,16 +21,28 @@ Card deck[DECK_SIZE] = {
 	{0,2}, {1,2}, {2,2}, {3,2}, {4,2}, {5,2}, {6,2}, {7,2}, {8,2}, {9,2}, {10,2}, {11,2}, {12,2},
 	{0,3}, {1,3}, {2,3}, {3,3}, {4,3}, {5,3}, {6,3}, {7,3}, {8,3}, {9,3}, {10,3}, {11,3}, {12,3}
 };
+typedef Card Deck[DECK_SIZE];
 byte deck_i;
 
 Card hand[LARGEST_HAND];
-byte hand_i;
-byte points;
+byte hand_i, points;
 bool has_ace;
 byte doubled_down;
 Card dealer_hand[LARGEST_HAND];
-byte dealer_hand_i;
-byte dealer_points;
+byte dealer_hand_i, dealer_points;
+CardBackStyle style;
+
+// https://benpfaff.org/writings/clc/shuffle.html
+static void shuffle(Deck deck, int size)
+{
+	for (int i = 0; i < size - 1; i++)
+	{
+		int j = i + rand() / (RAND_MAX / (size - i) + 1);
+		Card t = deck[j];
+		deck[j] = deck[i];
+		deck[i] = t;
+	}
+}
 
 static void dealCard(void)
 {
@@ -43,7 +57,7 @@ static void dealCardToDealer(bool hidden)
 	tot_sleep(300);
 	dealer_hand[++dealer_hand_i] = deck[++deck_i];
 	if (hidden)
-		drawCardBack(PL + 3 * dealer_hand_i, PTD);
+		drawCardBack(PL + 3 * dealer_hand_i, PTD, style);
 	else
 		drawCard(dealer_hand[dealer_hand_i], PL + 3 * dealer_hand_i, PTD);
 	if (dealer_hand[dealer_hand_i].type == CARD_ACE)
@@ -55,13 +69,34 @@ static void dealCardToDealer(bool hidden)
 
 static void grayOptions(void)
 {
-	putsn(ANSI_COLOR_GRAY ANSI_CURSOR_POS("0", "9") "H - Hit\nS - Stand\nD - Double down\nQ - Quit" ANSI_COLOR_RESET);
+	putsn(ANSI_COLOR_GRAY ANSI_CURSOR_POS("0", "9") "H - Hit\nS - Stand\nD - Double down\nP - Split\nQ - Quit" ANSI_COLOR_RESET);
 	fflush(stdout);
 }
 
-enum BlackjackGameResult playBlackjack(void)
+static void end(void)
 {
-	float bet = 10.2f;
+	grayOptions();
+	tot_sleep(1000);
+}
+
+static void handleLoss(float bet)
+{
+	state.money -= bet;
+	end();
+}
+
+static void handleWin(float bet)
+{
+	end();
+}
+
+static void handlePush(void)
+{
+	end();
+}
+
+enum BlackjackResult playBlackjack(float bet)
+{
 	deck_i = 0;
 	hand_i = -1;
 	points = 0;
@@ -69,12 +104,13 @@ enum BlackjackGameResult playBlackjack(void)
 	doubled_down = 0;
 	dealer_hand_i = -1;
 	dealer_points = 0;
+	style = chooseCardBackStyle();
 	shuffle(deck, DECK_SIZE);
 
 	clearStdout();
 	putsn(ANSI_CURSOR_HIDE);
 	printf("Bet: $%.2f", bet);
-	putsn(ANSI_CURSOR_POS("0", "9") "H - Hit\nS - Stand\nD - Double down\nQ - Quit");
+	putsn(ANSI_CURSOR_POS("0", "9") "H - Hit\nS - Stand\nD - Double down\n"ANSI_COLOR_GRAY"P - Split"ANSI_COLOR_RESET"\nQ - Quit");
 	if (state.money < bet * 2)
 		putsn(ANSI_CURSOR_POS("0", "11") ANSI_COLOR_GRAY "D - Double down" ANSI_COLOR_RESET);
 
@@ -87,7 +123,7 @@ enum BlackjackGameResult playBlackjack(void)
 
 	if (hand[0].type == hand[1].type)
 	{
-		putsn(ANSI_CURSOR_POS("0", "13") "P - Split");
+		putsn(ANSI_CURSOR_POS("0", "12") "P - Split");
 		fflush(stdout);
 	}
 
@@ -107,8 +143,11 @@ input_loop:
 
 		dealCard();
 
-		if (points > 21) // bust
-			goto lost;
+		if (points > 21)
+		{
+			handleLoss(bet);
+			return BLACKJACK_RESULT_LOST_BUST;
+		}
 		goto input_loop;
 
 	case 's':
@@ -126,9 +165,11 @@ input_loop:
 		fflush(stdout);
 		goto input_loop;
 
+	case KEY_QUIT:
+	case KEY_QUIT_ALL:
 	case 'q':
 	case 'Q':
-		return BLACKJACK_GAME_QUIT;
+		return BLACKJACK_RESULT_QUIT;
 
 	case 'p':
 	case 'P':
@@ -151,38 +192,40 @@ input_loop:
 		if (dealer_points < 17)
 		{
 			dealCardToDealer(0);
-			if (dealer_points > 21) // bust
-				goto won;
+			if (dealer_points > 21)
+			{
+				handleWin(bet);
+				return BLACKJACK_RESULT_WON_BUST;
+			}
 		}
 		else
 		{
 			if (has_ace && points <= 11) points += 10; // count ace as 11
 			if (points == dealer_points)
 			{
-				grayOptions();
-				tot_sleep(1000);
-				return BLACKJACK_GAME_PUSH;
+				handlePush();
+				return BLACKJACK_RESULT_PUSH;
 			}
 			if (points < dealer_points)
 			{
-			lost:
-				state.money -= bet;
-				grayOptions();
-				tot_sleep(1000);
-				return BLACKJACK_GAME_LOST;
+				handleLoss(bet);
+				if (dealer_points == 21)
+					return BLACKJACK_RESULT_LOST_BLACKJACK;
+				return BLACKJACK_RESULT_LOST;
 			}
 			if (points == 21)
 			{
-				state.money += bet * 1.5f; // fixme
-				grayOptions();
-				tot_sleep(1000);
-				return BLACKJACK_GAME_BLACKJACK;
+				handleWin(bet * 1.5f); // fixme
+				return BLACKJACK_RESULT_WON_BLACKJACK;
 			}
-		won:
-			state.money += bet;
-			grayOptions();
-			tot_sleep(800);
-			return BLACKJACK_GAME_WON;
+			handleWin(bet);
+			return BLACKJACK_RESULT_WON;
 		}
 	}
+}
+
+const char* const getBlackjackResult(enum BlackjackResult result)
+{
+	static const char* texts[] = { "quit", "lost", "lost (blackjack)", "lost (bust)", "push", "won", "won (bust)", "won (blackjack)" };
+	return texts[result - BLACKJACK_RESULT_QUIT];
 }

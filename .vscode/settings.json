@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "music.h": "c",
+        "portaudio.h": "c",
+        "base.h": "c",
+        "fcntl.h": "c",
+        "time.h": "c",
+        "discord_game_sdk.h": "c",
+        "stdbool.h": "c",
+        "cfgpath.h": "c",
+        "state.h": "c",
+        "discord.h": "c"
+    }
+}

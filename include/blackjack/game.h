@@ -1,10 +1,14 @@
-enum BlackjackGameResult
+enum BlackjackResult
 {
-	BLACKJACK_GAME_QUIT = -2,
-	BLACKJACK_GAME_LOST = -1,
-	BLACKJACK_GAME_PUSH,
-	BLACKJACK_GAME_WON,
-	BLACKJACK_GAME_BLACKJACK
+	BLACKJACK_RESULT_QUIT = -4,
+	BLACKJACK_RESULT_LOST = -3,
+	BLACKJACK_RESULT_LOST_BLACKJACK = -2,
+	BLACKJACK_RESULT_LOST_BUST = -1,
+	BLACKJACK_RESULT_PUSH,
+	BLACKJACK_RESULT_WON,
+	BLACKJACK_RESULT_WON_BUST,
+	BLACKJACK_RESULT_WON_BLACKJACK
 };
 
-enum BlackjackGameResult playBlackjack(void);
+enum BlackjackResult playBlackjack(float bet);
+const char* const getBlackjackResult(enum BlackjackResult result);

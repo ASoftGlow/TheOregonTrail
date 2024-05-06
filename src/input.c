@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <errno.h>
 #ifdef _WIN32
 #include <conio.h>
 #define tot_getchar() _getch()
@@ -11,16 +10,20 @@
 #include "input.h"
 #include "utils.h"
 #include "ansi_codes.h"
-#include "state.h"
 
 bool IS_TTY;
 bool escape_combo = 0;
+
+void setScreenSize(int width, int height)
+{
+	printf("\33[8;%i;%it", height, width);
+}
 
 #ifdef _WIN32
 #include <windows.h>
 Coord getScreenSize(void)
 {
-	Coord size = { 0,0 };
+	Coord size;
 	CONSOLE_SCREEN_BUFFER_INFO csbi;
 
 	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
@@ -33,10 +36,28 @@ void tot_sleep(unsigned long ms)
 {
 	Sleep(ms);
 }
+
+LONG original_style = LONG_MAX;
+void disableResizing()
+{
+	HWND hWnd = GetConsoleWindow();
+	original_style = GetWindowLong(hWnd, GWL_STYLE);
+	SetWindowLong(hWnd, GWL_STYLE, original_style & ~(WS_SIZEBOX | WS_MAXIMIZEBOX));
+}
+
+void enableResizing()
+{
+	if (original_style == LONG_MAX) return;
+	HWND hWnd = GetConsoleWindow();
+	SetWindowLong(hWnd, GWL_STYLE, original_style);
+}
+
 #else
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <termios.h>
+#define __USE_POSIX199309
+#include <time.h>
 Coord getScreenSize(void)
 {
 	Coord size = { 0,0 };
@@ -54,10 +75,22 @@ Coord getScreenSize(void)
 	return size;
 }
 
+void disableResizing()
+{
+	//TODO
+}
+
+void enableResizing()
+{
+	//TODO
+}
+
 void tot_sleep(unsigned long ms)
 {
 	nanosleep((const struct timespec[]) {
-		{0, ms * 1000000L}
+		{
+			ms / 1000UL, ms % 1000UL * 1000000UL
+		}
 	}, NULL);
 }
 
@@ -81,6 +114,7 @@ int getKeyInput(void)
 	// EOF
 	if (key < 0)
 	{
+		HALT = HALT_QUIT;
 		return KEY_QUIT_ALL;
 	}
 
@@ -88,7 +122,7 @@ int getKeyInput(void)
 	{
 	case 3:
 	case 4:
-		errno = ECANCELED;
+		HALT = HALT_QUIT;
 		return KEY_QUIT_ALL;
 
 	case 0:
@@ -146,10 +180,10 @@ int getKeyInput(void)
 		enableInputWait();
 		if (ret > 0) return ret;
 #endif
-		// TODO: consume escape
-		if (escape_combo && state.stage > 0)
+		if (escape_combo)
 		{
 			escape_combo = 0;
+			HALT = HALT_GAME;
 			return KEY_QUIT;
 		}
 		escape_combo = 1;
@@ -175,12 +209,13 @@ int getNumberInput(unsigned start, unsigned end, bool erase, const QKeyCallback 
 {
 	unsigned num = 0;
 	byte i = 0;
-	unsigned buffer[8];
+	unsigned buffer[8] = { 0 };
 
 	int key;
 	while (1)
 	{
 		key = getKeyInput();
+		if (KEY_IS_TERMINATING(key)) return -1;
 		if (key_callback)
 		{
 			va_list argptr;
@@ -197,7 +232,6 @@ int getNumberInput(unsigned start, unsigned end, bool erase, const QKeyCallback 
 		}
 		// enter pressed
 		if (key == ETR_CHAR && i) break;
-		if (KEY_IS_TERMINATING(key)) return -1;
 
 		switch (key)
 		{
@@ -246,6 +280,7 @@ bool getStringInput(char* buffer, int min_len, int max_len, const QKeyCallback k
 	while (1)
 	{
 		key = getKeyInput();
+		if (KEY_IS_TERMINATING(key)) return -1;
 		if (key_callback)
 		{
 			va_list argptr;
@@ -256,8 +291,11 @@ bool getStringInput(char* buffer, int min_len, int max_len, const QKeyCallback k
 			if (ret == QKEY_CALLBACK_RETURN_END) break;
 		}
 
-		if (key == ETR_CHAR && i >= min_len) break;
-		if (KEY_IS_TERMINATING(key)) return -1;
+		if (key == ETR_CHAR)
+		{
+			if (i >= min_len) break;
+			continue;
+		}
 
 		switch (key)
 		{
@@ -288,11 +326,110 @@ bool getStringInput(char* buffer, int min_len, int max_len, const QKeyCallback k
 	return 0;
 }
 
+bool getWrappedStringInput(char* buffer, byte width, Coord offset, int min_len, int max_len, const QKeyCallback key_callback, ...)
+{
+	int i = 0;
+	int last_break = width;
+	int last_break_x = 0, last_break_y = -1;
+	int x = -1, y = 0;
+
+	int key;
+	while (1)
+	{
+		key = getKeyInput();
+		if (KEY_IS_TERMINATING(key)) return 0;
+		if (key_callback)
+		{
+			va_list argptr;
+			va_start(argptr, key_callback);
+			const enum QKeyCallbackReturn ret = key_callback(key, argptr);
+			va_end(argptr);
+			if (ret == QKEY_CALLBACK_RETURN_IGNORE) continue;
+			if (ret == QKEY_CALLBACK_RETURN_END) break;
+		}
+		if (KEY_IS_ARROW(key)) continue;
+
+		if (key == ETR_CHAR)
+		{
+			if (i >= min_len) break;
+			continue;
+		}
+
+		switch (key)
+		{
+		case '\b':
+			if (!i) break;
+			if (x || !y)
+			{
+				--i;
+				--x;
+				putsn("\b \b");
+			}
+			else
+			{
+				--i;
+				x = width - 1;
+				putsn("\b ");
+				setCursorPos(offset.x + width, offset.y + --y);
+			}
+			fflush(stdout);
+			break;
+
+		case DEL_CHAR:
+			if (!i) break;
+			for (int j = 0; j <= y; j++)
+			{
+				setCursorPos(offset.x, offset.y + j);
+				for (int h = 0; h < width; h++)
+					putchar(' ');
+			}
+			setCursorPos(offset.x, offset.y);
+			fflush(stdout);
+			i = 0;
+			x = 0;
+			last_break = 0;
+			break;
+
+		case ' ':
+			last_break = i;
+			last_break_x = x + 2;
+			last_break_y = y;
+
+		default:
+			if (i < max_len)
+			{
+				if (x == width - 1)
+				{
+					if (last_break == i || last_break_y != y)
+					{
+						setCursorPos(offset.x, offset.y + ++y);
+						x = 0;
+					}
+					else
+					{
+						int j = x = width - last_break_x;
+						setCursorPos(last_break_x, last_break_y);
+						while (j--) putchar(' ');
+						setCursorPos(offset.x, offset.y + ++y);
+						putsn(buffer + last_break + 1);
+					}
+				}
+				else
+					++x;
+				buffer[i++] = putchar(key);
+				fflush(stdout);
+			}
+			break;
+		}
+	}
+	buffer[i] = 0;
+	return 0;
+}
+
 static enum QKeyCallbackReturn booleanInputCallback(int key, va_list args)
 {
 	const QKeyCallback callback = va_arg(args, const QKeyCallback);
 
-	if (KEY_IS_TERMINATING(key)) return QKEY_CALLBACK_RETURN_END;
 	if (KEY_IS_ARROWS(key)) return QKEY_CALLBACK_RETURN_NORMAL;
 
 	switch (key)

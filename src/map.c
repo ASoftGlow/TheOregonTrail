@@ -132,6 +132,7 @@ void showMap(void)
 	if (!state.map_viewed)
 	{
 		showInfoDialog("Map Tips", "Use arrow keys to pan map\nPress m key to enter mark mode\n  Use up/right and down/left arrows to traverse path\n  Press enter key to make a mark\n  Press m key again or escape key to exit mark mode");
+		if (HALT) return;
 		state.map_viewed = 1;
 	}
 
@@ -231,14 +232,16 @@ void showMap(void)
 			if (marking)
 			{
 				marking = 0;
+				escape_combo = 0;
 				putsn(ANSI_CURSOR_HIDE);
+				fflush(stdout);
 			}
 			break;
 
 		case ETR_CHAR:
 			if (!marking) break;
 			struct MapMark* mark = findMark(path_index, path_pos);
-			if (mark == 0)
+			if (mark == NULL)
 			{
 				// reached max marks TODO: show alert
 				if (state.map_marks_count == countof(state.map_marks)) break;

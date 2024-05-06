@@ -84,6 +84,7 @@ bool loadState(const char* path);
 bool saveSettings(void);
 bool loadSettings(void);
 void updateScreenSize(void);
+void updateAutoScreenSize(void);
 
 struct State
 {
@@ -105,6 +106,8 @@ struct State
 	enum Role role;
 
 	char location[32];
+	// Use `setActivity`!
+	char activity[32];
 	unsigned short progress;
 	struct MapMark map_marks[32];
 	byte map_marks_count;
@@ -124,15 +127,16 @@ struct Settings
 	bool auto_screen_size;
 	int screen_width;
 	int screen_height;
+	bool discord_rp;
 };
 
-#define SETTINGS_PATH "settings.dat"
-
-#define MIN_SCREEN_WIDTH 30
+#define MIN_SCREEN_WIDTH 32
 #define MAX_SCREEN_WIDTH 100
-#define MIN_SCREEN_HEIGHT 8
+#define MIN_SCREEN_HEIGHT 16
 #define MAX_SCREEN_HEIGHT 60
-
+#define DEBUG_SAVE_PATH "../../resources/save.dat"
 
 extern struct State state;
 extern struct Settings settings;
+
+void setActivity(const char*);

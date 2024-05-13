@@ -6,6 +6,7 @@
 enum SettingType
 {
 	SETTING_TYPE_NUMBER,
+	SETTING_TYPE_FRACTIONAL,
 	SETTING_TYPE_BOOLEAN,
 	SETTING_TYPE_STRING,
 	SETTING_TYPE_PATH
@@ -14,6 +15,7 @@ enum SettingType
 struct Setting
 {
 	const char name[32];
+	const char description[48];
 	void** p;
 	const enum SettingType type;
 	void (*callback)(void);

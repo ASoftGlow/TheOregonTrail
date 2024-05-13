@@ -9,14 +9,35 @@
 #include "input.h"
 #include "utils.h"
 
-static const char SETTING_TYPE_NAMES[][8] = {
+const char SETTING_TYPE_NAMES[][8] = {
 	"number",
+	"",
 	"boolean",
 	"string",
 	"path"
 };
 
 const nfdfilteritem_t SAVE_FILE_NFD_FILTER_ITEM = { "Binary data", "dat" };
+
+static void printFractionalSetting(const struct Setting* setting, unsigned value)
+{
+#define TOT_ASCII
+	putchar('[');
+	unsigned i = 0;
+	while (i++ < value)
+#ifdef TOT_ASCII
+		putchar('|');
+#else
+		putsn("\u2588");
+#endif
+	while (i++ <= setting->max - setting->min)
+#ifdef TOT_ASCII
+		putchar('.');
+#else
+		putsn("\u22C5");
+#endif
+	putchar(']');
+}
 
 static void printFormattedSetting(const struct Setting* setting)
 {
@@ -25,6 +46,10 @@ static void printFormattedSetting(const struct Setting* setting)
 	{
 	case SETTING_TYPE_NUMBER:
 		printf("%i", *(int*)setting->p);
+		break;
+
+	case SETTING_TYPE_FRACTIONAL:
+		printFractionalSetting(setting, *(int*)setting->p);
 		break;
 
 	case SETTING_TYPE_BOOLEAN:
@@ -64,11 +89,23 @@ static enum QKeyCallbackReturn settingInputCallback(int key, va_list args)
 void settingCallback(const struct ChoiceDialogChoice* choice, const int index)
 {
 	clearStdout();
-	putsn("Press escape to cancel.\n\nCurrent value: ");
+	if (gp_settings[index].description[0])
+	{
+		putBlockWL(wrapText(gp_settings[index].description, SCREEN_WIDTH, NULL), 0, 0, SCREEN_WIDTH);
+		putchar('\n');
+	}
+	putsn("Press escape to cancel.\n\nCurrent value: "ANSI_CURSOR_SAVE);
 	printFormattedSetting(&gp_settings[index]);
-	putsn("Enter a ");
-	putsn(SETTING_TYPE_NAMES[gp_settings[index].type]);
-	putsn(": "ANSI_CURSOR_SHOW);
+	if (gp_settings[index].type != SETTING_TYPE_FRACTIONAL)
+	{
+		putsn("Enter a ");
+		putsn(SETTING_TYPE_NAMES[gp_settings[index].type]);
+		putsn(": "ANSI_CURSOR_SHOW);
+	}
+	else
+	{
+		putsn("Use right and left arrow keys."ANSI_CURSOR_HIDE);
+	}
 	fflush(stdout);
 	switch (gp_settings[index].type)
 	{
@@ -76,6 +113,46 @@ void settingCallback(const struct ChoiceDialogChoice* choice, const int index)
 		int num = getNumberInput(gp_settings[index].min, elvis(gp_settings[index].max, -1), 1, settingInputCallback);
 		if (num < 0) goto skip;
 		*(int*)gp_settings[index].p = num;
+		break;
+
+	case SETTING_TYPE_FRACTIONAL:
+		unsigned temp_num = *(int*)gp_settings[index].p;
+		putsn(ANSI_BOLD);
+		while (1)
+		{
+			int key = getKeyInput();
+			if (KEY_IS_TERMINATING(key)) return;
+			switch (key)
+			{
+			case ESC_CHAR:
+				do_exit = 1;
+				escape_combo = 0;
+				goto skip;
+
+			case KEY_ARROW_LEFT:
+				if (temp_num > gp_settings[index].min)
+				{
+					putsn(ANSI_CURSOR_RESTORE);
+					printFractionalSetting(&gp_settings[index], --temp_num);
+					fflush(stdout);
+				}
+				break;
+
+			case KEY_ARROW_RIGHT:
+				if (temp_num < gp_settings[index].max)
+				{
+					putsn(ANSI_CURSOR_RESTORE);
+					printFractionalSetting(&gp_settings[index], ++temp_num);
+					fflush(stdout);
+				}
+				break;
+
+			case ETR_CHAR:
+				goto exit_fractional;
+			}
+		}
+	exit_fractional:
+		*(int*)gp_settings[index].p = temp_num;
 		break;
 
 	case SETTING_TYPE_STRING:

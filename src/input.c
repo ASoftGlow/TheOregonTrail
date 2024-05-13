@@ -23,7 +23,7 @@ void setScreenSize(int width, int height)
 #include <windows.h>
 Coord getScreenSize(void)
 {
-	Coord size;
+	Coord size = { 0 };
 	CONSOLE_SCREEN_BUFFER_INFO csbi;
 
 	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
@@ -183,8 +183,12 @@ int getKeyInput(void)
 		if (escape_combo)
 		{
 			escape_combo = 0;
-			HALT = HALT_GAME;
-			return KEY_QUIT;
+			if (HALT != HALT_DISALLOWED)
+			{
+				HALT = HALT_GAME;
+				return KEY_QUIT;
+			}
+			return key;
 		}
 		escape_combo = 1;
 		return key;

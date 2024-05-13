@@ -1,35 +1,25 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <stdarg.h>
 
 #include "utils.h"
 
 char* _strcat_ch(char* dst, const char src)
 {
 	char* cp = dst;
-
-	while (*cp) cp++;                   /* find end of dst */
-
-	*cp = src;       /* Copy src to end of dst */
+	// find end of dst
+	while (*cp) cp++;
+	// Copy src to end of dst
+	*cp = src;
 	*++cp = 0;
 
-	return dst;                  /* return dst */
+	return dst;
 }
 
-// functional for 2 digits
 void setCursorPos(byte x, byte y)
 {
-	const byte dy = ++y / (byte)10;
-	y -= dy * 10;
-	const byte dx = ++x / (byte)10;
-	x -= dx * 10;
-	putsn("\033[");
-	putchar('0' + dy);
-	putchar('0' + y);
-	putchar(';');
-	putchar('0' + dx);
-	putchar('0' + x);
-	putchar('H');
+	printf("\33[%i;%iH", (int)y + 1, (int)x + 1);
 }
 
 size_t _strlen_iae(const char* str)
@@ -47,4 +37,23 @@ size_t _strlen_iae(const char* str)
 		++pos;
 	}
 	return len;
+}
+
+void puts_warn(const char* msg)
+{
+	putsn(ANSI_SB_MAIN);
+	puts(msg);
+	putsn(ANSI_SB_ALT);
+	fflush(stdout);
+}
+
+void puts_warnf(const char* format, ...)
+{
+	putsn(ANSI_SB_MAIN);
+	va_list argptr;
+	va_start(argptr, format);
+	vprintf(format, argptr);
+	va_end(argptr);
+	putsn(ANSI_SB_ALT);
+	fflush(stdout);
 }

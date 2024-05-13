@@ -185,7 +185,7 @@ static declare_choice_callback(blackjack)
 	while (1)
 	{
 		enum BlackjackResult r = playBlackjack(10.5f);
-		tot_sleep(2000);
+		tot_sleep(1000);
 		clearStdout();
 		puts(getBlackjackResult(r));
 		fflush(stdout);
@@ -359,15 +359,16 @@ static declare_choice_callback(main_load)
 		{
 			goto error;
 		}
-		}
+	}
 #endif
 #endif
-	if (!loadState(path))
+	if (loadState(path))
 	{
 #ifndef _DEBUG
 		error :
 #endif
 		showErrorDialog("Error loading save");
+		if (HALT) return;
 		showMainMenu();
 	}
 }
@@ -387,6 +388,9 @@ static void discord_toggle(void)
 static declare_choice_callback(settings)
 {
 	const static struct Setting main_settings[] = {
+#ifndef TOT_MUTE
+	   {.name = "Volume", .p = (void**)&settings.volume, .type = SETTING_TYPE_FRACTIONAL, .max = 10},
+#endif
 	   {.name = "Skip tutorials", .p = (void**)&settings.no_tutorials, .type = SETTING_TYPE_BOOLEAN},
 	   {.name = "Auto save", .p = (void**)&settings.auto_save, .type = SETTING_TYPE_BOOLEAN},
 	   {.name = "Auto save path", .p = (void**)settings.auto_save_path, .type = SETTING_TYPE_PATH},
@@ -436,9 +440,12 @@ int main(void)
 {
 	if (setup())
 		goto error;
-
-	if (loadSettings())
-		goto error;
+	// TODO
+	const char r = loadSettings();
+	if (r > 1)
+	{
+		puts_warnf("Settings version %c unknown. Ignoring, and will write over.", r);
+	}
 
 	if (post_setup())
 		goto error;
@@ -451,15 +458,19 @@ int main(void)
 		{"Page up and down also work while selecting"} };
 
 		state.stage = STATE_STAGE_TUTORIAL;
+		HALT = HALT_DISALLOWED;
 		showChoiceDialog("Here is a choice dialog:\n\nPress escape once to exit choice selection mode, and twice to exit a game.", tutorial_choices, countof(tutorial_choices), NULL);
 		if (HALT == HALT_QUIT)
 			goto error;
 		settings.no_tutorials = 1;
 		saveSettings();
 		state.stage = STATE_STAGE_NONE;
+		HALT = HALT_NONE;
 	}
 
+#ifndef TOT_MUTE
 	// if (music_play("../resources/sample2.wav")) goto error;
+#endif
 
 	putsn(ANSI_CURSOR_SHOW);
 	fflush(stdout);
@@ -476,9 +487,9 @@ int main(void)
 		if (HALT == HALT_GAME)
 		{
 			HALT = HALT_NONE;
-			state.stage = STATE_STAGE_NONE;
 			if (state.stage)
 			{
+				state.stage = STATE_STAGE_NONE;
 				showSavePrompt();
 				if (HALT == HALT_QUIT)
 					break;

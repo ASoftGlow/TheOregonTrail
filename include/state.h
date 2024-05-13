@@ -1,5 +1,6 @@
 #pragma once
 #include <stdio.h>
+#include <stdint.h>
 
 #include "static.h"
 
@@ -82,14 +83,14 @@ enum StateStage
 bool saveState(const char* path);
 bool loadState(const char* path);
 bool saveSettings(void);
-bool loadSettings(void);
+char loadSettings(void);
 void updateScreenSize(void);
 void updateAutoScreenSize(void);
 
 struct State
 {
 	float money;
-	int bullets,
+	uint32_t bullets,
 		clothing_sets,
 		oxen,
 		wagon_axles,
@@ -97,7 +98,7 @@ struct State
 		wagon_torques;
 
 	byte water;
-	short food;
+	uint16_t food;
 
 	byte month, day;
 	enum Weather weather;
@@ -108,7 +109,7 @@ struct State
 	char location[32];
 	// Use `setActivity`!
 	char activity[32];
-	unsigned short progress;
+	uint16_t progress;
 	struct MapMark map_marks[32];
 	byte map_marks_count;
 	bool map_viewed;
@@ -116,23 +117,26 @@ struct State
 	struct WagonMember wagon_leader[NAME_SIZE + 1];
 	struct WagonMember wagon_members[WAGON_MEMBER_COUNT];
 
-	enum StateStage stage;
+	enum StateStage stage; // TODO: ensure enums are always same size
 };
 
 struct Settings
 {
+	char version;
 	bool no_tutorials;
 	bool auto_save;
-	char auto_save_path[FILENAME_MAX];
+	char auto_save_path[FILENAME_MAX]; // TODO: make platform independant
 	bool auto_screen_size;
-	int screen_width;
-	int screen_height;
+	int32_t screen_width;
+	int32_t screen_height;
+	int32_t volume;
 	bool discord_rp;
 };
 
+#define SETTINGS_VERSION 'A'
 #define MIN_SCREEN_WIDTH 32
 #define MAX_SCREEN_WIDTH 100
-#define MIN_SCREEN_HEIGHT 16
+#define MIN_SCREEN_HEIGHT 20
 #define MAX_SCREEN_HEIGHT 60
 #define DEBUG_SAVE_PATH "../../resources/save.dat"
 

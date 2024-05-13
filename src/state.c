@@ -21,6 +21,8 @@ struct State state = {
 };
 
 struct Settings settings = {
+	.version = SETTINGS_VERSION,
+	.volume = 8,
 	.auto_save_path = "save.dat",
 	.screen_width = 40,
 	.screen_height = 16,
@@ -43,7 +45,7 @@ static bool postSettings(bool ret)
 	return ret;
 }
 
-bool loadSettings(void)
+char loadSettings(void)
 {
 	if (!cfgfile[0])
 	{
@@ -54,7 +56,17 @@ bool loadSettings(void)
 	errno = 0;
 	FILE* f = fopen(cfgfile, "rb");
 	if (errno) return postSettings(1);
-	fread(&settings, 1, sizeof(settings), f);
+	char version = 0;
+	fread(&version, 1, 1, f);
+	switch (version)
+	{
+	case SETTINGS_VERSION:
+		break;
+
+	default:
+		return postSettings(version);
+	}
+	fread((char*)&settings + sizeof(settings.version), 1, sizeof(settings) - sizeof(settings.version), f);
 	fclose(f);
 
 	return postSettings(0);
@@ -74,10 +86,10 @@ bool loadState(const char* path)
 {
 	errno = 0;
 	FILE* f = fopen(path, "rb");
-	if (errno) return 0;
+	if (errno) return 1;
 	fread(&state, 1, sizeof(state), f);
 	fclose(f);
-	if (errno) return 0;
+	if (errno) return 1;
 	setActivity(state.activity);
 
 	switch (state.stage)
@@ -87,10 +99,10 @@ bool loadState(const char* path)
 		break;
 
 	default:
-		return 0;
+		return 1;
 		break;
 	}
-	return 1;
+	return 0;
 }
 
 void updateScreenSize()

@@ -305,6 +305,7 @@ void showChoiceDialogWL(struct WrapLine* lines, const struct ChoiceDialogChoice*
 
 void drawChoice(const struct ChoiceDialogChoice* choices, const struct WrapLine* lines, const struct _ChoiceInfo* choices_info, Coord offset, int index, bool selected)
 {
+	escape_combo = 0;
 	if (selected) putsn(ANSI_SELECTED);
 	for (byte i = choices_info[index].start; i < choices_info[index].end; i++)
 	{

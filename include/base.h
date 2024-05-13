@@ -1,14 +1,16 @@
 #pragma once
 
+#include <stdint.h>
 #include <stdbool.h>
 #include <assert.h>
 
-typedef unsigned char byte;
+typedef uint8_t byte;
 typedef struct {
 	byte x, y;
 } Coord;
 enum HaltType
 {
+	HALT_DISALLOWED = -1,
 	HALT_NONE,
 	HALT_GAME,
 	HALT_QUIT

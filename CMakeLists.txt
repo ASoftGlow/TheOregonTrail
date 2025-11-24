@@ -52,6 +52,7 @@ set_property(TARGET tot PROPERTY C_STANDARD_REQUIRED ON)
 target_include_directories(
     tot PUBLIC "${PROJECT_SOURCE_DIR}/include"
     tot PUBLIC lib
+    tot PUBLIC "${PROJECT_BINARY_DIR}/generated"
 )
 
 set(BUILD_SHARED_LIBS OFF)
@@ -80,3 +81,4 @@ if(DISCORD)
     add_subdirectory(${PROJECT_SOURCE_DIR}/lib/discord-rpc)
     target_link_libraries(tot PRIVATE discord-rpc)
 endif()
+

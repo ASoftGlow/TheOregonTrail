@@ -1,0 +1,12 @@
+* text=auto
+
+*.c text
+*.h text
+
+VersionInfo.h text=crlf
+VersionResource.rc text=crlf
+
+*.xcf binary
+*.png binary
+*.ico binary
+*.wav binary

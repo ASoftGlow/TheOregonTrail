@@ -373,6 +373,7 @@ static declare_choice_callback(main_load)
 	}
 }
 
+#ifdef TOT_DISCORD
 static void discord_toggle(void)
 {
 	if (settings.discord_rp)
@@ -384,6 +385,9 @@ static void discord_toggle(void)
 		discord_setup();
 	}
 }
+#endif
+
+//#include "../generated/langs.h"
 
 static declare_choice_callback(settings)
 {
@@ -401,6 +405,8 @@ static declare_choice_callback(settings)
 	   {.name = "Enable Discord rich presence", .p = (void**)&settings.discord_rp, .type = SETTING_TYPE_BOOLEAN, .callback = &discord_toggle}
    #endif
 	};
+
+	//puts(en_us);
 
 	showSettings(main_settings, countof(main_settings));
 	if (HALT == HALT_QUIT)
@@ -434,7 +440,6 @@ void showMainMenu(void)
 	setActivity("Pondering the main menu");
 	showChoiceDialog("You may:", choices, countof(choices), &(struct _DialogOptions){.title = "The Oregon Trail"});
 }
-
 
 int main(void)
 {

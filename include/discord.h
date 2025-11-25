@@ -1,4 +1,4 @@
-#include "base.h"
+#include <stdbool.h>
 
 bool discord_setup(void);
 bool discord_update_activity(const char*);

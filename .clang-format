@@ -1,0 +1,24 @@
+BasedOnStyle: GNU
+IndentWidth: 2
+ColumnLimit: 128
+Cpp11BracedListStyle: false
+AlignConsecutiveShortCaseStatements:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: true
+AlignEscapedNewlines: Left
+AlignAfterOpenBracket: BlockIndent
+PointerAlignment: Left
+SpaceBeforeParens: ControlStatements
+AlignConsecutiveMacros:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: true
+UseTab: Never
+BreakBeforeBraces: Allman
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
+AllowShortBlocksOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortLoopsOnASingleLine: true
+SeparateDefinitionBlocks: Always
+AlignArrayOfStructures: Left

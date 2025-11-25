@@ -2,7 +2,7 @@
 #include "base.h"
 
 #define WAGON_MEMBER_COUNT 4
-#define NAME_SIZE 10
+#define NAME_SIZE          10
 extern const char WAGON_MEMBER_NAMES[4][NAME_SIZE];
 
 extern const char MONTHS[][16];

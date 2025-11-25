@@ -1,13 +1,13 @@
 #pragma once
 #include <stddef.h>
 
-#include "base.h"
 #include "ansi_codes.h"
+#include "base.h"
 
 struct ChoiceDialogChoice
 {
-	char* name;
-	void (*callback)(const struct ChoiceDialogChoice*);
+  char* name;
+  void (*callback)(const struct ChoiceDialogChoice*);
 };
 
 typedef void (*ChoiceCallback)(const struct ChoiceDialogChoice*);
@@ -15,66 +15,66 @@ typedef void (*ChoiceDialogCallback)(const struct ChoiceDialogChoice*, const int
 
 enum BorderStyle
 {
-	BORDER_SINGLE,
-	BORDER_DOUBLE
+  BORDER_SINGLE,
+  BORDER_DOUBLE
 };
 
 typedef struct _BoxOptions
 {
-	const char* title;
-	int height;
-	enum Color color;
-	byte paddingX;
-	byte paddingY;
-	Coord* captures;
-	byte captures_count;
-	bool do_not_free;
-} *BoxOptions;
+  const char* title;
+  int height;
+  enum Color color;
+  byte paddingX;
+  byte paddingY;
+  Coord* captures;
+  byte captures_count;
+  bool do_not_free;
+}* BoxOptions;
 
 typedef struct _DialogOptions
 {
-	char* title;
-	ChoiceDialogCallback callback;
-	enum Color color;
-	bool noPaddingY;
-} *DialogOptions;
+  char* title;
+  ChoiceDialogCallback callback;
+  enum Color color;
+  bool noPaddingY;
+}* DialogOptions;
 
 typedef byte WrapLineKind;
-#define WRAPLINEKIND_LTR 0
-#define WRAPLINEKIND_RTL 1
+#define WRAPLINEKIND_LTR    0
+#define WRAPLINEKIND_RTL    1
 #define WRAPLINEKIND_CENTER 2
-#define WRAPLINEKIND_NONE 3
+#define WRAPLINEKIND_NONE   3
 
 struct WrapLine
 {
-	byte length;
-	byte client_length;
-	char text[61];
-	WrapLineKind kind;
+  byte length;
+  byte client_length;
+  char text[61];
+  WrapLineKind kind;
 };
 
 typedef struct _WrapLineOptions
 {
-	int height;
-	Coord* captures;
-	byte captures_count;
-	struct WrapLine* lines;
-	byte* added_count;
-	WrapLineKind kind;
-} *WrapLineOptions;
+  int height;
+  Coord* captures;
+  byte captures_count;
+  struct WrapLine* lines;
+  byte* added_count;
+  WrapLineKind kind;
+}* WrapLineOptions;
 
 // Provides y position of first line and last line
 struct _ChoiceInfo
 {
-	byte start, end;
+  byte start, end;
 };
 
 struct StoryPage
 {
-	const char* title;
-	const char* text;
-	const char* music_path;
-	const enum Color border_color;
+  const char* title;
+  const char* text;
+  const char* music_path;
+  const enum Color border_color;
 };
 
 // @param options - is optional
@@ -124,13 +124,18 @@ void showChoiceDialog(const char* text, const struct ChoiceDialogChoice* choices
  * @brief Uses cvector of lines
  * @param options - is optional
  */
-void showChoiceDialogWL(struct WrapLine* lines, const struct ChoiceDialogChoice* choices, int choices_size, DialogOptions options);
+void
+showChoiceDialogWL(struct WrapLine* lines, const struct ChoiceDialogChoice* choices, int choices_size, DialogOptions options);
 void showInfoDialog(const char title[], const char text[]);
 void showLongInfoDialog(const char title[], const char text[], enum Color border_color);
-void showStoryDialog(const struct StoryPage* const pages, size_t count);
+void showStoryDialog(size_t count, const struct StoryPage pages[count]);
 bool showConfirmationDialog(char* text);
 void showPromptDialog(const char text[], char* buffer, short buffer_size);
-void showErrorDialog(const char* context);
+/**
+ * @param context - max length 255
+ * @param error_code - not used if 0
+ */
+void showErrorDialog(const char* context, int error_code);
 
 /**
  * @brief Draws block of text at <x> and <y>
@@ -145,7 +150,7 @@ void putBlockWL(struct WrapLine* lines, byte x, byte y, byte width);
 /**
  * @brief Draws block of lines at <x> and <y> and fills background with whitespace
  */
-void putBlockWLFill(struct WrapLine* lines, byte count, byte x, byte y, byte width);
+void putBlockWLFill(byte count, struct WrapLine lines[count], byte x, byte y, byte width);
 
 void indentLines(struct WrapLine* begin, struct WrapLine* end, const byte amount);
 
@@ -159,50 +164,37 @@ struct WrapLine* addBar(struct WrapLine* lines);
  */
 struct WrapLine* addLine(struct WrapLine* lines, const char* text, WrapLineKind kind);
 
-/**
- * @brief Adds a line with const char[] text to cvector <lines>
- * @returns nothing
- */
-#define addStaticLine(lines, _text, _kind) \
-do { \
-	cvector_push_back_struct(lines); \
-	cvector_last(lines).client_length = (byte)_strlen_iae(_text); \
-	cvector_last(lines).length = (byte)sizeof(_text) - (byte)1; \
-	cvector_last(lines).kind = (_kind); \
-	memcpy(cvector_last(lines).text, (_text), sizeof(_text)); \
-} while (0)
-
- // box drawing chars
+// box drawing chars
 #ifdef TOT_ASCII
-#define BOX_CHAR_D_DR   '@'
-#define BOX_CHAR_D_DL   '@'
-#define BOX_CHAR_D_H    '='
-#define BOX_CHAR_D_V    '|'
-#define BOX_CHAR_D_UR   '@'
-#define BOX_CHAR_D_UL   '@'
-#define BOX_CHAR_DR     '+'
-#define BOX_CHAR_DL     '+'
-#define BOX_CHAR_H      '-'
-#define BOX_CHAR_V      '|'
-#define BOX_CHAR_UR     '+'
-#define BOX_CHAR_UL     '+'
+#define BOX_CHAR_D_DR '@'
+#define BOX_CHAR_D_DL '@'
+#define BOX_CHAR_D_H  '='
+#define BOX_CHAR_D_V  '|'
+#define BOX_CHAR_D_UR '@'
+#define BOX_CHAR_D_UL '@'
+#define BOX_CHAR_DR   '+'
+#define BOX_CHAR_DL   '+'
+#define BOX_CHAR_H    '-'
+#define BOX_CHAR_V    '|'
+#define BOX_CHAR_UR   '+'
+#define BOX_CHAR_UL   '+'
 
 typedef char box_char_t;
 
 #define putBoxChar(ascii) putchar(ascii)
 #else
-#define BOX_CHAR_D_DR   "\u2554"
-#define BOX_CHAR_D_DL   "\u2557"
-#define BOX_CHAR_D_H    "\u2550"
-#define BOX_CHAR_D_V    "\u2551"
-#define BOX_CHAR_D_UR   "\u255A"
-#define BOX_CHAR_D_UL   "\u255D"
-#define BOX_CHAR_DR     "\u250C"
-#define BOX_CHAR_DL     "\u2510"
-#define BOX_CHAR_H      "\u2500"
-#define BOX_CHAR_V      "\u2502"
-#define BOX_CHAR_UR     "\u2514"
-#define BOX_CHAR_UL     "\u2518"
+#define BOX_CHAR_D_DR    "\u2554"
+#define BOX_CHAR_D_DL    "\u2557"
+#define BOX_CHAR_D_H     "\u2550"
+#define BOX_CHAR_D_V     "\u2551"
+#define BOX_CHAR_D_UR    "\u255A"
+#define BOX_CHAR_D_UL    "\u255D"
+#define BOX_CHAR_DR      "\u250C"
+#define BOX_CHAR_DL      "\u2510"
+#define BOX_CHAR_H       "\u2500"
+#define BOX_CHAR_V       "\u2502"
+#define BOX_CHAR_UR      "\u2514"
+#define BOX_CHAR_UL      "\u2518"
 
 typedef char* box_char_t;
 
@@ -214,28 +206,29 @@ extern byte SCREEN_HEIGHT;
 
 extern byte DIALOG_CONTENT_WIDTH;
 
-#define DIALOG_PADDING_X 4
-#define DIALOG_PADDING_Y 1
-#define DIALOG_WIDTH SCREEN_WIDTH
-#define INDENT_SIZE DIALOG_PADDING_X
+#define DIALOG_PADDING_X              4
+#define DIALOG_PADDING_Y              1
+#define DIALOG_WIDTH                  SCREEN_WIDTH
+#define INDENT_SIZE                   DIALOG_PADDING_X
 
 // @brief Signifies a position to capture
-#define CONTROL_CHAR (char)5
+#define CONTROL_CHAR                  (char)5
 // @brief Signifies a position to capture
-#define CONTROL_CHAR_STR "\5"
+#define CONTROL_CHAR_STR              "\5"
 
-#define TAB "   "
+#define TAB                           "   "
 
-#define __callback_prefix __menu_
+#define __callback_prefix             __menu_
 /**
  * @brief Gets the choice callback with <name>
  */
-#define choice_callback(name) &TOKENPASTE2(__callback_prefix, name)
- /**
-  * @brief Delare a callback function for a specific choice
-  */
+#define choice_callback(name)         &TOKENPASTE2(__callback_prefix, name)
+/**
+ * @brief Delare a callback function for a specific choice
+ */
 #define declare_choice_callback(name) void TOKENPASTE2(__callback_prefix, name)(const struct ChoiceDialogChoice* choice)
-  /**
-   * @brief Declare a default callback function
-   */
-#define declare_choice_callback_g(name) void TOKENPASTE2(__callback_prefix, name)(const struct ChoiceDialogChoice* choice, const int index)
+/**
+ * @brief Declare a default callback function
+ */
+#define declare_choice_callback_g(name) \
+  void TOKENPASTE2(__callback_prefix, name)(const struct ChoiceDialogChoice* choice, const int index)

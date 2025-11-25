@@ -1,6 +1,5 @@
 #pragma once
 #include "base.h"
-#include "state.h"
 #include "tui.h"
 
 enum SettingType
@@ -22,7 +21,7 @@ struct Setting
   unsigned min, max;
 };
 
-#ifndef TTY
+#ifndef TOT_TTY
 extern const nfdfilteritem_t SAVE_FILE_NFD_FILTER_ITEM;
 #endif
 

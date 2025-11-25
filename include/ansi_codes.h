@@ -2,15 +2,15 @@
 
 enum Color
 {
-    COLOR_DEFAULT,
-    COLOR_RED,
-    COLOR_GREEN,
-    COLOR_YELLOW,
-    COLOR_BLUE,
-    COLOR_MAGENTA,
-    COLOR_CYAN,
-    COLOR_GRAY,
-    __COLOR_END
+  COLOR_DEFAULT,
+  COLOR_RED,
+  COLOR_GREEN,
+  COLOR_YELLOW,
+  COLOR_BLUE,
+  COLOR_MAGENTA,
+  COLOR_CYAN,
+  COLOR_GRAY,
+  __COLOR_END
 };
 
 #define ANSI_COLOR_RED                  "\33[31m"
@@ -47,5 +47,7 @@ enum Color
 #define ANSI_WINDOW_TITLE(title)        "\33]0;" title "\33\\"
 #define ANSI_WINDOW_SIZE(width, height) "\33[8;" height ";" width "t"
 
-static const char* ANSI_COLORS[__COLOR_END] = { (char*)0,        ANSI_COLOR_RED,     ANSI_COLOR_GREEN, ANSI_COLOR_YELLOW,
-                                                ANSI_COLOR_BLUE, ANSI_COLOR_MAGENTA, ANSI_COLOR_CYAN,  ANSI_COLOR_GRAY };
+static const char* ANSI_COLORS[__COLOR_END] = {
+  (char*)0,        ANSI_COLOR_RED,     ANSI_COLOR_GREEN, ANSI_COLOR_YELLOW,
+  ANSI_COLOR_BLUE, ANSI_COLOR_MAGENTA, ANSI_COLOR_CYAN,  ANSI_COLOR_GRAY,
+};

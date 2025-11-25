@@ -1,4 +1,4 @@
-#include "base.h"
+#include <stdbool.h>
 
 bool music_setup(void);
 void music_setdown(void);

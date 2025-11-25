@@ -9,7 +9,7 @@ struct StoreCategory STORE_MATT_CATEGORIES[] = {
 		.items = (struct StoreItem[]) {
 			{.name = "yokes", .price = 40.f, .min = 1, .max = 9}
 		},
-		.items_count = 1
+		.items_count = 1,
 	},
 	{
 		.name = "Food",
@@ -19,7 +19,7 @@ struct StoreCategory STORE_MATT_CATEGORIES[] = {
 			{.name = "pounds of bacon", .price = .2f, .max = 1000},
 			{.name = "pounds of flour", .price = .2f, .max = 1000}
 		},
-		.items_count = 2
+		.items_count = 2,
 	},
 	{
 		.name = "Clothing",
@@ -28,7 +28,7 @@ struct StoreCategory STORE_MATT_CATEGORIES[] = {
 		.items = (struct StoreItem[]) {
 			{.name = "sets of clothes", .price = 10.f, .max = 99}
 		},
-		.items_count = 1
+		.items_count = 1,
 	},
 	{
 		.name = "Ammunition",
@@ -37,7 +37,7 @@ struct StoreCategory STORE_MATT_CATEGORIES[] = {
 		.items = (struct StoreItem[]) {
 			{.name = "boxes", .price = 2.f, .max = 99}
 		},
-		.items_count = 1
+		.items_count = 1,
 	},
 	{
 		.name = "Spare parts",
@@ -46,8 +46,8 @@ struct StoreCategory STORE_MATT_CATEGORIES[] = {
 		.items = (struct StoreItem[]) {
 			{.name = "axles", .price = 10.f, .max = 3},
 			{.name = "wheels", .price = 10.f, .max = 3},
-			{.name = "tongues", .price = 10.f, .max = 3}
+			{.name = "tongues", .price = 10.f, .max = 3},
 		},
-		.items_count = 3
+		.items_count = 3,
 	}
 };

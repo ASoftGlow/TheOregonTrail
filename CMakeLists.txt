@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 set(CMAKE_SUPPRESS_REGENERATION true)
 project(TheOregonTrail C)
 
-option(TTY "Build assuming TTY" False)
+option(TTY "Build assuming TTY" True)
 option(ASCII "Use only ASCII instead of UTF-8" False)
 option(MUTE "Don't use sound" True)
 option(DISCORD "Enable Discord rich presence support" False)
@@ -58,6 +58,7 @@ target_include_directories(
 set(BUILD_SHARED_LIBS OFF)
 
 if(NOT TTY)
+    set(NFD_PORTAL ON)
     add_subdirectory(${PROJECT_SOURCE_DIR}/lib/nativefiledialog-extended)
     target_link_libraries(tot PRIVATE nfd)
 endif()
@@ -77,8 +78,9 @@ if(NOT MUTE)
 endif()
 
 if(DISCORD)
+    set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
     set(BUILD_EXAMPLES OFF)
     add_subdirectory(${PROJECT_SOURCE_DIR}/lib/discord-rpc)
-    target_link_libraries(tot PRIVATE discord-rpc)
+    target_link_libraries(tot PRIVATE discord-rpc stdc++)
 endif()
 

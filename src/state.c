@@ -1,12 +1,11 @@
-#include <errno.h>
-#include <string.h>
 #include "cfgpath.h"
+#include <string.h>
 
-#include "state.h"
-#include "main.h"
-#include "tui.h"
-#include "map.h"
 #include "input.h"
+#include "main.h"
+#include "map.h"
+#include "state.h"
+#include "tui.h"
 #ifdef TOT_DISCORD
 #include "discord.h"
 #endif
@@ -14,136 +13,147 @@
 char cfgfile[MAX_PATH] = { 0 };
 
 struct State state = {
-	.water = -1,
-	.day = 1,
-	.location = "Missing",
-	.activity = "Loading"
+  .water = -1,
+  .day = 1,
+  .location = "Missing",
+  .activity = "Loading",
 };
 
 struct Settings settings = {
-	.version = SETTINGS_VERSION,
-	.volume = 8,
-	.auto_save_path = "save.dat",
-	.screen_width = 40,
-	.screen_height = 16,
-	.discord_rp = 1
+  .version = SETTINGS_VERSION,
+  .volume = 8,
+  .auto_save_path = "save.dat",
+  .screen_width = 40,
+  .screen_height = 16,
+  .discord_rp = 1,
 };
 
-bool saveSettings(void)
+int
+saveSettings(void)
 {
-	errno = 0;
-	FILE* f = fopen(cfgfile, "wb");
-	if (errno) return 0;
-	fwrite(&settings, 1, sizeof(settings), f);
-	fclose(f);
-	return 1;
+  FILE* f = fopen(cfgfile, "wb");
+  if (!f) return 1;
+  if (!fwrite(&settings, sizeof(settings), 1, f))
+  {
+    fclose(f);
+    return 2;
+  }
+  fclose(f);
+  return 0;
 }
 
-static bool postSettings(bool ret)
+static int
+readSettings()
 {
-	updateAutoScreenSize();
-	return ret;
+  FILE* f = fopen(cfgfile, "rb");
+  if (!f) return 1;
+  char version = 0;
+  if (!fread(&version, 1, 1, f)) goto fail;
+  switch (version)
+  {
+  case SETTINGS_VERSION:
+    if (!fread((char*)&settings + sizeof(settings.version), sizeof(settings) - sizeof(settings.version), 1, f)) goto fail;
+    break;
+
+  default:
+  fail:
+    fclose(f);
+    return 2;
+  }
+  fclose(f);
+  return 0;
 }
 
-char loadSettings(void)
+int
+loadSettings(void)
 {
-	if (!cfgfile[0])
-	{
-		get_user_config_file(cfgfile, sizeof(cfgfile), "asoftglow-tot");
-		if (!cfgfile[0]) return 0;
-	}
+  if (!cfgfile[0])
+  {
+    get_user_config_file(cfgfile, sizeof(cfgfile), "asoftglow-tot");
+    if (!cfgfile[0]) return 9;
+  }
 
-	errno = 0;
-	FILE* f = fopen(cfgfile, "rb");
-	if (errno) return postSettings(1);
-	char version = 0;
-	fread(&version, 1, 1, f);
-	switch (version)
-	{
-	case SETTINGS_VERSION:
-		break;
+  int success = readSettings();
 
-	default:
-		return postSettings(version);
-	}
-	fread((char*)&settings + sizeof(settings.version), 1, sizeof(settings) - sizeof(settings.version), f);
-	fclose(f);
-
-	return postSettings(0);
+  updateAutoScreenSize();
+  return success;
 }
 
-bool saveState(const char* path)
+int
+saveState(const char* path)
 {
-	errno = 0;
-	FILE* f = fopen(path, "wb");
-	if (errno) return 0;
-	fwrite(&state, 1, sizeof(state), f);
-	fclose(f);
-	return 1;
+  FILE* f = fopen(path, "wb");
+  if (!f) return 1;
+  if (!fwrite(&state, sizeof(state), 1, f))
+  {
+    return 2;
+    fclose(f);
+  }
+  fclose(f);
+  return 0;
 }
 
-bool loadState(const char* path)
+int
+loadState(const char* path)
 {
-	errno = 0;
-	FILE* f = fopen(path, "rb");
-	if (errno) return 1;
-	fread(&state, 1, sizeof(state), f);
-	fclose(f);
-	if (errno) return 1;
-	setActivity(state.activity);
+  FILE* f = fopen(path, "rb");
+  if (!f) return 1;
+  if (!fread(&state, sizeof(state), 1, f))
+  {
+    fclose(f);
+    return 2;
+  }
+  fclose(f);
+  setActivity(state.activity);
 
-	switch (state.stage)
-	{
-	case STATE_STAGE_START:
-		showMain();
-		break;
+  switch (state.stage)
+  {
+  case STATE_STAGE_START: showMain(); break;
 
-	default:
-		return 1;
-		break;
-	}
-	return 0;
+  default:                return 3;
+  }
+  return 0;
 }
 
-void updateScreenSize()
+void
+updateScreenSize()
 {
-	if (settings.auto_screen_size)
-	{
-		Coord size = getScreenSize();
-		settings.screen_width = size.x;
-		settings.screen_height = size.y;
-	}
+  if (settings.auto_screen_size)
+  {
+    Coord size = getScreenSize();
+    settings.screen_width = size.x;
+    settings.screen_height = size.y;
+  }
 
-	if (settings.screen_width < MIN_SCREEN_WIDTH) settings.screen_width = MIN_SCREEN_WIDTH;
-	if (settings.screen_width > MAX_SCREEN_WIDTH) settings.screen_width = MAX_SCREEN_WIDTH;
-	if (settings.screen_height < MIN_SCREEN_HEIGHT) settings.screen_height = MIN_SCREEN_HEIGHT;
-	if (settings.screen_height > MAX_SCREEN_HEIGHT) settings.screen_height = MAX_SCREEN_HEIGHT;
+  if (settings.screen_width < MIN_SCREEN_WIDTH) settings.screen_width = MIN_SCREEN_WIDTH;
+  if (settings.screen_width > MAX_SCREEN_WIDTH) settings.screen_width = MAX_SCREEN_WIDTH;
+  if (settings.screen_height < MIN_SCREEN_HEIGHT) settings.screen_height = MIN_SCREEN_HEIGHT;
+  if (settings.screen_height > MAX_SCREEN_HEIGHT) settings.screen_height = MAX_SCREEN_HEIGHT;
 
-	SCREEN_WIDTH = settings.screen_width;
-	SCREEN_HEIGHT = settings.screen_height;
-	DIALOG_CONTENT_WIDTH = DIALOG_WIDTH - DIALOG_PADDING_X * 2 - 2;
-	MAP_VIEWPORT_HEIGHT = SCREEN_HEIGHT - 2;
+  SCREEN_WIDTH = settings.screen_width;
+  SCREEN_HEIGHT = settings.screen_height;
+  DIALOG_CONTENT_WIDTH = DIALOG_WIDTH - DIALOG_PADDING_X * 2 - 2;
+  MAP_VIEWPORT_HEIGHT = SCREEN_HEIGHT - 2;
 
-	setScreenSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+  setScreenSize(SCREEN_WIDTH, SCREEN_HEIGHT);
 }
 
-void updateAutoScreenSize(void)
+void
+updateAutoScreenSize(void)
 {
-	updateScreenSize();
-	if (settings.auto_screen_size)
-		enableResizing();
-	else
-		disableResizing();
+  updateScreenSize();
+  if (settings.auto_screen_size) enableResizing();
+  else disableResizing();
 }
 
-void setActivity(const char* activity)
+void
+setActivity(const char* activity)
 {
-	if (strcmp(state.activity, activity))
-	{
-		strcpy(state.activity, activity);
+  if (strcmp(state.activity, activity))
+  {
+    strcpy(state.activity, activity);
 #ifdef TOT_DISCORD
-		if (settings.discord_rp)
-			discord_update_activity(activity);
+    if (settings.discord_rp) discord_update_activity(activity);
 #endif
-	}
+  }
 }

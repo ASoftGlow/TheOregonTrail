@@ -16,12 +16,13 @@
 #include "main.h"
 #include "map.h"
 #include "settings.h"
-#include "setup.h"
 #include "state.h"
 #include "static.h"
 #include "store.h"
 #include "tui.h"
 #include "utils.h"
+
+#include "setup.c"
 
 void showMainMenu(void);
 void showMonth(void);
@@ -409,20 +410,16 @@ static declare_choice_callback(main_load)
 
 #ifdef TOT_DISCORD
 static void
-discord_toggle(void)
+updateDiscordSupport(void)
 {
   if (settings.discord_rp)
   {
-    discord_setdown();
-  }
-  else
-  {
     discord_setup();
+    refreshActivity();
   }
+  else discord_setdown();
 }
 #endif
-
-// #include "../generated/langs.h"
 
 static declare_choice_callback(settings)
 {
@@ -451,11 +448,9 @@ static declare_choice_callback(settings)
     { .name = "Enable Discord rich presence",
                     .p = (void**)&settings.discord_rp,
                     .type = SETTING_TYPE_BOOLEAN,
-                    .callback = &discord_toggle },
+                    .callback = &updateDiscordSupport },
 #endif
   };
-
-  // puts(en_us);
 
   showSettings(main_settings, countof(main_settings));
   if (HALT == HALT_QUIT) return;

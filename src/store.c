@@ -3,9 +3,10 @@
 #include "input.h"
 #include "state.h"
 #include "store.h"
-#include "store_data.c"
 #include "tui.h"
 #include "utils.h"
+
+#include "store_data.c"
 
 float total_bill = 0;
 

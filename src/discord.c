@@ -5,11 +5,9 @@
 #include <threads.h>
 
 bool isSetup = 0;
-char __details[128];
-const DiscordRichPresence drp = {
+DiscordRichPresence drp = {
   .largeImageKey = "tot",
   .largeImageText = "This is supposed to be a wagon",
-  .details = __details,
 };
 
 bool
@@ -23,7 +21,7 @@ discord_setup(void)
 bool
 discord_update_activity(const char* details)
 {
-  strcpy(__details, details);
+  drp.details = details;
   Discord_UpdatePresence(&drp);
   Discord_RunCallbacks();
   return 0;
@@ -34,8 +32,6 @@ discord_setdown(void)
 {
   if (isSetup)
   {
-    Discord_ClearPresence();
-    Discord_RunCallbacks();
     Discord_Shutdown();
     isSetup = 0;
   }

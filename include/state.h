@@ -139,3 +139,4 @@ extern struct State state;
 extern struct Settings settings;
 
 void setActivity(const char*);
+void refreshActivity(void);

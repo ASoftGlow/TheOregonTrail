@@ -1,4 +1,3 @@
-#pragma once
 #include "store.h"
 
 struct StoreCategory STORE_MATT_CATEGORIES[] = {

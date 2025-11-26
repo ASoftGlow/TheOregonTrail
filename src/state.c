@@ -73,10 +73,10 @@ loadSettings(void)
     if (!cfgfile[0]) return 9;
   }
 
-  int success = readSettings();
+  int error = readSettings();
 
   updateAutoScreenSize();
-  return success;
+  return error;
 }
 
 int
@@ -152,8 +152,14 @@ setActivity(const char* activity)
   if (strcmp(state.activity, activity))
   {
     strcpy(state.activity, activity);
-#ifdef TOT_DISCORD
-    if (settings.discord_rp) discord_update_activity(activity);
-#endif
+    refreshActivity();
   }
+}
+
+void
+refreshActivity(void)
+{
+#ifdef TOT_DISCORD
+  if (settings.discord_rp) discord_update_activity(state.activity);
+#endif
 }

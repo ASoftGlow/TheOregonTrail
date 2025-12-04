@@ -82,10 +82,13 @@ enum StateStage
 
 int saveState(const char* path);
 int loadState(const char* path);
+const char* getSettingsPath(void);
 int saveSettings(void);
 int loadSettings(void);
 void updateScreenSize(void);
 void updateAutoScreenSize(void);
+void updateDiscordSupport(void);
+void updateVolume(void);
 
 struct State
 {
@@ -124,7 +127,7 @@ struct Settings
   bool auto_screen_size;
   int32_t screen_width;
   int32_t screen_height;
-  int32_t volume;
+  uint32_t volume;
   bool discord_rp;
 };
 

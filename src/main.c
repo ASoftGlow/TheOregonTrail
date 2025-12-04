@@ -3,12 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifndef TOT_TTY
-#include "nfd.h"
-#endif
-#ifndef TOT_MUTE
-#include "music.h"
-#endif
 
 #include "base.h"
 #include "blackjack/game.h"
@@ -23,6 +17,7 @@
 #include "utils.h"
 
 #include "setup.c"
+#include "tracks.c"
 
 void showMainMenu(void);
 void showMonth(void);
@@ -180,10 +175,9 @@ showMain(void)
   lines = addNewline(lines);
 
   lines = addQuickInfo(lines);
+  lines = addNewline(lines);
 
-  showChoiceDialogWL(
-      lines, &choices[0], countof(choices), &(struct _DialogOptions){ .title = state.location, .noPaddingY = 1 }
-  );
+  showChoiceDialogWL(lines, countof(choices), choices, &(struct DialogOptions){ .title = state.location, .noPaddingY = 1 });
 }
 
 static declare_choice_callback(blackjack)
@@ -220,7 +214,7 @@ static declare_choice_callback_g(month)
   };
   sprintf(choices[0].name, "\"My name is %s.\"", state.wagon_leader.name);
   putsn(ANSI_CURSOR_SHOW);
-  showChoiceDialog("What are you doing?", choices, countof(choices), NULL);
+  showChoiceDialog("What are you doing?", countof(choices), choices, NULL);
   if (HALT) return;
 
   playBlackjack(20.f);
@@ -290,7 +284,7 @@ showMonth(void)
     { "Ask for advice", .callback = choice_callback(month_advice) }
   };
 
-  showChoiceDialog(text, choices, countof(choices), &(struct _DialogOptions){ .callback = choice_callback(month) });
+  showChoiceDialog(text, countof(choices), choices, &(struct DialogOptions){ .callback = choice_callback(month) });
 }
 
 static declare_choice_callback(role_learn)
@@ -323,7 +317,7 @@ static declare_choice_callback_g(role)
   clearStdout();
   drawBox(
       &("What is the first name of the wagon leader?\n" ANSI_CURSOR_SAVE)[0], DIALOG_WIDTH, BORDER_DOUBLE,
-      &(struct _BoxOptions){ .height = 8, .color = COLOR_YELLOW }
+      &(struct BoxOptions){ .height = 8, .color = COLOR_YELLOW }
   );
   putsn(ANSI_CURSOR_RESTORE ANSI_CURSOR_SHOW);
   fflush(stdout);
@@ -357,8 +351,8 @@ showRole(void)
 
   setActivity("Getting started");
   showChoiceDialog(
-      "Many kinds of people made the trip to Oregon.\n\nYou may:", choices, countof(choices),
-      &(struct _DialogOptions){ .callback = choice_callback(role) }
+      "Many kinds of people made the trip to Oregon.\n\nYou may:", countof(choices), choices,
+      &(struct DialogOptions){ .callback = choice_callback(role) }
   );
 }
 
@@ -408,51 +402,43 @@ static declare_choice_callback(main_load)
   }
 }
 
-#ifdef TOT_DISCORD
-static void
-updateDiscordSupport(void)
-{
-  if (settings.discord_rp)
-  {
-    discord_setup();
-    refreshActivity();
-  }
-  else discord_setdown();
-}
-#endif
-
 static declare_choice_callback(settings)
 {
   const static struct Setting main_settings[] = {
 #ifndef TOT_MUTE
-    { .name = "Volume", .p = (void**)&settings.volume, .type = SETTING_TYPE_FRACTIONAL, .max = 10 },
+    { .name = "Volume",
+                    .p = { .fractional = &settings.volume },
+                    .type = SETTING_TYPE_FRACTIONAL,
+                    .callback = &updateVolume,
+                    .max = 9,
+                    .live = true },
 #endif
-    { .name = "Skip tutorials", .p = (void**)&settings.no_tutorials, .type = SETTING_TYPE_BOOLEAN },
-    { .name = "Auto save", .p = (void**)&settings.auto_save, .type = SETTING_TYPE_BOOLEAN },
-    { .name = "Auto save path", .p = (void**)settings.auto_save_path, .type = SETTING_TYPE_PATH },
+    { .name = "Skip tutorials", .p = { .boolean = &settings.no_tutorials }, .type = SETTING_TYPE_BOOLEAN },
+    { .name = "Auto save", .p = { .boolean = &settings.auto_save }, .type = SETTING_TYPE_BOOLEAN },
+    { .name = "Auto save path", .p = { .string = (char**)&settings.auto_save_path }, .type = SETTING_TYPE_PATH },
     { .name = "Auto screen size",
-                    .p = (void**)&settings.auto_screen_size,
+                    .p = { .boolean = &settings.auto_screen_size },
                     .type = SETTING_TYPE_BOOLEAN,
                     .callback = &updateAutoScreenSize },
     { .name = "Screen width",
-                    .p = (void**)&settings.screen_width,
+                    .p = { .number = &settings.screen_width },
                     .type = SETTING_TYPE_NUMBER,
                     .callback = &updateScreenSize,
                     .min = 30 },
     { .name = "Screen height",
-                    .p = (void**)&settings.screen_height,
+                    .p = { .number = &settings.screen_height },
                     .type = SETTING_TYPE_NUMBER,
                     .callback = &updateScreenSize,
                     .min = 10 },
 #ifdef TOT_DISCORD
     { .name = "Enable Discord rich presence",
-                    .p = (void**)&settings.discord_rp,
+                    .p = { .boolean = &settings.discord_rp },
                     .type = SETTING_TYPE_BOOLEAN,
                     .callback = &updateDiscordSupport },
 #endif
   };
 
-  showSettings(main_settings, countof(main_settings));
+  showSettings(countof(main_settings), main_settings);
   if (HALT == HALT_QUIT) return;
   showMainMenu();
 }
@@ -479,13 +465,25 @@ showMainMenu(void)
   };
 
   setActivity("Pondering the main menu");
-  showChoiceDialog("You may:", choices, countof(choices), &(struct _DialogOptions){ .title = "The Oregon Trail" });
+  showChoiceDialog("You may:", countof(choices), choices, &(struct DialogOptions){ .title = "The Oregon Trail" });
 }
 
 int
-main(void)
+main(int argc, char** argv)
 {
-  if (setup()) goto error;
+  bool prefer_tty = false;
+  for (int i = 0; i < argc; i++)
+  {
+    if (strcmp(argv[i], "config") == 0)
+    {
+      loadSettings();
+      puts(getSettingsPath());
+      return 0;
+    }
+    if (strcmp(argv[i], "tty") == 0) prefer_tty = true;
+  }
+
+  if (setup(prefer_tty)) goto error;
   int error = loadSettings();
   if (error)
   {
@@ -506,7 +504,7 @@ main(void)
     HALT = HALT_DISALLOWED;
     showChoiceDialog(
         "Here is a choice dialog:\n\nPress escape once to exit choice selection mode, and twice to exit a game.",
-        tutorial_choices, countof(tutorial_choices), NULL
+        countof(tutorial_choices), tutorial_choices, NULL
     );
     if (HALT == HALT_QUIT) goto error;
     settings.no_tutorials = 1;
@@ -516,14 +514,10 @@ main(void)
   }
 
 #ifndef TOT_MUTE
-  // if (music_play("../resources/sample2.wav")) goto error;
+  music_play(&track0, true);
 #endif
 
   putsn(ANSI_CURSOR_SHOW);
-  fflush(stdout);
-  /*char buf[64];
-  Coord offset = { 0 };
-  getWrappedStringInput(buf, 10, offset, 0, sizeof(buf), NULL);*/
 
   while (1)
   {

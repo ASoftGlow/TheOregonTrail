@@ -44,7 +44,7 @@ showStoreCategoryMenu(struct StoreCategory* category, byte index)
   memcpy(text + pos, question_end, sizeof(question_end));
 
   Coord captures[2] = { { 0 }, { 0 } };
-  struct WrapLine* lines = wrapText(text, DIALOG_CONTENT_WIDTH, &(struct _WrapLineOptions){ .captures = &captures[0] });
+  struct WrapLine* lines = wrapText(text, DIALOG_CONTENT_WIDTH, &(struct WrapLineOptions){ .captures = &captures[0] });
   free(text);
 
   lines = addNewline(lines);
@@ -57,7 +57,7 @@ showStoreCategoryMenu(struct StoreCategory* category, byte index)
   clearStdout();
   drawBoxWL(
       lines, DIALOG_WIDTH, BORDER_DOUBLE,
-      &(struct _BoxOptions){ .title = "Matt's General Store", .color = COLOR_BLUE, .paddingX = DIALOG_PADDING_X }
+      &(struct BoxOptions){ .title = "Matt's General Store", .color = COLOR_BLUE, .paddingX = DIALOG_PADDING_X }
   );
   setCursorPos(captures[1].x + DIALOG_PADDING_X + 1, captures[1].y + DIALOG_PADDING_Y);
   fflush(stdout);
@@ -68,7 +68,7 @@ showStoreCategoryMenu(struct StoreCategory* category, byte index)
   {
     strcpy(text2, item->name);
     strcat(text2, question_end);
-    struct WrapLine* lines = wrapText(text2, DIALOG_CONTENT_WIDTH, &(struct _WrapLineOptions){ .captures = &captures[1] });
+    struct WrapLine* lines = wrapText(text2, DIALOG_CONTENT_WIDTH, &(struct WrapLineOptions){ .captures = &captures[1] });
     putBlockWL(lines, captures[0].x + DIALOG_PADDING_X + 1, captures[0].y + DIALOG_PADDING_Y, 0);
     setCursorPos(captures[1].x + captures[0].x + DIALOG_PADDING_X + 1, captures[1].y + captures[0].y + DIALOG_PADDING_Y);
     fflush(stdout);
@@ -118,7 +118,7 @@ showAlert(char text[])
   byte added_lines_count = 0;
   lines = wrapText(
       "Which item would you like to buy?\n", DIALOG_CONTENT_WIDTH - INDENT_SIZE,
-      &(struct _WrapLineOptions){ .lines = lines, .added_count = &added_lines_count }
+      &(struct WrapLineOptions){ .lines = lines, .added_count = &added_lines_count }
   );
   indentLines(cvector_end(lines) - added_lines_count, cvector_end(lines), INDENT_SIZE);
   lines = addLine(lines, "Press SPACE BAR to leave store", WRAPLINEKIND_CENTER);
@@ -269,7 +269,7 @@ showStore(void)
   byte added_lines_count = 0;
   lines = wrapText(
       "Which item would you like to buy? " CONTROL_CHAR_STR "\n", DIALOG_CONTENT_WIDTH - INDENT_SIZE,
-      &(struct _WrapLineOptions){ .captures = &capture, .lines = lines, .added_count = &added_lines_count }
+      &(struct WrapLineOptions){ .captures = &capture, .lines = lines, .added_count = &added_lines_count }
   );
   indentLines(cvector_end(lines) - added_lines_count, cvector_end(lines), INDENT_SIZE);
   lines = addLine(lines, "Press SPACE BAR to leave store", WRAPLINEKIND_CENTER);
@@ -277,7 +277,7 @@ showStore(void)
   clearStdout();
   drawBoxWL(
       lines, DIALOG_WIDTH, BORDER_DOUBLE,
-      &(struct _BoxOptions){
+      &(struct BoxOptions){
           .title = "Matt's General Store",
           .paddingX = DIALOG_PADDING_X,
           .color = COLOR_CYAN //"\033[38;5;94m"

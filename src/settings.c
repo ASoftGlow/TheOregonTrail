@@ -43,14 +43,14 @@ printFormattedSetting(const struct Setting* setting)
   putsn(ANSI_BOLD);
   switch (setting->type)
   {
-  case SETTING_TYPE_NUMBER:     printf("%i", *(int*)setting->p); break;
+  case SETTING_TYPE_NUMBER:     printf("%i", *setting->p.number); break;
 
-  case SETTING_TYPE_FRACTIONAL: printFractionalSetting(setting, *(int*)setting->p); break;
+  case SETTING_TYPE_FRACTIONAL: printFractionalSetting(setting, *setting->p.fractional); break;
 
-  case SETTING_TYPE_BOOLEAN:    putsn(*(bool*)setting->p ? ANSI_COLOR_GREEN "True" : ANSI_COLOR_RED "False"); break;
+  case SETTING_TYPE_BOOLEAN:    putsn(*setting->p.boolean ? ANSI_COLOR_GREEN "True" : ANSI_COLOR_RED "False"); break;
 
   case SETTING_TYPE_STRING:
-  case SETTING_TYPE_PATH:       putsn(*(char*)setting->p ? (char*)setting->p : ANSI_COLOR_GRAY "Empty"); break;
+  case SETTING_TYPE_PATH:       putsn(*setting->p.string ? *setting->p.string : ANSI_COLOR_GRAY "Empty"); break;
   }
   puts(ANSI_COLOR_RESET);
 }
@@ -60,7 +60,7 @@ struct ChoiceDialogChoice* gp_dialog_choices;
 byte gp_dialog_choices_count;
 bool do_exit;
 
-struct _DialogOptions dialog_options = { .color = COLOR_GREEN, .title = "Settings", .callback = &settingCallback };
+struct DialogOptions dialog_options = { .color = COLOR_GREEN, .title = "Settings", .callback = &settingCallback };
 
 static enum QKeyCallbackReturn
 settingInputCallback(int key, va_list args)
@@ -101,11 +101,12 @@ settingCallback(const struct ChoiceDialogChoice* choice, const int index)
   case SETTING_TYPE_NUMBER:;
     int num = getNumberInput(gp_settings[index].min, elvis(gp_settings[index].max, -1), 1, settingInputCallback);
     if (num < 0) goto skip;
-    *(int*)gp_settings[index].p = num;
+    *gp_settings[index].p.number = num;
     break;
 
   case SETTING_TYPE_FRACTIONAL:;
-    unsigned temp_num = *(int*)gp_settings[index].p;
+    uint32_t* value = gp_settings[index].p.fractional;
+    unsigned inital_value = *value;
     putsn(ANSI_BOLD);
     while (1)
     {
@@ -116,23 +117,27 @@ settingCallback(const struct ChoiceDialogChoice* choice, const int index)
       case ESC_CHAR:
         do_exit = 1;
         escape_combo = 0;
+        *value = inital_value;
+        if (gp_settings[index].callback) gp_settings[index].callback();
         goto skip;
 
       case KEY_ARROW_LEFT:
-        if (temp_num > gp_settings[index].min)
+        if (*value > gp_settings[index].min)
         {
           putsn(ANSI_CURSOR_RESTORE);
-          printFractionalSetting(&gp_settings[index], --temp_num);
+          printFractionalSetting(&gp_settings[index], --*value);
           fflush(stdout);
+          if (gp_settings[index].callback) gp_settings[index].callback();
         }
         break;
 
       case KEY_ARROW_RIGHT:
-        if (temp_num < gp_settings[index].max)
+        if (*value < gp_settings[index].max)
         {
           putsn(ANSI_CURSOR_RESTORE);
-          printFractionalSetting(&gp_settings[index], ++temp_num);
+          printFractionalSetting(&gp_settings[index], ++*value);
           fflush(stdout);
+          if (gp_settings[index].callback) gp_settings[index].callback();
         }
         break;
 
@@ -140,13 +145,12 @@ settingCallback(const struct ChoiceDialogChoice* choice, const int index)
       }
     }
   exit_fractional:
-    *(int*)gp_settings[index].p = temp_num;
     break;
 
   case SETTING_TYPE_STRING:;
     char buffer[32];
     if (getStringInput(buffer, 0, sizeof(buffer), settingInputCallback)) goto skip;
-    memcpy(gp_settings[index].p, buffer, sizeof(buffer));
+    memcpy(*gp_settings[index].p.string, buffer, sizeof(buffer));
     break;
 
   case SETTING_TYPE_PATH:
@@ -155,7 +159,7 @@ settingCallback(const struct ChoiceDialogChoice* choice, const int index)
     {
       char buffer[FILENAME_MAX];
       if (getStringInput(buffer, 0, sizeof(buffer), settingInputCallback)) goto skip;
-      memcpy(gp_settings[index].p, buffer, sizeof(buffer));
+      memcpy(*gp_settings[index].p.string, buffer, sizeof(buffer));
     }
 #ifndef TOT_TTY
     else
@@ -167,7 +171,7 @@ settingCallback(const struct ChoiceDialogChoice* choice, const int index)
       putsn(ANSI_CURSOR_SHOW);
       if (result == NFD_OKAY)
       {
-        strcpy((char*)gp_settings[index].p, out_path);
+        strcpy(*gp_settings[index].p.string, out_path);
         NFD_FreePath(out_path);
       }
       else
@@ -184,23 +188,25 @@ settingCallback(const struct ChoiceDialogChoice* choice, const int index)
     bool b = getBooleanInput(settingInputCallback);
     if (HALT) return;
     if (do_exit) break;
-    *(bool*)gp_settings[index].p = b;
+    *gp_settings[index].p.boolean = b;
     break;
   }
   if (gp_settings[index].callback) gp_settings[index].callback();
   saveSettings();
 skip:
   if (HALT) return;
-  showChoiceDialog("Compiled " __DATE__, gp_dialog_choices, gp_dialog_choices_count, &dialog_options);
+  showChoiceDialogWL(NULL, gp_dialog_choices_count, gp_dialog_choices, &dialog_options);
 }
 
 static void
 exitCallback(const struct ChoiceDialogChoice* choice)
 {
+  // custom handler so it doesn't use the option type handler
+  // purposefully empty!
 }
 
 void
-showSettings(const struct Setting* const settings, byte settings_count)
+showSettings(byte settings_count, const struct Setting settings[settings_count])
 {
   struct ChoiceDialogChoice* choices = malloc(((size_t)settings_count + 1) * sizeof(struct ChoiceDialogChoice));
   assert(choices);
@@ -214,7 +220,8 @@ showSettings(const struct Setting* const settings, byte settings_count)
   gp_settings = settings;
   gp_dialog_choices = choices;
   gp_dialog_choices_count = settings_count + 1;
-  showChoiceDialog("Compiled " __DATE__, choices, gp_dialog_choices_count, &dialog_options);
+
+  showChoiceDialogWL(NULL, gp_dialog_choices_count, gp_dialog_choices, &dialog_options);
   free(choices);
 }
 

@@ -9,6 +9,9 @@
 #ifdef TOT_DISCORD
 #include "discord.h"
 #endif
+#ifndef TOT_MUTE
+#include "music.h"
+#endif
 
 char cfgfile[MAX_PATH] = { 0 };
 
@@ -28,6 +31,12 @@ struct Settings settings = {
   .discord_rp = 1,
 };
 
+const char*
+getSettingsPath(void)
+{
+  return cfgfile;
+}
+
 int
 saveSettings(void)
 {
@@ -42,9 +51,12 @@ saveSettings(void)
   return 0;
 }
 
-static int
-readSettings()
+int
+loadSettings(void)
 {
+  get_user_config_file(cfgfile, sizeof(cfgfile), "asoftglow-tot");
+  if (!cfgfile[0]) return 9;
+
   FILE* f = fopen(cfgfile, "rb");
   if (!f) return 1;
   char version = 0;
@@ -62,21 +74,6 @@ readSettings()
   }
   fclose(f);
   return 0;
-}
-
-int
-loadSettings(void)
-{
-  if (!cfgfile[0])
-  {
-    get_user_config_file(cfgfile, sizeof(cfgfile), "asoftglow-tot");
-    if (!cfgfile[0]) return 9;
-  }
-
-  int error = readSettings();
-
-  updateAutoScreenSize();
-  return error;
 }
 
 int
@@ -145,6 +142,27 @@ updateAutoScreenSize(void)
   if (settings.auto_screen_size) enableResizing();
   else disableResizing();
 }
+
+#ifdef TOT_DISCORD
+void
+updateDiscordSupport(void)
+{
+  if (settings.discord_rp)
+  {
+    discord_setup();
+    refreshActivity();
+  }
+  else discord_setdown();
+}
+#endif
+
+#ifndef TOT_MUTE
+void
+updateVolume(void)
+{
+  music_setVolume(settings.volume / 9.0f);
+}
+#endif
 
 void
 setActivity(const char* activity)

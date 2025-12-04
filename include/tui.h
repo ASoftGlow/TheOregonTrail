@@ -4,14 +4,16 @@
 #include "ansi_codes.h"
 #include "base.h"
 
-struct ChoiceDialogChoice
-{
-  char* name;
-  void (*callback)(const struct ChoiceDialogChoice*);
-};
+struct ChoiceDialogChoice;
 
 typedef void (*ChoiceCallback)(const struct ChoiceDialogChoice*);
 typedef void (*ChoiceDialogCallback)(const struct ChoiceDialogChoice*, const int);
+
+struct ChoiceDialogChoice
+{
+  char* name;
+  ChoiceCallback callback;
+};
 
 enum BorderStyle
 {
@@ -19,7 +21,7 @@ enum BorderStyle
   BORDER_DOUBLE
 };
 
-typedef struct _BoxOptions
+typedef struct BoxOptions
 {
   const char* title;
   int height;
@@ -31,7 +33,7 @@ typedef struct _BoxOptions
   bool do_not_free;
 }* BoxOptions;
 
-typedef struct _DialogOptions
+typedef struct DialogOptions
 {
   char* title;
   ChoiceDialogCallback callback;
@@ -53,7 +55,7 @@ struct WrapLine
   WrapLineKind kind;
 };
 
-typedef struct _WrapLineOptions
+typedef struct WrapLineOptions
 {
   int height;
   Coord* captures;
@@ -62,12 +64,6 @@ typedef struct _WrapLineOptions
   byte* added_count;
   WrapLineKind kind;
 }* WrapLineOptions;
-
-// Provides y position of first line and last line
-struct _ChoiceInfo
-{
-  byte start, end;
-};
 
 struct StoryPage
 {
@@ -118,14 +114,17 @@ void drawBoxWL(struct WrapLine* lines, int width, enum BorderStyle border, BoxOp
  * @brief Wraps <text>
  * @param options - is optional
  */
-void showChoiceDialog(const char* text, const struct ChoiceDialogChoice* choices, int choices_size, DialogOptions options);
+void showChoiceDialog(
+    const char* text, int choices_size, const struct ChoiceDialogChoice choices[choices_size], DialogOptions options
+);
 
 /**
  * @brief Uses cvector of lines
  * @param options - is optional
  */
-void
-showChoiceDialogWL(struct WrapLine* lines, const struct ChoiceDialogChoice* choices, int choices_size, DialogOptions options);
+void showChoiceDialogWL(
+    struct WrapLine* lines, int choices_size, const struct ChoiceDialogChoice choices[choices_size], DialogOptions options
+);
 void showInfoDialog(const char title[], const char text[]);
 void showLongInfoDialog(const char title[], const char text[], enum Color border_color);
 void showStoryDialog(size_t count, const struct StoryPage pages[count]);

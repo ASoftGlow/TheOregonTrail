@@ -6,13 +6,18 @@
 #include <string.h>
 
 #include "input.h"
-#include "music.h"
 #include "tui.h"
 #include "utils.h"
 
+// Provides y position of first line and last line
+struct ChoiceInfo
+{
+  byte start, end;
+};
+
 void drawChoice(
-    const struct ChoiceDialogChoice* choices, const struct WrapLine* lines, const struct _ChoiceInfo* choices_info,
-    Coord offset, int index, bool selected
+    const struct ChoiceDialogChoice* choices, const struct WrapLine* lines, const struct ChoiceInfo* choices_info, Coord offset,
+    int index, bool selected
 );
 
 byte SCREEN_WIDTH;
@@ -28,7 +33,7 @@ wrapText(const char* text, int width, WrapLineOptions options)
   if (!options)
   {
     free_options = 1;
-    options = malloc(sizeof(struct _WrapLineOptions));
+    options = malloc(sizeof(struct WrapLineOptions));
     assert(options);
     options->captures = NULL;
     options->height = 0;
@@ -158,7 +163,7 @@ inputCallback(int key, va_list args)
   const struct ChoiceDialogChoice* choices = va_arg(args, const struct ChoiceDialogChoice*);
   const ChoiceDialogCallback callback = va_arg(args, const ChoiceDialogCallback);
   const struct WrapLine* lines = va_arg(args, const struct WrapLine*);
-  const struct _ChoiceInfo* choices_info = va_arg(args, const struct _ChoiceInfo*);
+  const struct ChoiceInfo* choices_info = va_arg(args, const struct ChoiceInfo*);
   const Coord offset = va_arg(args, const Coord);
   const Coord end = va_arg(args, const Coord);
 
@@ -225,20 +230,25 @@ inputCallback(int key, va_list args)
 }
 
 void
-showChoiceDialog(const char* text, const struct ChoiceDialogChoice* choices, int choices_size, DialogOptions options)
+showChoiceDialog(
+    const char* text, int choices_size, const struct ChoiceDialogChoice choices[choices_size], DialogOptions options
+)
 {
   struct WrapLine* lines = wrapText(text, DIALOG_CONTENT_WIDTH, NULL);
-  showChoiceDialogWL(lines, choices, choices_size, options);
+  lines = addNewline(lines);
+  showChoiceDialogWL(lines, choices_size, choices, options);
 }
 
 void
-showChoiceDialogWL(struct WrapLine* lines, const struct ChoiceDialogChoice* choices, int choices_size, DialogOptions options)
+showChoiceDialogWL(
+    struct WrapLine* lines, int choices_size, const struct ChoiceDialogChoice choices[choices_size], DialogOptions options
+)
 {
   bool free_options = 0;
   if (!options)
   {
     free_options = 1;
-    options = malloc(sizeof(struct _DialogOptions));
+    options = malloc(sizeof(struct DialogOptions));
     options->title = NULL;
     options->noPaddingY = 0;
     options->callback = NULL;
@@ -250,9 +260,8 @@ showChoiceDialogWL(struct WrapLine* lines, const struct ChoiceDialogChoice* choi
   }
   const byte padding_y = options->noPaddingY ? 0 : DIALOG_PADDING_Y;
   Coord capture = { 0 };
-  struct _ChoiceInfo* choices_info = (struct _ChoiceInfo*)malloc(sizeof(struct _ChoiceInfo) * choices_size);
+  struct ChoiceInfo* choices_info = (struct ChoiceInfo*)malloc(sizeof(struct ChoiceInfo) * choices_size);
   assert(choices_info);
-  lines = addNewline(lines);
 
   for (int i = 0; i < choices_size; i++)
   {
@@ -261,20 +270,20 @@ showChoiceDialogWL(struct WrapLine* lines, const struct ChoiceDialogChoice* choi
     str[0] = '1' + i;
     strcat(str, choices[i].name);
     choices_info[i].start = (byte)cvector_size(lines);
-    lines = wrapText(str, DIALOG_CONTENT_WIDTH, &(struct _WrapLineOptions){ .lines = lines, .added_count = &added_count });
+    lines = wrapText(str, DIALOG_CONTENT_WIDTH, &(struct WrapLineOptions){ .lines = lines, .added_count = &added_count });
     choices_info[i].end = (byte)choices_info[i].start + added_count;
   }
   lines = addNewline(lines);
 
   char str2[] = "What is your choice? " CONTROL_CHAR_STR;
-  lines = wrapText(str2, DIALOG_CONTENT_WIDTH, &(struct _WrapLineOptions){ .lines = lines, .captures = &capture });
+  lines = wrapText(str2, DIALOG_CONTENT_WIDTH, &(struct WrapLineOptions){ .lines = lines, .captures = &capture });
   capture.x += 1 + DIALOG_PADDING_X;
   capture.y += 1 + padding_y;
 
   clearStdout();
   drawBoxWL(
       lines, DIALOG_WIDTH, BORDER_DOUBLE,
-      &(struct _BoxOptions){
+      &(struct BoxOptions){
           .title = options->title,
           .color = options->color,
           .paddingX = DIALOG_PADDING_X,
@@ -308,8 +317,8 @@ showChoiceDialogWL(struct WrapLine* lines, const struct ChoiceDialogChoice* choi
 
 void
 drawChoice(
-    const struct ChoiceDialogChoice* choices, const struct WrapLine* lines, const struct _ChoiceInfo* choices_info,
-    Coord offset, int index, bool selected
+    const struct ChoiceDialogChoice* choices, const struct WrapLine* lines, const struct ChoiceInfo* choices_info, Coord offset,
+    int index, bool selected
 )
 {
   escape_combo = 0;
@@ -326,7 +335,7 @@ drawChoice(
 struct WrapLine*
 wrapBox(const char* text, int width, const BoxOptions options)
 {
-  struct _WrapLineOptions wrap_options = { .height = options->height - options->paddingY * 2, .captures = options->captures };
+  struct WrapLineOptions wrap_options = { .height = options->height - options->paddingY * 2, .captures = options->captures };
   struct WrapLine* lines = wrapText(text, width - options->paddingX * 2, &wrap_options);
   options->captures_count = wrap_options.captures_count;
   return lines;
@@ -345,7 +354,7 @@ drawBoxWL(struct WrapLine* lines, int width, enum BorderStyle border, BoxOptions
   if (!options)
   {
     free_options = 1;
-    options = malloc(sizeof(struct _BoxOptions));
+    options = malloc(sizeof(struct BoxOptions));
     options->captures = NULL;
     options->color = COLOR_DEFAULT;
     options->do_not_free = 0;
@@ -482,7 +491,7 @@ drawBoxWL(struct WrapLine* lines, int width, enum BorderStyle border, BoxOptions
 void
 showInfoDialog(const char title[], const char text[])
 {
-  struct _BoxOptions options
+  struct BoxOptions options
       = { .title = title, .color = COLOR_YELLOW, .paddingX = DIALOG_PADDING_X, .paddingY = DIALOG_PADDING_Y };
   struct WrapLine* lines = wrapBox(text, DIALOG_WIDTH, &options);
   lines = addNewline(lines);
@@ -657,7 +666,7 @@ showConfirmationDialog(char* text)
 {
   Coord capture = { 0 };
   clearStdout();
-  struct _BoxOptions options
+  struct BoxOptions options
       = { .color = COLOR_RED, .paddingX = DIALOG_PADDING_X, .paddingY = DIALOG_PADDING_Y, .captures = &capture };
   drawBox(text, DIALOG_WIDTH, BORDER_DOUBLE, &options);
   setCursorPos(capture.x, capture.y);
@@ -679,7 +688,7 @@ showPromptDialog(const char text[], char* buffer, short buffer_size)
   _text[len + 2] = 0;
 
   Coord capture = { 0 };
-  drawBox(_text, DIALOG_WIDTH, BORDER_DOUBLE, &(struct _BoxOptions){ .color = COLOR_YELLOW, .captures = &capture });
+  drawBox(_text, DIALOG_WIDTH, BORDER_DOUBLE, &(struct BoxOptions){ .color = COLOR_YELLOW, .captures = &capture });
   setCursorPos(capture.x, capture.y);
   putsn(ANSI_CURSOR_SHOW);
   fflush(stdout);

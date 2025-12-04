@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
+
 #ifndef TOT_TTY
 #include "nfd.h"
 #endif
@@ -59,15 +61,10 @@ handleSig(int sig)
   {
   case SIGWINCH:
     if (settings.auto_screen_size)
-      // This function is NOT signal safe, however, the chances of
+      // This function is NOT signal safe; however, the chances of
       // the user resizing the window while it is being drawn is low.
       updateScreenSize();
     break;
-
-    // case SIGINT:
-    // 	puts("sigint");
-    // 	fflush(stdout);
-    // 	break;
 
   default: break;
   }
@@ -94,7 +91,7 @@ setupLinux(void)
 Coord original_screen_size;
 
 bool
-setup(void)
+setup(bool prefer_tty)
 {
 #ifdef _WIN32
   setupWin();
@@ -126,6 +123,7 @@ setup(void)
     }
   }
 #endif
+  IS_TTY |= prefer_tty;
 
 #ifndef TOT_MUTE
   if (music_setup()) return 1;
@@ -134,6 +132,7 @@ setup(void)
   return 0;
 }
 
+// After settings are loaded
 bool
 post_setup(void)
 {
@@ -141,6 +140,10 @@ post_setup(void)
   if (settings.discord_rp)
     if (discord_setup()) return 1;
 #endif
+#ifndef TOT_MUTE
+  updateVolume();
+#endif
+  updateAutoScreenSize();
 
   return 0;
 }

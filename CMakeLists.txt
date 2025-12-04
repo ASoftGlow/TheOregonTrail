@@ -56,6 +56,7 @@ target_include_directories(
 )
 
 set(BUILD_SHARED_LIBS OFF)
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 
 if(NOT TTY)
     set(NFD_PORTAL ON)
@@ -66,19 +67,9 @@ endif()
 if(NOT MUTE)
     add_subdirectory(${PROJECT_SOURCE_DIR}/lib/portaudio)
     target_link_libraries(tot PRIVATE PortAudio)
-
-    set(BUILD_TESTING OFF)
-    set(BUILD_EXAMPLES OFF)
-    set(ENABLE_CPACK OFF)
-    set(INSTALL_MANPAGES OFF)
-    set(ENABLE_PACKAGE_CONFIG OFF)
-    set(INSTALL_PKGCONFIG_MODULE OFF)
-    add_subdirectory(${PROJECT_SOURCE_DIR}/lib/libsndfile)
-    target_link_libraries(tot PRIVATE sndfile)
 endif()
 
 if(DISCORD)
-    set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
     set(BUILD_EXAMPLES OFF)
     add_subdirectory(${PROJECT_SOURCE_DIR}/lib/discord-rpc)
     target_link_libraries(tot PRIVATE discord-rpc stdc++)

@@ -11,20 +11,38 @@ enum SettingType
   SETTING_TYPE_PATH
 };
 
+typedef union
+{
+  int32_t number;
+  uint32_t fractional;
+  bool boolean;
+  char* string;
+}* SettingValuePointer;
+
 struct Setting
 {
   const char name[32];
   const char description[48];
-  void** p;
+
+  union
+  {
+    int32_t* number;
+    uint32_t* fractional;
+    bool* boolean;
+    char** string;
+  } p;
   const enum SettingType type;
   void (*callback)(void);
-  unsigned min, max;
+  unsigned min;
+  unsigned max;
+
+  bool live;
 };
 
 #ifndef TOT_TTY
 extern const nfdfilteritem_t SAVE_FILE_NFD_FILTER_ITEM;
 #endif
 
-void showSettings(const struct Setting* const settings, byte settings_count);
+void showSettings(byte settings_count, const struct Setting settings[settings_count]);
 void settingCallback(const struct ChoiceDialogChoice* choice, const int index);
 void autoSave(void);

@@ -32,7 +32,7 @@ bld/
 [Ll]og/
 [Ll]ogs/
 build/
-buildl/
+build[wlm]/
 compile_commands.json
 
 # Visual Studio 2015/2017 cache/options directory

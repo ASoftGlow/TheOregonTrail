@@ -5,6 +5,12 @@
 
 #include "utils.h"
 
+void
+setCursorPos(byte x, byte y)
+{
+  printf("\33[%i;%iH", (int)y + 1, (int)x + 1);
+}
+
 char*
 _strcat_ch(char* dst, const char src)
 {
@@ -16,12 +22,6 @@ _strcat_ch(char* dst, const char src)
   *++cp = 0;
 
   return dst;
-}
-
-void
-setCursorPos(byte x, byte y)
-{
-  printf("\33[%i;%iH", (int)y + 1, (int)x + 1);
 }
 
 size_t

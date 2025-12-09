@@ -11,7 +11,7 @@ typedef void (*ChoiceDialogCallback)(const struct ChoiceDialogChoice*, const int
 
 struct ChoiceDialogChoice
 {
-  char* name;
+  const char* name;
   ChoiceCallback callback;
 };
 
@@ -50,7 +50,7 @@ typedef byte WrapLineKind;
 struct WrapLine
 {
   byte length;
-  byte client_length;
+  byte display_length;
   char text[61];
   WrapLineKind kind;
 };

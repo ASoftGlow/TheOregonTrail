@@ -7,3 +7,9 @@
 [submodule "lib/discord-rpc"]
 	path = lib/discord-rpc
 	url = https://github.com/harmonytf/discord-rpc.git
+[submodule "lib/cfgpath"]
+	path = lib/cfgpath
+	url = https://github.com/GerHobbelt/cfgpath.git
+[submodule "lib/cvector"]
+	path = lib/cvector
+	url = https://github.com/eteran/c-vector.git

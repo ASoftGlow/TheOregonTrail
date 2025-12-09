@@ -39,6 +39,12 @@ extern const char* EXIT_MSG;
 
 #ifdef _WIN32
 #define ETR_CHAR '\r'
+#ifdef _DEBUG
+#define DEBUG
+#endif
 #else
 #define ETR_CHAR '\n'
+#ifndef NDEBUG
+#define DEBUG
+#endif
 #endif

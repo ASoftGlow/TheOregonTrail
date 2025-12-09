@@ -170,6 +170,7 @@ getKeyInput(void)
       case 'D': ret = KEY_ARROW_LEFT; break;
       case 53:  ret = KEY_PAGE_UP; break;
       case 54:  ret = KEY_PAGE_DOWN; break;
+      default:  ret = KEY_UNKNOWN; break;
       }
     }
     else clearerr(stdin);
@@ -225,7 +226,7 @@ getNumberInput(unsigned start, unsigned end, bool erase, const QKeyCallback key_
       if (result == QKEY_CALLBACK_RETURN_IGNORE) continue;
       if (result == QKEY_CALLBACK_RETURN_END)
       {
-        // overwrite old text
+        // overwrite previous char
         if (erase)
           while (i--) putsn("\b \b");
         return -1;
@@ -256,7 +257,7 @@ getNumberInput(unsigned start, unsigned end, bool erase, const QKeyCallback key_
       if (key < '0' || key > '9') break;
       const unsigned digit = key - '0';
       if ((digit == 0 || i == 1) && (i && !num)) break;
-      if (end == 0 ? digit >= start : (end > 9 || (digit >= start && digit <= end)) && (num * 10 + digit <= end))
+      if (end == 0 ? digit >= start : (end > 9 || (digit >= start && digit <= end)) && ((unsigned long)num * 10 + digit <= end))
       {
         num *= 10;
         num += digit;

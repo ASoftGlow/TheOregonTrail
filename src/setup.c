@@ -18,35 +18,11 @@
 #include "state.h"
 #include "utils.h"
 
-#ifdef _WIN32
-#include <Windows.h>
-
-static inline void
-setupWin(void)
-{
-  IS_TTY = 0;
-  // enable ANSI escape codes
-  HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-  DWORD dwMode = 0;
-
-  GetConsoleMode(hOut, &dwMode);
-  dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-  SetConsoleMode(hOut, dwMode);
-#ifndef TOT_ASCII
-  SetConsoleOutputCP(CP_UTF8);
+#ifdef __APPLE__
+#define __unix__
 #endif
-}
 
-#elif __APPLE__
-#include <unistd.h>
-
-static inline void
-setupMacOS(void)
-{
-  IS_TTY = isatty(fileno(stdout));
-}
-
-#else
+#ifdef __unix__
 #include <signal.h>
 #include <termios.h>
 #include <unistd.h>
@@ -71,10 +47,8 @@ handleSig(int sig)
 }
 
 static inline void
-setupLinux(void)
+setupUnix(void)
 {
-  IS_TTY = getenv("DISPLAY") == 0;
-
   tcgetattr(STDIN_FILENO, &oldt);
   newtw = oldt;
   newtw.c_lflag &= ~(ICANON | ECHO);
@@ -88,6 +62,42 @@ setupLinux(void)
 }
 #endif
 
+#ifdef _WIN32
+#include <Windows.h>
+
+static inline void
+setupWin(void)
+{
+  IS_TTY = 0;
+  // enable ANSI escape codes
+  HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+  DWORD dwMode = 0;
+
+  GetConsoleMode(hOut, &dwMode);
+  dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+  SetConsoleMode(hOut, dwMode);
+#ifndef TOT_ASCII
+  SetConsoleOutputCP(CP_UTF8);
+#endif
+}
+
+#elif __APPLE__
+static inline void
+setupMacOS(void)
+{
+  IS_TTY = isatty(fileno(stdout));
+  setupUnix();
+}
+
+#elif __linux__
+static inline void
+setupLinux(void)
+{
+  IS_TTY = getenv("DISPLAY") == 0;
+  setupUnix();
+}
+#endif
+
 Coord original_screen_size;
 
 bool
@@ -97,7 +107,7 @@ setup(bool prefer_tty)
   setupWin();
 #elif __APPLE__
   setupMacOS();
-#else
+#elif __linux__
   setupLinux();
 #endif
 
@@ -154,7 +164,9 @@ setdown(void)
   putsn(ANSI_SB_MAIN ANSI_COLOR_RESET ANSI_CURSOR_STYLE_DEFAULT ANSI_CURSOR_SHOW ANSI_WRAP);
   if (IS_TTY) clearStdout();
 
-#ifndef _WIN32
+#ifdef _WIN32
+#elif __APPLE__
+#else
   tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 #endif
 #ifndef TOT_TTY

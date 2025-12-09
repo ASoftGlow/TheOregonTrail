@@ -63,10 +63,6 @@ enum Ration
 
 typedef short MapMarkDensity;
 
-#define MAP_MARK_DENSITY_NORMAL  0
-#define MAP_MARK_DENSITY_DOUBLE  1
-#define MAP_MARK_DENSITY_SMUDGED 2
-
 struct MapMark
 {
   byte pos, path_index;
@@ -132,6 +128,7 @@ struct Settings
 };
 
 #define SETTINGS_VERSION  'A'
+#define SAVE_VERSION      'A'
 #define MIN_SCREEN_WIDTH  32
 #define MAX_SCREEN_WIDTH  100
 #define MIN_SCREEN_HEIGHT 20
@@ -143,3 +140,4 @@ extern struct Settings settings;
 
 void setActivity(const char*);
 void refreshActivity(void);
+void autoSave(void);

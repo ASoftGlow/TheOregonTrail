@@ -1,9 +1,7 @@
-#include "cfgpath.h"
+#include "cfgpath/cfgpath.h"
 #include <string.h>
 
 #include "input.h"
-#include "main.h"
-#include "map.h"
 #include "state.h"
 #include "tui.h"
 #ifdef TOT_DISCORD
@@ -90,6 +88,7 @@ saveState(const char* path)
   return 0;
 }
 
+// TODO
 int
 loadState(const char* path)
 {
@@ -105,12 +104,19 @@ loadState(const char* path)
 
   switch (state.stage)
   {
-  case STATE_STAGE_START: showMain(); break;
+  case STATE_STAGE_START: return 0;
 
   default:                return 3;
   }
-  return 0;
 }
+
+void
+autoSave(void)
+{
+  if (settings.auto_save && *settings.auto_save_path) saveState(settings.auto_save_path);
+}
+
+byte MAP_VIEWPORT_HEIGHT;
 
 void
 updateScreenSize()

@@ -3,13 +3,17 @@
 
 #include "base.h"
 
-#define KEY_ARROW_UP            256
-#define KEY_ARROW_DOWN          257
-#define KEY_ARROW_RIGHT         258
-#define KEY_ARROW_LEFT          259
+enum
+{
+  KEY_UNKNOWN = 256,
+  KEY_ARROW_UP,
+  KEY_ARROW_DOWN,
+  KEY_ARROW_RIGHT,
+  KEY_ARROW_LEFT,
 
-#define KEY_PAGE_UP             260
-#define KEY_PAGE_DOWN           261
+  KEY_PAGE_UP,
+  KEY_PAGE_DOWN,
+};
 
 #define KEY_QUIT                -1
 #define KEY_QUIT_ALL            -2
@@ -17,7 +21,7 @@
 #define KEY_IS_ARROWS(key)      (key >= KEY_ARROW_UP && key <= KEY_PAGE_DOWN)
 #define KEY_IS_ARROW(key)       (key >= KEY_ARROW_UP && key <= KEY_ARROW_LEFT)
 #define KEY_IS_TERMINATING(key) (key < 0)
-#define KEY_IS_NORMAL(key)      (key >= 0 && key < KEY_ARROW_UP)
+#define KEY_IS_NORMAL(key)      (key >= 0 && key <= 255)
 
 enum QKeyCallbackReturn
 {

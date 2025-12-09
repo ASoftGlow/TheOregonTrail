@@ -1,7 +1,7 @@
 #pragma once
-#include "base.h"
+#include <stdbool.h>
 
-void showStore(void);
+#include "ansi_codes.h"
 
 struct StoreItem
 {
@@ -18,6 +18,19 @@ struct StoreCategory
   const char* desciption;
   const char* image;
   struct StoreItem* items;
-  const byte items_count;
+  const int items_count;
   float spent;
 };
+
+struct Store
+{
+  const char name[32];
+  const enum Color color, color_category;
+  struct StoreCategory* categories;
+  const int categories_count;
+
+  bool (*const callback_leave)(const struct Store* store);
+};
+
+void showStore(struct Store* store);
+void showStoreAlert(char* text);

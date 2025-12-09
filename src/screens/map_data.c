@@ -1,5 +1,3 @@
-#pragma once
-
 #include "ansi_codes.h"
 #include "base.h"
 

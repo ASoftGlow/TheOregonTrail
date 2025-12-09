@@ -1,15 +1,18 @@
-#include "map.h"
 #include "input.h"
-#include "map_data.h"
+#include "screens.h"
 #include "state.h"
 #include "tui.h"
 #include "utils.h"
+
+#include "map_data.c"
+
+#define MAP_VIEWPORT_WIDTH SCREEN_WIDTH
 
 struct MapMark* findMark(byte path_id, byte pos);
 void drawMap(Coord focus);
 void drawMark(struct MapMark* mark, Coord offset);
 
-byte MAP_VIEWPORT_HEIGHT;
+extern byte MAP_VIEWPORT_HEIGHT;
 Coord last_offset;
 
 void
@@ -25,6 +28,7 @@ drawMap(Coord focus)
     overflow_down = focus.y < MAP_HEIGHT - MAP_VIEWPORT_HEIGHT / 2 - 1;
     height = MAP_VIEWPORT_HEIGHT;
     if (overflow_up)
+    {
       if (focus.y > MAP_HEIGHT - MAP_VIEWPORT_HEIGHT / 2)
       {
         offset.y = MAP_HEIGHT - MAP_VIEWPORT_HEIGHT;
@@ -33,6 +37,7 @@ drawMap(Coord focus)
       {
         offset.y = focus.y - MAP_VIEWPORT_HEIGHT / 2;
       }
+    }
   }
   else
   {
@@ -44,6 +49,7 @@ drawMap(Coord focus)
     overflow_right = focus.x < MAP_WIDTH - MAP_VIEWPORT_WIDTH / 2;
     width = MAP_VIEWPORT_WIDTH;
     if (overflow_left)
+    {
       if (focus.x > MAP_WIDTH - MAP_VIEWPORT_WIDTH / 2)
       {
         offset.x = MAP_WIDTH - MAP_VIEWPORT_WIDTH;
@@ -52,6 +58,7 @@ drawMap(Coord focus)
       {
         offset.x = focus.x - MAP_VIEWPORT_WIDTH / 2;
       }
+    }
   }
   else
   {
@@ -136,7 +143,7 @@ drawMark(struct MapMark* mark, Coord offset)
 }
 
 void
-showMap(void)
+screen_map(void)
 {
   if (!state.map_viewed)
   {

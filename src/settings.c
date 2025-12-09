@@ -1,5 +1,5 @@
 #include <assert.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <string.h>
 #ifndef TOT_TTY
 #include "nfd.h"
@@ -50,7 +50,7 @@ printFormattedSetting(const struct Setting* setting)
   case SETTING_TYPE_BOOLEAN:    putsn(*setting->p.boolean ? ANSI_COLOR_GREEN "True" : ANSI_COLOR_RED "False"); break;
 
   case SETTING_TYPE_STRING:
-  case SETTING_TYPE_PATH:       putsn(*setting->p.string ? *setting->p.string : ANSI_COLOR_GRAY "Empty"); break;
+  case SETTING_TYPE_PATH:       putsn(setting->p.string ? setting->p.string : ANSI_COLOR_GRAY "Empty"); break;
   }
   puts(ANSI_COLOR_RESET);
 }
@@ -150,7 +150,7 @@ settingCallback(const struct ChoiceDialogChoice* choice, const int index)
   case SETTING_TYPE_STRING:;
     char buffer[32];
     if (getStringInput(buffer, 0, sizeof(buffer), settingInputCallback)) goto skip;
-    memcpy(*gp_settings[index].p.string, buffer, sizeof(buffer));
+    memcpy(gp_settings[index].p.string, buffer, sizeof(buffer));
     break;
 
   case SETTING_TYPE_PATH:
@@ -159,7 +159,7 @@ settingCallback(const struct ChoiceDialogChoice* choice, const int index)
     {
       char buffer[FILENAME_MAX];
       if (getStringInput(buffer, 0, sizeof(buffer), settingInputCallback)) goto skip;
-      memcpy(*gp_settings[index].p.string, buffer, sizeof(buffer));
+      memcpy(gp_settings[index].p.string, buffer, sizeof(buffer));
     }
 #ifndef TOT_TTY
     else
@@ -171,7 +171,7 @@ settingCallback(const struct ChoiceDialogChoice* choice, const int index)
       putsn(ANSI_CURSOR_SHOW);
       if (result == NFD_OKAY)
       {
-        strcpy(*gp_settings[index].p.string, out_path);
+        strcpy(gp_settings[index].p.string, out_path);
         NFD_FreePath(out_path);
       }
       else
@@ -223,10 +223,4 @@ showSettings(byte settings_count, const struct Setting settings[settings_count])
 
   showChoiceDialogWL(NULL, gp_dialog_choices_count, gp_dialog_choices, &dialog_options);
   free(choices);
-}
-
-void
-autoSave(void)
-{
-  if (settings.auto_save && *settings.auto_save_path) saveState(settings.auto_save_path);
 }

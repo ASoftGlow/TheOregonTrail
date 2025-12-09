@@ -2,7 +2,6 @@
 #include "discord-rpc/include/discord_rpc.h"
 #include <stdio.h>
 #include <string.h>
-#include <threads.h>
 
 bool isSetup = 0;
 DiscordRichPresence drp = {

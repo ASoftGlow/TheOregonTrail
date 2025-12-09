@@ -9,10 +9,6 @@ option(DISCORD "Enable Discord rich presence support" False)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 
-if(APPLE)
-    message(FATAL_ERROR "L")
-endif()
-
 if(ASCII)
     add_definitions(-DTOT_ASCII)
 endif()
@@ -66,7 +62,7 @@ endif()
 
 if(NOT MUTE)
     add_subdirectory(${PROJECT_SOURCE_DIR}/lib/portaudio)
-    target_link_libraries(tot PRIVATE PortAudio)
+    target_link_libraries(tot PRIVATE portaudio)
 endif()
 
 if(DISCORD)

@@ -29,7 +29,7 @@ struct Setting
     int32_t* number;
     uint32_t* fractional;
     bool* boolean;
-    char** string;
+    char* string;
   } p;
   const enum SettingType type;
   void (*callback)(void);
@@ -45,4 +45,3 @@ extern const nfdfilteritem_t SAVE_FILE_NFD_FILTER_ITEM;
 
 void showSettings(byte settings_count, const struct Setting settings[settings_count]);
 void settingCallback(const struct ChoiceDialogChoice* choice, const int index);
-void autoSave(void);

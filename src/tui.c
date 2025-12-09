@@ -1,4 +1,4 @@
-#include "cvector.h"
+#include "cvector/cvector.h"
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -42,21 +42,19 @@ wrapText(const char* text, int width, WrapLineOptions options)
     options->added_count = NULL;
   }
 
-  struct WrapLine* lines = NULL;
+  byte start = 0;
+  struct WrapLine* lines = options->lines;
   if (options->lines)
   {
-    lines = options->lines;
+    start = (byte)cvector_size(lines);
   }
   else
   {
     cvector_init(lines, 0, 0);
   }
-  byte start = (byte)cvector_size(lines);
-  cvector_push_back_struct(lines);
-  assert(lines);
   byte l = start;
-  lines[l].length = 0;
-  lines[l].kind = options->kind;
+  cvector_push_back(lines, (struct WrapLine){ .kind = options->kind });
+  assert(lines);
 
   const bool auto_height = options->height; // todo
 
@@ -66,18 +64,16 @@ wrapText(const char* text, int width, WrapLineOptions options)
   int last_break = 0;
   int capture_i = 0;
 
+  // TODO check line text max size or dyn alloc
   while (text[++i])
   {
     if (text[i] == '\n')
     {
     newline:
-      lines[l].client_length = lines[l].length - escaped_chars;
+      lines[l].display_length = lines[l].length - escaped_chars;
       lines[l].text[lines[l].length++] = 0;
       ++l;
-      cvector_push_back_struct(lines);
-      lines[l].length = 0;
-      lines[l].kind = options->kind;
-      lines[l].text[0] = 0;
+      cvector_push_back(lines, (struct WrapLine){ .kind = options->kind });
       escaped_chars = 0;
       continue;
     }
@@ -103,7 +99,7 @@ wrapText(const char* text, int width, WrapLineOptions options)
       goto newline;
     }
   }
-  lines[l].client_length = lines[l].length - escaped_chars;
+  lines[l].display_length = lines[l].length - escaped_chars;
   lines[l].text[lines[l].length++] = 0;
 
   if (options->added_count) *options->added_count = l - start + (byte)1;
@@ -115,43 +111,42 @@ wrapText(const char* text, int width, WrapLineOptions options)
 struct WrapLine*
 addNewline(struct WrapLine* lines)
 {
-  cvector_push_back_struct(lines);
-  struct WrapLine* last_line = &cvector_last(lines);
-  last_line->length = 0;
-  last_line->client_length = 0;
-  last_line->text[0] = 0;
-  last_line->kind = WRAPLINEKIND_LTR;
+  cvector_push_back(lines, (struct WrapLine){ .kind = WRAPLINEKIND_LTR });
   return lines;
 }
 
 struct WrapLine*
 addLine(struct WrapLine* lines, const char* text, WrapLineKind kind)
 {
-  cvector_push_back_struct(lines);
-  struct WrapLine* last_line = &cvector_last(lines);
-  last_line->length = (byte)strlen(text);
-  last_line->client_length = (byte)_strlen_iae(text);
-  last_line->kind = kind;
-  if (text) memcpy(last_line->text, text, (size_t)last_line->length + 1);
+  struct WrapLine line = {
+    .length = (byte)strlen(text),
+    .display_length = (byte)_strlen_iae(text),
+    .kind = kind,
+  };
+  if (text) memcpy(line.text, text, (size_t)line.length + 1);
+
+  cvector_push_back(lines, line);
   return lines;
 }
 
 struct WrapLine*
-justifyLineWL(struct WrapLine* lines, const char* text1, const char* text2, const byte width)
+justifyLineWL(struct WrapLine* lines, const char* text_l, const char* text_r, const byte width)
 {
-  cvector_push_back_struct(lines);
-  struct WrapLine* last_line = &cvector_last(lines);
-  last_line->length = width;
-  last_line->client_length = width;
-  last_line->kind = WRAPLINEKIND_NONE;
-  const byte len2 = (byte)strlen(text2);
-  byte pos = (byte)strlen(text1);
-  memcpy(last_line->text, text1, pos);
-  while (pos + len2 < width) last_line->text[pos++] = ' ';
-  memcpy(last_line->text + pos, text2, (size_t)len2);
+  struct WrapLine line = {
+    .length = width,
+    .display_length = width,
+    .kind = WRAPLINEKIND_NONE,
+  };
+  const byte len2 = (byte)strlen(text_r);
+  byte pos = (byte)strlen(text_l);
+  memcpy(line.text, text_l, pos);
+  while (pos + len2 < width) line.text[pos++] = ' ';
+  memcpy(line.text + pos, text_r, (size_t)len2);
   pos += len2;
-  while (pos < width) last_line->text[pos++] = ' ';
-  last_line->text[pos] = 0;
+  while (pos < width) line.text[pos++] = ' ';
+  line.text[pos] = 0;
+
+  cvector_push_back(lines, line);
   return lines;
 }
 
@@ -266,9 +261,8 @@ showChoiceDialogWL(
   for (int i = 0; i < choices_size; i++)
   {
     byte added_count = 0;
-    char str[64] = { 0, '.', ' ', 0 };
-    str[0] = '1' + i;
-    strcat(str, choices[i].name);
+    char str[64];
+    sprintf(str, "%i. %s", i + 1, choices[i].name);
     choices_info[i].start = (byte)cvector_size(lines);
     lines = wrapText(str, DIALOG_CONTENT_WIDTH, &(struct WrapLineOptions){ .lines = lines, .added_count = &added_count });
     choices_info[i].end = (byte)choices_info[i].start + added_count;
@@ -303,16 +297,17 @@ showChoiceDialogWL(
                   )
                   - 1;
 
+  ChoiceDialogCallback options_callback = options->callback;
   cvector_free(lines);
   free(choices_info);
+  if (free_options) free(options);
 
   if (num >= 0)
   {
     const struct ChoiceDialogChoice* choice = &choices[num];
     if (choice->callback) (*choice->callback)(choice);
-    else if (options->callback) (*options->callback)(choice, num);
+    else if (options_callback) (*options_callback)(choice, num);
   }
-  if (free_options) free(options);
 }
 
 void
@@ -426,7 +421,7 @@ drawBoxWL(struct WrapLine* lines, int width, enum BorderStyle border, BoxOptions
       break;
 
     case WRAPLINEKIND_CENTER:;
-      const int space = width - lines[l].client_length;
+      const int space = width - lines[l].display_length;
       p = space / 2;
       while (p--) putchar(' ');
       putsn(lines[l].text);
@@ -435,7 +430,7 @@ drawBoxWL(struct WrapLine* lines, int width, enum BorderStyle border, BoxOptions
       break;
 
     case WRAPLINEKIND_RTL:
-      p = width - options->paddingX - lines[l].client_length;
+      p = width - options->paddingX - lines[l].display_length;
       while (p--) putchar(' ');
       putsn(lines[l].text);
       p = options->paddingX;
@@ -447,7 +442,7 @@ drawBoxWL(struct WrapLine* lines, int width, enum BorderStyle border, BoxOptions
       p = options->paddingX;
       while (p--) putchar(' ');
       putsn(lines[l].text);
-      p = width - options->paddingX - lines[l].client_length;
+      p = width - options->paddingX - lines[l].display_length;
       while (p--) putchar(' ');
       break;
     }
@@ -496,13 +491,13 @@ showInfoDialog(const char title[], const char text[])
   struct WrapLine* lines = wrapBox(text, DIALOG_WIDTH, &options);
   lines = addNewline(lines);
 
-  cvector_push_back_struct(lines);
-  struct WrapLine* last_line = &cvector_last(lines);
-
-  memcpy(last_line->text, press_space, sizeof(press_space));
-  last_line->length = sizeof(press_space) - 1;
-  last_line->client_length = (byte)_strlen_iae(press_space);
-  last_line->kind = WRAPLINEKIND_CENTER;
+  struct WrapLine line = {
+    .length = sizeof(press_space) - 1,
+    .display_length = (byte)_strlen_iae(press_space),
+    .kind = WRAPLINEKIND_CENTER,
+  };
+  memcpy(line.text, press_space, sizeof(press_space));
+  cvector_push_back(lines, line);
 
   putsn(ANSI_CURSOR_HIDE);
   clearStdout();
@@ -558,7 +553,7 @@ drawEmptyBox(byte width, byte height, enum BorderStyle border, enum Color color)
 static void
 drawScrollIndicator(void)
 {
-  setCursorPos(SCREEN_WIDTH, SCREEN_HEIGHT - 2);
+  setCursorPos(SCREEN_WIDTH - 2, SCREEN_HEIGHT - 2);
 #ifdef TOT_ASCII
   putsn(ANSI_COLOR_GRAY "v" ANSI_COLOR_RESET);
 #else
@@ -576,7 +571,7 @@ removeScrollIndicator(void)
 void
 showLongInfoDialog(const char title[], const char text[], enum Color border_color)
 {
-  struct WrapLine* lines = wrapText(text, SCREEN_WIDTH - 3, NULL);
+  struct WrapLine* lines = wrapText(text, DIALOG_WIDTH - 3, NULL);
 
   lines = addNewline(lines);
   lines = addLine(lines, press_space, WRAPLINEKIND_CENTER);
@@ -584,10 +579,10 @@ showLongInfoDialog(const char title[], const char text[], enum Color border_colo
   putsn(ANSI_CURSOR_HIDE);
   clearStdout();
 
-  drawEmptyBox(SCREEN_WIDTH, (byte)cvector_size(lines) + 2, BORDER_SINGLE, border_color);
-  putBlockWLFill((byte)cvector_size(lines), lines, 2, 1, SCREEN_WIDTH - 3);
+  drawEmptyBox(DIALOG_WIDTH, min(SCREEN_HEIGHT, (byte)cvector_size(lines) + 2), BORDER_SINGLE, border_color);
+  putBlockWLFill(min(SCREEN_HEIGHT - 2, (byte)cvector_size(lines)), lines, 2, 1, SCREEN_WIDTH - 3);
 
-  int max_scroll = max((int)cvector_size(lines) - SCREEN_HEIGHT + 1, 0);
+  int max_scroll = max((int)cvector_size(lines) - SCREEN_HEIGHT + 2, 0);
 
   if (max_scroll) drawScrollIndicator();
   fflush(stdout);
@@ -597,7 +592,7 @@ showLongInfoDialog(const char title[], const char text[], enum Color border_colo
   while ((key = getKeyInput()))
   {
     if (key < 0) break;
-    if (key == ' ' && scroll >= max_scroll - 2) break;
+    if (key == ' ' && scroll >= max_scroll - 3) break;
     switch (key)
     {
     case KEY_ARROW_DOWN:
@@ -638,7 +633,7 @@ showLongInfoDialog(const char title[], const char text[], enum Color border_colo
     }
 
     // update
-    putBlockWLFill(SCREEN_HEIGHT - 1, lines + scroll, 2, 1, SCREEN_WIDTH - 2);
+    putBlockWLFill(SCREEN_HEIGHT - 2, lines + scroll, 2, 1, SCREEN_WIDTH - 3);
     if (scroll < max_scroll) drawScrollIndicator();
     else removeScrollIndicator();
     fflush(stdout);
@@ -745,14 +740,14 @@ putBlockWL(struct WrapLine* lines, byte x, byte y, byte width)
       break;
 
     case WRAPLINEKIND_CENTER:;
-      const int space = width - lines[i].client_length;
+      const int space = width - lines[i].display_length;
       byte p = space / 2;
       setCursorPos(x + p, y + i);
       putsn(lines[i].text);
       break;
 
     case WRAPLINEKIND_RTL:
-      setCursorPos(x + width - lines[i].client_length, y + i);
+      setCursorPos(x + width - lines[i].display_length, y + i);
       putsn(lines[i].text);
       break;
     }
@@ -775,12 +770,12 @@ putBlockWLFill(byte count, struct WrapLine lines[count], byte x, byte y, byte wi
 
     case WRAPLINEKIND_LTR:
       putsn(lines[i].text);
-      p = width - lines[i].client_length;
+      p = width - lines[i].display_length;
       while (p--) putchar(' ');
       break;
 
     case WRAPLINEKIND_CENTER:;
-      const int space = width - lines[i].client_length;
+      const int space = width - lines[i].display_length;
       p = space / 2;
       while (p--) putchar(' ');
       putsn(lines[i].text);
@@ -789,7 +784,7 @@ putBlockWLFill(byte count, struct WrapLine lines[count], byte x, byte y, byte wi
       break;
 
     case WRAPLINEKIND_RTL:
-      p = width - lines[i].client_length;
+      p = width - lines[i].display_length;
       while (p--) putchar(' ');
       putsn(lines[i].text);
       break;
@@ -806,7 +801,7 @@ indentLines(struct WrapLine* begin, struct WrapLine* end, const byte amount)
     memmove(begin->text + amount, begin->text, begin->length);
     memset(begin->text, ' ', amount);
     begin->length += amount;
-    begin->client_length += amount;
+    begin->display_length += amount;
     ++begin;
   }
 }
@@ -823,21 +818,20 @@ struct WrapLine*
 textToLinesWL(struct WrapLine* lines, const char* text)
 {
   char* _text = strdup(text);
-  char* line;
+  char* line_text;
 
   // split by newline
-  line = strtok(_text, "\n");
-  while (line)
+  line_text = strtok(_text, "\n");
+  while (line_text)
   {
-    cvector_push_back_struct(lines);
-    struct WrapLine* last_line = &cvector_last(lines);
-
-    last_line->length = (byte)strlen(line);
-    last_line->client_length = last_line->length;
-    last_line->kind = WRAPLINEKIND_LTR;
-    memcpy(last_line->text, line, last_line->length);
-    last_line->text[last_line->length] = 0;
-    line = strtok(0, "\n");
+    struct WrapLine line = {
+      .length = (byte)strlen(line_text),
+      .display_length = line.length,
+      .kind = WRAPLINEKIND_LTR,
+    };
+    memcpy(line.text, line_text, line.length);
+    line.text[line.length] = 0;
+    line_text = strtok(0, "\n");
   }
   free(_text);
   return lines;

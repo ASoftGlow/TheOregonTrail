@@ -43,14 +43,18 @@ printFormattedSetting(const struct Setting* setting)
   putsn(ANSI_BOLD);
   switch (setting->type)
   {
-  case SETTING_TYPE_NUMBER:     printf("%i", *setting->p.number); break;
+  case SETTING_TYPE_NUMBER:       printf("%i", *setting->p.number); break;
 
-  case SETTING_TYPE_FRACTIONAL: printFractionalSetting(setting, *setting->p.fractional); break;
+  case SETTING_TYPE_FRACTIONAL:   printFractionalSetting(setting, *setting->p.fractional); break;
 
-  case SETTING_TYPE_BOOLEAN:    putsn(*setting->p.boolean ? ANSI_COLOR_GREEN "True" : ANSI_COLOR_RED "False"); break;
+  case SETTING_TYPE_BOOLEAN:      putsn(*setting->p.boolean ? ANSI_COLOR_GREEN "True" : ANSI_COLOR_RED "False"); break;
 
-  case SETTING_TYPE_STRING:
-  case SETTING_TYPE_PATH:       putsn(setting->p.string ? setting->p.string : ANSI_COLOR_GRAY "Empty"); break;
+  case SETTING_TYPE_FIXED_STRING: putsn(setting->p.fixed_string ? setting->p.fixed_string : ANSI_COLOR_GRAY "Empty"); break;
+
+  case SETTING_TYPE_DYNAMIC_STRING:
+  case SETTING_TYPE_PATH:
+    putsn(setting->p.dynamic_string && *setting->p.dynamic_string ? *setting->p.dynamic_string : ANSI_COLOR_GRAY "Empty");
+    break;
   }
   puts(ANSI_COLOR_RESET);
 }
@@ -147,19 +151,26 @@ settingCallback(const struct ChoiceDialogChoice* choice, const int index)
   exit_fractional:
     break;
 
-  case SETTING_TYPE_STRING:;
-    char buffer[32];
-    if (getStringInput(buffer, 0, sizeof(buffer), settingInputCallback)) goto skip;
-    memcpy(gp_settings[index].p.string, buffer, sizeof(buffer));
+  case SETTING_TYPE_FIXED_STRING:
+  {
+    char buffer[gp_settings[index].max];
+    if (getStringInput(buffer, 0, gp_settings[index].max, settingInputCallback)) goto skip;
+    strcpy(gp_settings[index].p.fixed_string, buffer);
+    break;
+  }
+
+  case SETTING_TYPE_DYNAMIC_STRING:
+    // TODO
     break;
 
   case SETTING_TYPE_PATH:
   {
     if (IS_TTY)
     {
+      // TODO: use dynamic string
       char buffer[FILENAME_MAX];
       if (getStringInput(buffer, 0, sizeof(buffer), settingInputCallback)) goto skip;
-      memcpy(gp_settings[index].p.string, buffer, sizeof(buffer));
+      memcpy(gp_settings[index].p.fixed_string, buffer, sizeof(buffer));
     }
 #ifndef TOT_TTY
     else

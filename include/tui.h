@@ -130,11 +130,7 @@ void showLongInfoDialog(const char title[], const char text[], enum Color border
 void showStoryDialog(size_t count, const struct StoryPage pages[count]);
 bool showConfirmationDialog(char* text);
 void showPromptDialog(const char text[], char* buffer, short buffer_size);
-/**
- * @param context - max length 255
- * @param error_code - not used if 0
- */
-void showErrorDialog(const char* context, int error_code);
+void showErrorDialog(const char context[], const char error_text[]);
 
 /**
  * @brief Draws block of text at <x> and <y>
@@ -211,7 +207,7 @@ extern byte DIALOG_CONTENT_WIDTH;
 #define INDENT_SIZE                   DIALOG_PADDING_X
 
 // @brief Signifies a position to capture
-#define CONTROL_CHAR                  (char)5
+#define CONTROL_CHAR                  '\5'
 // @brief Signifies a position to capture
 #define CONTROL_CHAR_STR              "\5"
 

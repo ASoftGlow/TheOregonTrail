@@ -24,7 +24,7 @@ byte SCREEN_WIDTH;
 byte SCREEN_HEIGHT;
 byte DIALOG_CONTENT_WIDTH;
 
-static const char press_space[] = ANSI_COLOR_GREEN "Press SPACE BAR to continue" ANSI_COLOR_RESET;
+static const char PRESS_SPACE[] = ANSI_COLOR_GREEN "Press SPACE BAR to continue" ANSI_COLOR_RESET;
 
 struct WrapLine*
 wrapText(const char* text, int width, WrapLineOptions options)
@@ -492,16 +492,45 @@ showInfoDialog(const char title[], const char text[])
   lines = addNewline(lines);
 
   struct WrapLine line = {
-    .length = sizeof(press_space) - 1,
-    .display_length = (byte)_strlen_iae(press_space),
+    .length = sizeof(PRESS_SPACE) - 1,
+    .display_length = (byte)_strlen_iae(PRESS_SPACE),
     .kind = WRAPLINEKIND_CENTER,
   };
-  memcpy(line.text, press_space, sizeof(press_space));
+  memcpy(line.text, PRESS_SPACE, sizeof(PRESS_SPACE));
   cvector_push_back(lines, line);
 
   putsn(ANSI_CURSOR_HIDE);
   clearStdout();
   drawBoxWL(lines, DIALOG_WIDTH, BORDER_SINGLE, &options);
+
+  fflush(stdout);
+
+  waitForKey(' ');
+  putsn(ANSI_CURSOR_SHOW);
+}
+
+void
+showErrorDialog(const char context[], const char error_text[])
+{
+  char* text = malloc(strlen(context) + strlen(error_text) + 4);
+  sprintf(text, "%s: %s", context, error_text);
+
+  struct BoxOptions options
+      = { .title = "ERROR", .color = COLOR_RED, .paddingX = DIALOG_PADDING_X, .paddingY = DIALOG_PADDING_Y };
+  struct WrapLine* lines = wrapBox(text, DIALOG_WIDTH, &options);
+  lines = addNewline(lines);
+
+  struct WrapLine line = {
+    .length = sizeof(PRESS_SPACE) - 1,
+    .display_length = (byte)_strlen_iae(PRESS_SPACE),
+    .kind = WRAPLINEKIND_CENTER,
+  };
+  memcpy(line.text, PRESS_SPACE, sizeof(PRESS_SPACE));
+  cvector_push_back(lines, line);
+
+  putsn(ANSI_CURSOR_HIDE);
+  clearStdout();
+  drawBoxWL(lines, DIALOG_WIDTH, BORDER_DOUBLE, &options);
 
   fflush(stdout);
 
@@ -574,7 +603,7 @@ showLongInfoDialog(const char title[], const char text[], enum Color border_colo
   struct WrapLine* lines = wrapText(text, DIALOG_WIDTH - 3, NULL);
 
   lines = addNewline(lines);
-  lines = addLine(lines, press_space, WRAPLINEKIND_CENTER);
+  lines = addLine(lines, PRESS_SPACE, WRAPLINEKIND_CENTER);
 
   putsn(ANSI_CURSOR_HIDE);
   clearStdout();
@@ -690,22 +719,6 @@ showPromptDialog(const char text[], char* buffer, short buffer_size)
   free(_text);
 
   getStringInput(buffer, 1, buffer_size, NULL);
-}
-
-void
-showErrorDialog(const char* context, int error_code)
-{
-  char buffer[256];
-  if (error_code)
-  {
-    snprintf(buffer, sizeof(buffer), "%s: %i", context, error_code);
-    buffer[sizeof(buffer) - 1] = 0;
-  }
-  else
-  {
-    strcpy(buffer, context);
-  }
-  showInfoDialog("! Error !", buffer);
 }
 
 void

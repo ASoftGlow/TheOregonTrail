@@ -7,7 +7,8 @@ enum SettingType
   SETTING_TYPE_NUMBER,
   SETTING_TYPE_FRACTIONAL,
   SETTING_TYPE_BOOLEAN,
-  SETTING_TYPE_STRING,
+  SETTING_TYPE_FIXED_STRING,
+  SETTING_TYPE_DYNAMIC_STRING,
   SETTING_TYPE_PATH
 };
 
@@ -29,14 +30,18 @@ struct Setting
     int32_t* number;
     uint32_t* fractional;
     bool* boolean;
-    char* string;
+    char* fixed_string;
+    char** dynamic_string;
   } p;
   const enum SettingType type;
   void (*callback)(void);
   unsigned min;
   unsigned max;
 
-  bool live;
+  union
+  {
+    bool live, dynamic;
+  };
 };
 
 #ifndef TOT_TTY

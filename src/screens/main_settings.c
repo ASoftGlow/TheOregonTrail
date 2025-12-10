@@ -13,7 +13,7 @@ const static struct Setting main_settings[] = {
 #endif
   { .name = "Skip tutorials", .p = { .boolean = &settings.no_tutorials }, .type = SETTING_TYPE_BOOLEAN },
   { .name = "Auto save", .p = { .boolean = &settings.auto_save }, .type = SETTING_TYPE_BOOLEAN },
-  { .name = "Auto save path", .p = { .string = settings.auto_save_path }, .type = SETTING_TYPE_PATH },
+  { .name = "Auto save path", .p = { .dynamic_string = &settings.auto_save_path }, .type = SETTING_TYPE_PATH },
   { .name = "Auto screen size",
                   .p = { .boolean = &settings.auto_screen_size },
                   .type = SETTING_TYPE_BOOLEAN,

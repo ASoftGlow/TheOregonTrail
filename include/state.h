@@ -1,6 +1,5 @@
 #pragma once
 #include <stdint.h>
-#include <stdio.h>
 
 #include "static.h"
 
@@ -34,14 +33,14 @@ struct WagonMember
   byte injury_duration;
 };
 
-enum Role
+enum Role : uint16_t
 {
   ROLE_BANKER,
   ROLE_CARPENTER,
   ROLE_FARMER
 };
 
-enum Weather
+enum Weather : uint16_t
 {
   WEATHER_MILD,
   WEATHER_COLD,
@@ -50,18 +49,18 @@ enum Weather
   WEATHER_SNOW
 };
 
-enum Pace
+enum Pace : uint16_t
 {
   PACE_STEADY,
   PACE_2
 };
 
-enum Ration
+enum Ration : uint16_t
 {
   RATION_FILLING
 };
 
-typedef short MapMarkDensity;
+typedef uint16_t MapMarkDensity;
 
 struct MapMark
 {
@@ -69,15 +68,15 @@ struct MapMark
   MapMarkDensity density;
 };
 
-enum StateStage
+enum StateStage : int16_t
 {
   STATE_STAGE_TUTORIAL = -1,
   STATE_STAGE_NONE,
   STATE_STAGE_START
 };
 
-int saveState(const char* path);
-int loadState(const char* path);
+const char* saveState(const char* path);
+const char* loadState(const char* path);
 const char* getSettingsPath(void);
 int saveSettings(void);
 int loadSettings(void);
@@ -100,9 +99,6 @@ struct State
   enum Ration ration;
   enum Role role;
 
-  char location[32];
-  // Use `setActivity`!
-  char activity[32];
   uint16_t progress;
   struct MapMark map_marks[32];
   byte map_marks_count;
@@ -111,20 +107,24 @@ struct State
   struct WagonMember wagon_leader;
   struct WagonMember wagon_members[WAGON_MEMBER_COUNT];
 
-  enum StateStage stage; // TODO: ensure enums are always same size
+  enum StateStage stage;
+
+  byte __disk_end;
+  char location[32];
+  // Use `setActivity`!
+  char activity[32];
 };
 
 struct Settings
 {
-  char version;
   bool no_tutorials;
+  bool discord_rp;
   bool auto_save;
-  char auto_save_path[FILENAME_MAX]; // TODO: make platform independant
   bool auto_screen_size;
+  char* auto_save_path;
   int32_t screen_width;
   int32_t screen_height;
   uint32_t volume;
-  bool discord_rp;
 };
 
 #define SETTINGS_VERSION  'A'

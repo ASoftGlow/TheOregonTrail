@@ -88,13 +88,11 @@ getScreenSize(void)
 void
 disableResizing()
 {
-  // TODO
 }
 
 void
 enableResizing()
 {
-  // TODO
 }
 
 void

@@ -50,7 +50,7 @@ static declare_choice_callback(main_start) { screen_role(); }
 static declare_choice_callback(main_load)
 {
   char path[FILENAME_MAX];
-#ifdef DEBUG
+#if defined(DEBUG) && 0
   strcpy(path, DEBUG_SAVE_PATH);
 #else
   if (IS_TTY)
@@ -78,7 +78,7 @@ static declare_choice_callback(main_load)
   }
 #endif
 #endif
-  int err = loadState(path);
+  const char* err = loadState(path);
   if (err)
   {
 #ifndef DEBUG

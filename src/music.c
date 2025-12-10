@@ -29,13 +29,21 @@ typedef struct
     int edge;
     float freq;
     float volume;
-  } state[MUSIC_NUM_CHANNELS];
+    float edge_time;
+  } states[MUSIC_NUM_CHANNELS];
 } MusicData;
 
 static inline float
 pitchToFreq(float pitch)
 {
   return pow(2, ((double)pitch) / 12) * 440;
+}
+
+static void
+resetTimeline(MusicData* data)
+{
+  memset(data->states, 0, sizeof(data->states));
+  data->time = 0.0f;
 }
 
 /*
@@ -59,18 +67,23 @@ musicCallback(
     float value = 0.0f;
     for (unsigned c = 0; c < MUSIC_NUM_CHANNELS; c++)
     {
-#define state   data->state[c]
+#define state   data->states[c]
 #define channel data->track->channels[c]
 
       if (state.i == channel.num_events)
       {
-        if (!data->loop)
+        if (++finished_channels == MUSIC_NUM_CHANNELS)
         {
-          if (++finished_channels == MUSIC_NUM_CHANNELS) result = paComplete;
-          continue;
+          if (data->loop)
+          {
+            resetTimeline(data);
+          }
+          else
+          {
+            result = paComplete;
+          }
         }
-        if (state.i == 0) continue;
-        state.i = 0;
+        continue;
       }
 
       float volume = state.volume * data->volume;
@@ -84,21 +97,27 @@ musicCallback(
         break;
 
       case WAVEFORM_TRIANGLE:
-        state.value += volume * state.freq * 2 / MUSIC_SAMPLE_RATE * state.edge;
-        if (state.value >= volume)
+        // the quietest, so boost it
+#define TRI_MUL 2
+        state.value += volume * TRI_MUL * state.freq * 2 / MUSIC_SAMPLE_RATE * state.edge;
+        if (fabs(state.value) >= volume * TRI_MUL)
         {
-          state.value = volume;
-          state.edge = -1;
+          state.value = volume * TRI_MUL * state.edge;
+          state.edge *= -1;
         }
-        else if (state.value <= -volume)
+        break;
+
+      case WAVEFORM_SQUARE:
+        if (state.edge_time <= data->time)
         {
-          state.value = -volume;
-          state.edge = 1;
+          state.edge_time = data->time + 1 / state.freq * data->track->tempo;
+          state.edge *= -1;
+          state.value = volume * state.edge;
         }
         break;
 
       case WAVEFORM_NOISE:
-        // TODO
+        state.value = volume * (rand() / (float)RAND_MAX * 2 - 1); //
         break;
       }
       value += state.value;
@@ -109,6 +128,7 @@ musicCallback(
         state.time += event.offset;
         state.value = 0;
         state.edge = 1;
+        state.edge_time = 0;
         if (event.pitch != MUSIC_SPECIAL_VAL) state.freq = pitchToFreq(event.pitch);
         if (event.volume != MUSIC_SPECIAL_VAL) state.volume = event.volume;
         state.i++;
@@ -212,8 +232,7 @@ music_play(struct Track* track, bool loop)
     track->processed = true;
   }
 
-  memset(&data.state, 0, sizeof(data.state));
-  data.time = 0.0f;
+  resetTimeline(&data);
   data.track = track;
   data.loop = loop;
   return Pa_StartStream(stream);

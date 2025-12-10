@@ -1,7 +1,7 @@
 #pragma once
 #include <stdbool.h>
 
-#define MUSIC_NUM_CHANNELS 2
+#define MUSIC_NUM_CHANNELS 4
 #define MUSIC_SPECIAL_VAL  1.17549435e-38f // FLT_MIN
 
 struct Channel
@@ -11,6 +11,7 @@ struct Channel
     WAVEFORM_NONE,
     WAVEFORM_SAWTOOTH,
     WAVEFORM_TRIANGLE,
+    WAVEFORM_SQUARE,
     WAVEFORM_NOISE,
   } waveform_type;
 

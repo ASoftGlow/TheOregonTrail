@@ -246,6 +246,7 @@ screen_map(void)
         fflush(stdout);
         break;
       }
+      FALLTHROUGH;
 
     case ESC_CHAR:
       if (marking)

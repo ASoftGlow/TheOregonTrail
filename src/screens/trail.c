@@ -18,7 +18,7 @@ getQuickHealth(void)
 }
 
 static void
-advanceDate()
+advanceDate(void)
 {
   if (++state.day > MONTH_LENGTHS[state.month])
   {
@@ -36,7 +36,7 @@ formatDate(char* buffer)
 static declare_choice_callback(travel)
 {
   struct WrapLine* lines = NULL;
-  cvector_init(lines, 0, NULL);
+  cvector_init(lines, 2, NULL);
 
   lines = addLine(lines, "Date:", WRAPLINEKIND_RTL);
   lines = addLine(lines, "Weather:", WRAPLINEKIND_RTL);
@@ -45,7 +45,7 @@ static declare_choice_callback(travel)
   putBlockWL(lines, 1, SCREEN_HEIGHT - (byte)cvector_size(lines), SCREEN_WIDTH / 2);
 
   lines = NULL;
-  cvector_init(lines, 0, NULL);
+  cvector_init(lines, 2, NULL);
   char date[16];
   formatDate(date);
 
@@ -98,13 +98,13 @@ declare_choice_callback(map) { screen_map(); }
 void
 screen_trail(void)
 {
-  const static struct ChoiceDialogChoice choices[] = {
+  static const struct ChoiceDialogChoice choices[] = {
     { .name = "Continue on trail", .callback = choice_callback(travel)   },
     { .name = "Check supplies",    .callback = choice_callback(supplies) },
     { .name = "Look at map",       .callback = choice_callback(map)      }
   };
   struct WrapLine* lines = NULL;
-  cvector_init(lines, 0, NULL);
+  cvector_init(lines, 4, NULL);
 
   char date[16];
   formatDate(date);

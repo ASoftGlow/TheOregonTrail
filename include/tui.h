@@ -94,28 +94,28 @@ struct WrapLine* textToLinesWL(struct WrapLine* lines, const char* text);
  * @param options - is optional
  * @returns a new cvector of lines
  */
-struct WrapLine* wrapBox(const char* text, int width, const BoxOptions options);
+struct WrapLine* wrapBox(const char* text, unsigned width, const BoxOptions options);
 
 /**
  * @brief Wraps <text>, applies a border, and draws it
  * @param border - possible values: BORDER_SINGLE, BORDER_DOUBLE
  * @param options - is optional
  */
-void drawBox(char* text, int width, enum BorderStyle border, BoxOptions options);
+void drawBox(char* text, unsigned width, enum BorderStyle border, BoxOptions options);
 
 /**
  * @brief Applies a border to <lines> and draws it
  * @param border - possible values: BORDER_SINGLE, BORDER_DOUBLE
  * @param options - is optional
  */
-void drawBoxWL(struct WrapLine* lines, int width, enum BorderStyle border, BoxOptions options);
+void drawBoxWL(struct WrapLine* lines, unsigned width, enum BorderStyle border, BoxOptions options);
 
 /**
  * @brief Wraps <text>
  * @param options - is optional
  */
 void showChoiceDialog(
-    const char* text, int choices_size, const struct ChoiceDialogChoice choices[choices_size], DialogOptions options
+    const char* text, unsigned choices_size, const struct ChoiceDialogChoice choices[choices_size], DialogOptions options
 );
 
 /**
@@ -123,7 +123,7 @@ void showChoiceDialog(
  * @param options - is optional
  */
 void showChoiceDialogWL(
-    struct WrapLine* lines, int choices_size, const struct ChoiceDialogChoice choices[choices_size], DialogOptions options
+    struct WrapLine* lines, unsigned choices_size, const struct ChoiceDialogChoice choices[choices_size], DialogOptions options
 );
 void showInfoDialog(const char title[], const char text[]);
 void showLongInfoDialog(const char title[], const char text[], enum Color border_color);
@@ -201,29 +201,30 @@ extern byte SCREEN_HEIGHT;
 
 extern byte DIALOG_CONTENT_WIDTH;
 
-#define DIALOG_PADDING_X              4
-#define DIALOG_PADDING_Y              1
-#define DIALOG_WIDTH                  SCREEN_WIDTH
-#define INDENT_SIZE                   DIALOG_PADDING_X
+#define DIALOG_PADDING_X      4
+#define DIALOG_PADDING_Y      1
+#define DIALOG_WIDTH          SCREEN_WIDTH
+#define INDENT_SIZE           DIALOG_PADDING_X
 
 // @brief Signifies a position to capture
-#define CONTROL_CHAR                  '\5'
+#define CONTROL_CHAR          '\5'
 // @brief Signifies a position to capture
-#define CONTROL_CHAR_STR              "\5"
+#define CONTROL_CHAR_STR      "\5"
 
-#define TAB                           "   "
+#define TAB                   "   "
 
-#define __callback_prefix             __menu_
+#define __callback_prefix     __menu_
 /**
  * @brief Gets the choice callback with <name>
  */
-#define choice_callback(name)         &TOKENPASTE2(__callback_prefix, name)
+#define choice_callback(name) &TOKENPASTE2(__callback_prefix, name)
 /**
  * @brief Delare a callback function for a specific choice
  */
-#define declare_choice_callback(name) void TOKENPASTE2(__callback_prefix, name)(const struct ChoiceDialogChoice* choice)
+#define declare_choice_callback(name) \
+  void TOKENPASTE2(__callback_prefix, name)(const struct ChoiceDialogChoice* choice MAYBE_UNUSED)
 /**
  * @brief Declare a default callback function
  */
 #define declare_choice_callback_g(name) \
-  void TOKENPASTE2(__callback_prefix, name)(const struct ChoiceDialogChoice* choice, const int index)
+  void TOKENPASTE2(__callback_prefix, name)(const struct ChoiceDialogChoice* choice MAYBE_UNUSED, const int index MAYBE_UNUSED)

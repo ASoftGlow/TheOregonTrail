@@ -42,9 +42,13 @@ extern const char* EXIT_MSG;
 #ifdef _DEBUG
 #define DEBUG
 #endif
+#define MAYBE_UNUSED
+#define FALLTHROUGH
 #else
 #define ETR_CHAR '\n'
 #ifndef NDEBUG
 #define DEBUG
+#define MAYBE_UNUSED __attribute__((unused))
+#define FALLTHROUGH  __attribute__((fallthrough))
 #endif
 #endif

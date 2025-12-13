@@ -28,7 +28,7 @@ const Coord MAP_PATH1_COORDS[] = {
 const Coord* MAP_PATHS[] = { &MAP_PATH1_COORDS[0] };
 const short MAP_PATH_LENGTHS[] = { countof(MAP_PATH1_COORDS) };
 
-#define MAP_WIDTH 53
+#define MAP_WIDTH 54
 const char MAP[][MAP_WIDTH] = {
   "1    /\\^  @-\\                        yes this is map!", "2 /\\         \\^ ^        \\___  jdf djfdkf d f e  e ed",
   "3             \\                       ___ ff sdfoiwef",  "4    /\\^       `\\                    yes this is map!",

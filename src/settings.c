@@ -69,6 +69,8 @@ struct DialogOptions dialog_options = { .color = COLOR_GREEN, .title = "Settings
 static enum QKeyCallbackReturn
 settingInputCallback(int key, va_list args)
 {
+  (void)args;
+
   if (key == ESC_CHAR)
   {
     do_exit = 1;
@@ -81,6 +83,8 @@ settingInputCallback(int key, va_list args)
 void
 settingCallback(const struct ChoiceDialogChoice* choice, const int index)
 {
+  (void)choice;
+
   clearStdout();
   if (gp_settings[index].description[0])
   {
@@ -103,7 +107,7 @@ settingCallback(const struct ChoiceDialogChoice* choice, const int index)
   switch (gp_settings[index].type)
   {
   case SETTING_TYPE_NUMBER:;
-    int num = getNumberInput(gp_settings[index].min, elvis(gp_settings[index].max, -1), 1, settingInputCallback);
+    int num = getNumberInput(gp_settings[index].min, elvis(gp_settings[index].max, -1u), 1, settingInputCallback);
     if (num < 0) goto skip;
     *gp_settings[index].p.number = num;
     break;
@@ -212,6 +216,7 @@ skip:
 static void
 exitCallback(const struct ChoiceDialogChoice* choice)
 {
+  (void)choice;
   // custom handler so it doesn't use the option type handler
   // purposefully empty!
 }

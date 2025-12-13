@@ -25,11 +25,6 @@ if(DISCORD)
     add_definitions(-DTOT_DISCORD)
 endif()
 
-if(MSVC)
-    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-    add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
-endif()
-
 if(WIN32)
     include(generate_product_version)
     generate_product_version(
@@ -50,6 +45,13 @@ target_include_directories(
     tot PUBLIC lib
     tot PUBLIC "${PROJECT_BINARY_DIR}/generated"
 )
+
+if(MSVC)
+    target_compile_definitions(tot PUBLIC -D_CRT_SECURE_NO_WARNINGS)
+    target_compile_options(tot PUBLIC "$<$<C_COMPILER_ID:MSVC>:/utf-8>")
+else()
+    target_compile_options(tot PUBLIC -Wall -Wextra -Wpedantic -Wno-missing-field-initializers)
+endif()
 
 set(BUILD_SHARED_LIBS OFF)
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)

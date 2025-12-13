@@ -50,13 +50,13 @@ wrapText(const char* text, int width, WrapLineOptions options)
   }
   else
   {
-    cvector_init(lines, 0, 0);
+    cvector_init(lines, 1, NULL);
   }
   byte l = start;
   cvector_push_back(lines, (struct WrapLine){ .kind = options->kind });
   assert(lines);
 
-  const bool auto_height = options->height; // todo
+  const bool auto_height = options->height; // TODO
 
   int i = -1;
   bool is_escaping = 0;
@@ -226,7 +226,7 @@ inputCallback(int key, va_list args)
 
 void
 showChoiceDialog(
-    const char* text, int choices_size, const struct ChoiceDialogChoice choices[choices_size], DialogOptions options
+    const char* text, unsigned choices_size, const struct ChoiceDialogChoice choices[choices_size], DialogOptions options
 )
 {
   struct WrapLine* lines = wrapText(text, DIALOG_CONTENT_WIDTH, NULL);
@@ -236,7 +236,7 @@ showChoiceDialog(
 
 void
 showChoiceDialogWL(
-    struct WrapLine* lines, int choices_size, const struct ChoiceDialogChoice choices[choices_size], DialogOptions options
+    struct WrapLine* lines, unsigned choices_size, const struct ChoiceDialogChoice choices[choices_size], DialogOptions options
 )
 {
   bool free_options = 0;
@@ -258,7 +258,7 @@ showChoiceDialogWL(
   struct ChoiceInfo* choices_info = (struct ChoiceInfo*)malloc(sizeof(struct ChoiceInfo) * choices_size);
   assert(choices_info);
 
-  for (int i = 0; i < choices_size; i++)
+  for (unsigned i = 0; i < choices_size; i++)
   {
     byte added_count = 0;
     char str[64];
@@ -316,6 +316,8 @@ drawChoice(
     int index, bool selected
 )
 {
+  (void)choices;
+
   escape_combo = 0;
   if (selected) putsn(ANSI_SELECTED);
   for (byte i = choices_info[index].start; i < choices_info[index].end; i++)
@@ -328,7 +330,7 @@ drawChoice(
 }
 
 struct WrapLine*
-wrapBox(const char* text, int width, const BoxOptions options)
+wrapBox(const char* text, unsigned width, const BoxOptions options)
 {
   struct WrapLineOptions wrap_options = { .height = options->height - options->paddingY * 2, .captures = options->captures };
   struct WrapLine* lines = wrapText(text, width - options->paddingX * 2, &wrap_options);
@@ -337,13 +339,13 @@ wrapBox(const char* text, int width, const BoxOptions options)
 }
 
 void
-drawBox(char* text, int width, enum BorderStyle border, BoxOptions options)
+drawBox(char* text, unsigned width, enum BorderStyle border, BoxOptions options)
 {
   drawBoxWL(wrapBox(text, width, options), width, border, options);
 }
 
 void
-drawBoxWL(struct WrapLine* lines, int width, enum BorderStyle border, BoxOptions options)
+drawBoxWL(struct WrapLine* lines, unsigned width, enum BorderStyle border, BoxOptions options)
 {
   bool free_options = 0;
   if (!options)
@@ -823,7 +825,7 @@ struct WrapLine*
 textToLines(const char* text)
 {
   struct WrapLine* lines = NULL;
-  cvector_init(lines, 0, NULL);
+  cvector_init(lines, 1, NULL);
   return textToLinesWL(lines, text);
 }
 

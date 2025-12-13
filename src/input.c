@@ -43,7 +43,7 @@ tot_sleep(unsigned long ms)
 LONG original_style = LONG_MAX;
 
 void
-disableResizing()
+disableResizing(void)
 {
   HWND hWnd = GetConsoleWindow();
   original_style = GetWindowLong(hWnd, GWL_STYLE);
@@ -51,7 +51,7 @@ disableResizing()
 }
 
 void
-enableResizing()
+enableResizing(void)
 {
   if (original_style == LONG_MAX) return;
   HWND hWnd = GetConsoleWindow();
@@ -86,12 +86,12 @@ getScreenSize(void)
 }
 
 void
-disableResizing()
+disableResizing(void)
 {
 }
 
 void
-enableResizing()
+enableResizing(void)
 {
 }
 
@@ -394,6 +394,7 @@ getWrappedStringInput(char* buffer, byte width, Coord offset, int min_len, int m
       last_break = i;
       last_break_x = x + 2;
       last_break_y = y;
+      FALLTHROUGH;
 
     default:
       if (i < max_len)

@@ -2,7 +2,7 @@
 #include "settings.h"
 #include "state.h"
 
-const static struct Setting main_settings[] = {
+static const struct Setting main_settings[] = {
 #ifndef TOT_MUTE
   { .name = "Volume",
                   .p = { .fractional = &settings.volume },

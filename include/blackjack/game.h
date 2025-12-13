@@ -11,4 +11,4 @@ enum BlackjackResult
 };
 
 enum BlackjackResult playBlackjack(float bet);
-const char* const getBlackjackResult(enum BlackjackResult result);
+const char* getBlackjackResult(enum BlackjackResult result);

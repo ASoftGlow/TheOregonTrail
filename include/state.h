@@ -3,6 +3,8 @@
 
 #include "static.h"
 
+#define FORCE_ENUM
+
 enum WagonMemberHealth
 {
   HEALTH_GOOD,
@@ -33,14 +35,14 @@ struct WagonMember
   byte injury_duration;
 };
 
-enum Role : uint16_t
+enum Role
 {
   ROLE_BANKER,
   ROLE_CARPENTER,
   ROLE_FARMER
 };
 
-enum Weather : uint16_t
+enum Weather
 {
   WEATHER_MILD,
   WEATHER_COLD,
@@ -49,13 +51,13 @@ enum Weather : uint16_t
   WEATHER_SNOW
 };
 
-enum Pace : uint16_t
+enum Pace
 {
   PACE_STEADY,
   PACE_2
 };
 
-enum Ration : uint16_t
+enum Ration
 {
   RATION_FILLING
 };
@@ -68,7 +70,7 @@ struct MapMark
   MapMarkDensity density;
 };
 
-enum StateStage : int16_t
+enum StateStage
 {
   STATE_STAGE_TUTORIAL = -1,
   STATE_STAGE_NONE,
@@ -94,10 +96,10 @@ struct State
   uint16_t food;
 
   byte month, day;
-  enum Weather weather;
-  enum Pace pace;
-  enum Ration ration;
-  enum Role role;
+  enum Weather weather : 8;
+  enum Pace pace : 8;
+  enum Ration ration : 8;
+  enum Role role : 8;
 
   uint16_t progress;
   struct MapMark map_marks[32];
@@ -107,7 +109,7 @@ struct State
   struct WagonMember wagon_leader;
   struct WagonMember wagon_members[WAGON_MEMBER_COUNT];
 
-  enum StateStage stage;
+  enum StateStage stage : 8;
 
   byte __disk_end;
   char location[32];

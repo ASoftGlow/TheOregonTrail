@@ -18,7 +18,7 @@ struct StoreCategory
   const char* desciption;
   const char* image;
   struct StoreItem* items;
-  const int items_count;
+  const unsigned items_count;
   float spent;
 };
 
@@ -27,9 +27,9 @@ struct Store
   const char name[32];
   const enum Color color, color_category;
   struct StoreCategory* categories;
-  const int categories_count;
+  const unsigned categories_count;
 
-  bool (*const callback_leave)(const struct Store* store);
+  bool (*const callback_leave)(const struct Store*);
 };
 
 void showStore(struct Store* store);

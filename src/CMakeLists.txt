@@ -1,5 +1,6 @@
 SET(SOURCE_FILES
 	base.c
+  ansi_codes.c
 	input.c
 	main.c
 	settings.c

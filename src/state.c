@@ -153,6 +153,7 @@ loadState(const char* path)
     {
       break;
     }
+    FALLTHROUGH;
 
   case EOF:
     fclose(f); //

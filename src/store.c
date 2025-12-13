@@ -20,7 +20,7 @@ showStoreCategory(struct WrapLine* lines, const struct StoreCategory* categories
 }
 
 static void
-showStoreCategoryMenu(struct StoreCategory* category, byte index)
+showStoreCategoryMenu(struct StoreCategory* category)
 {
   struct StoreItem* item = category->items;
   const struct StoreItem* items_end = &category->items[category->items_count];
@@ -107,7 +107,7 @@ showStoreAlert(char* text)
   if (HALT) return;
 
   lines = NULL;
-  cvector_init(lines, 0, 0);
+  cvector_init(lines, 4, NULL);
   char buffer[32];
   sprintf(buffer, "Amount you have: $%.2f", state.money);
   lines = addLine(lines, buffer, WRAPLINEKIND_RTL);
@@ -129,14 +129,14 @@ showStoreAlert(char* text)
 static enum QKeyCallbackReturn
 storeInputCallback(int key, va_list args)
 {
-  char* cur_pos = va_arg(args, char*);
+  unsigned* cur_pos = va_arg(args, unsigned*);
   Coord end = va_arg(args, Coord);
 
   switch (key)
   {
   case KEY_ARROW_DOWN:
     if (*cur_pos == store->categories_count - 1) break;
-    if (*cur_pos != -1) drawChoiceStore(*cur_pos, 0);
+    if (*cur_pos != -1u) drawChoiceStore(*cur_pos, 0);
     else putsn(ANSI_CURSOR_HIDE);
 
     drawChoiceStore(++*cur_pos, 1);
@@ -144,7 +144,7 @@ storeInputCallback(int key, va_list args)
 
   case KEY_ARROW_UP:
     if (*cur_pos == 0) break;
-    if (*cur_pos != -1) drawChoiceStore(*cur_pos, 0);
+    if (*cur_pos != -1u) drawChoiceStore(*cur_pos, 0);
     else
     {
       *cur_pos = store->categories_count;
@@ -154,21 +154,21 @@ storeInputCallback(int key, va_list args)
     break;
 
   case KEY_PAGE_DOWN:
-    if (*cur_pos == -1 || *cur_pos == store->categories_count - 1) break;
+    if (*cur_pos == -1u || *cur_pos == store->categories_count - 1) break;
     drawChoiceStore(*cur_pos, 0);
     *cur_pos = store->categories_count - 1;
     drawChoiceStore(*cur_pos, 1);
     break;
 
   case KEY_PAGE_UP:
-    if (*cur_pos <= 0) break;
+    if (*cur_pos == 0 || *cur_pos == -1u) break;
     drawChoiceStore(*cur_pos, 0);
     *cur_pos = 0;
     drawChoiceStore(*cur_pos, 1);
     break;
 
   case ' ':
-    if (*cur_pos != -1)
+    if (*cur_pos != -1u)
     {
       drawChoiceStore(*cur_pos, 0);
       *cur_pos = -1;
@@ -194,19 +194,19 @@ storeInputCallback(int key, va_list args)
     return QKEY_CALLBACK_RETURN_END;
 
   case ETR_CHAR:
-    if (*cur_pos != -1)
+    if (*cur_pos != -1u)
     {
       putsn(ANSI_CURSOR_SHOW);
-      showStoreCategoryMenu(&store->categories[*cur_pos], *cur_pos);
+      showStoreCategoryMenu(&store->categories[*cur_pos]);
       return QKEY_CALLBACK_RETURN_END;
     }
     break;
 
   case ESC_CHAR:
-    if (*cur_pos > -1)
+    if (*cur_pos != -1u)
     {
       drawChoiceStore(*cur_pos, 0);
-      *cur_pos = -1;
+      *cur_pos = -1u;
       setCursorPos(end.x, end.y);
       putsn(ANSI_CURSOR_SHOW);
       fflush(stdout);
@@ -214,14 +214,14 @@ storeInputCallback(int key, va_list args)
     }
     break;
   }
-  return *cur_pos == -1 ? QKEY_CALLBACK_RETURN_NORMAL : QKEY_CALLBACK_RETURN_IGNORE;
+  return *cur_pos == -1u ? QKEY_CALLBACK_RETURN_NORMAL : QKEY_CALLBACK_RETURN_IGNORE;
 }
 
 static Coord
-drawStore()
+drawStore(void)
 {
   struct WrapLine* lines = NULL;
-  cvector_init(lines, 0, NULL);
+  cvector_init(lines, 12, NULL);
   lines = addLine(lines, &state.location[0], WRAPLINEKIND_CENTER);
   lines = addNewline(lines);
   char date[16];
@@ -279,13 +279,13 @@ showStore(struct Store* store_in)
   total_bill = 0.f;
 
   do {
-    char cur_pos = -1;
+    unsigned cur_pos = -1u;
     Coord capture = drawStore();
     setCursorPos(capture.x, capture.y);
     putsn(ANSI_CURSOR_SHOW);
     fflush(stdout);
     const int choice = getNumberInput(1, store->categories_count, 1, &storeInputCallback, &cur_pos, capture) - 1;
     if (choice < 0) return;
-    showStoreCategoryMenu(&store->categories[choice], choice);
+    showStoreCategoryMenu(&store->categories[choice]);
   } while (!HALT);
 }

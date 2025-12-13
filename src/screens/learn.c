@@ -3,8 +3,6 @@
 #include "state.h"
 #include "tui.h"
 
-static declare_choice_callback(empty) {}
-
 static bool back = 0;
 
 static declare_choice_callback(back) { back = 1; }
@@ -37,7 +35,7 @@ static declare_choice_callback(licenses)
 void
 screen_learn(void)
 {
-  const static struct ChoiceDialogChoice choices[] = {
+  static const struct ChoiceDialogChoice choices[] = {
     { "Licenses", .callback = choice_callback(licenses) },
     { "Back",     .callback = choice_callback(back)     },
   };

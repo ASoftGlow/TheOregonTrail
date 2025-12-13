@@ -47,7 +47,4 @@ enum Color
 #define ANSI_WINDOW_TITLE(title)        "\33]0;" title "\33\\"
 #define ANSI_WINDOW_SIZE(width, height) "\33[8;" height ";" width "t"
 
-static const char* ANSI_COLORS[__COLOR_END] = {
-  (char*)0,        ANSI_COLOR_RED,     ANSI_COLOR_GREEN, ANSI_COLOR_YELLOW,
-  ANSI_COLOR_BLUE, ANSI_COLOR_MAGENTA, ANSI_COLOR_CYAN,  ANSI_COLOR_GRAY,
-};
+extern const char* ANSI_COLORS[__COLOR_END];

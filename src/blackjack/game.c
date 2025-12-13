@@ -223,7 +223,7 @@ input_loop:
   }
 }
 
-const char* const
+const char*
 getBlackjackResult(enum BlackjackResult result)
 {
   static const char* texts[]

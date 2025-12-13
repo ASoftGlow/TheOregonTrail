@@ -25,7 +25,7 @@ static declare_choice_callback(blackjack)
 
 static declare_choice_callback_g(month)
 {
-  const static struct StoryPage story[] = {
+  const struct StoryPage story[] = {
     { .title = "Dim morning",
      .text = "You wander into Independence as the weak sun breaks the horizon, horse in toe. The journey has here was "
               "tiresome, but "
@@ -64,9 +64,9 @@ static declare_choice_callback(month_advice)
 void
 showMonth(void)
 {
-  const static char text[] = "It is 1848. Your jumping off place for Oregon is Independence, Missouri. You must decide which "
-                             "month to leave Independence.";
-  const static struct ChoiceDialogChoice choices[] = {
+  const char text[] = "It is 1848. Your jumping off place for Oregon is Independence, Missouri. You must decide which "
+                      "month to leave Independence.";
+  const struct ChoiceDialogChoice choices[] = {
     { "March" },
     { "April" },
     { "May" },
@@ -92,6 +92,8 @@ static declare_choice_callback(role_learn)
 static enum QKeyCallbackReturn
 nameInputCallback(int key, va_list args)
 {
+  (void)args;
+
   if (key == '\b' || key == ETR_CHAR || key == DEL_CHAR || key == ' ' || key == '\'' || (KEY_IS_NORMAL(key) && isalpha(key)))
     return QKEY_CALLBACK_RETURN_NORMAL;
   return QKEY_CALLBACK_RETURN_IGNORE;
@@ -128,7 +130,7 @@ static declare_choice_callback_g(role)
 void
 screen_role(void)
 {
-  const static struct ChoiceDialogChoice choices[] = {
+  const struct ChoiceDialogChoice choices[] = {
     { "Be a banker from Boston" },
     { "Be a carpenter from Ohio" },
     { "Be a farmer from Illinois" },

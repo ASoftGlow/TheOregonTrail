@@ -6,7 +6,9 @@
 #include "tui.h"
 
 #include "setup.c"
+#ifndef TOT_MUTE
 #include "tracks.c"
+#endif
 
 void showSavePrompt(void);
 
@@ -97,7 +99,7 @@ static declare_choice_callback(main_exit) { HALT = HALT_QUIT; }
 void
 screen_mainMenu(void)
 {
-  const static struct ChoiceDialogChoice choices[] = {
+  static const struct ChoiceDialogChoice choices[] = {
     { ANSI_COLOR_CYAN "Start traveling trail" ANSI_COLOR_RESET, .callback = choice_callback(main_start)    },
     { "Continue traveling trail",                               .callback = choice_callback(main_load)     },
     { "Learn about the trail",                                  .callback = choice_callback(main_learn)    },

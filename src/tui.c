@@ -226,7 +226,7 @@ inputCallback(int key, va_list args)
 
 void
 showChoiceDialog(
-    const char* text, unsigned choices_size, const struct ChoiceDialogChoice choices[choices_size], DialogOptions options
+    const char* text, unsigned choices_size, const struct ChoiceDialogChoice choices[], DialogOptions options
 )
 {
   struct WrapLine* lines = wrapText(text, DIALOG_CONTENT_WIDTH, NULL);
@@ -236,7 +236,7 @@ showChoiceDialog(
 
 void
 showChoiceDialogWL(
-    struct WrapLine* lines, unsigned choices_size, const struct ChoiceDialogChoice choices[choices_size], DialogOptions options
+    struct WrapLine* lines, unsigned choices_size, const struct ChoiceDialogChoice choices[], DialogOptions options
 )
 {
   bool free_options = 0;
@@ -673,7 +673,7 @@ showLongInfoDialog(const char title[], const char text[], enum Color border_colo
 }
 
 void
-showStoryDialog(size_t count, const struct StoryPage pages[count])
+showStoryDialog(size_t count, const struct StoryPage pages[])
 {
   for (size_t i = 0; i < count; i++)
   {
@@ -772,7 +772,7 @@ putBlockWL(struct WrapLine* lines, byte x, byte y, byte width)
 }
 
 void
-putBlockWLFill(byte count, struct WrapLine lines[count], byte x, byte y, byte width)
+putBlockWLFill(byte count, struct WrapLine lines[], byte x, byte y, byte width)
 {
   for (byte i = 0; i < count; i++)
   {

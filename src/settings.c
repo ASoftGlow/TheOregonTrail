@@ -157,7 +157,7 @@ settingCallback(const struct ChoiceDialogChoice* choice, const int index)
 
   case SETTING_TYPE_FIXED_STRING:
   {
-    char buffer[gp_settings[index].max];
+    VLA(char, buffer, gp_settings[index].max);
     if (getStringInput(buffer, 0, gp_settings[index].max, settingInputCallback)) goto skip;
     strcpy(gp_settings[index].p.fixed_string, buffer);
     break;
@@ -222,7 +222,7 @@ exitCallback(const struct ChoiceDialogChoice* choice)
 }
 
 void
-showSettings(byte settings_count, const struct Setting settings[settings_count])
+showSettings(byte settings_count, const struct Setting settings[])
 {
   struct ChoiceDialogChoice* choices = malloc(((size_t)settings_count + 1) * sizeof(struct ChoiceDialogChoice));
   assert(choices);

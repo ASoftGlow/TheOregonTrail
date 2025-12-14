@@ -115,7 +115,7 @@ void drawBoxWL(struct WrapLine* lines, unsigned width, enum BorderStyle border, 
  * @param options - is optional
  */
 void showChoiceDialog(
-    const char* text, unsigned choices_size, const struct ChoiceDialogChoice choices[choices_size], DialogOptions options
+    const char* text, unsigned choices_size, const struct ChoiceDialogChoice choices[], DialogOptions options
 );
 
 /**
@@ -123,11 +123,11 @@ void showChoiceDialog(
  * @param options - is optional
  */
 void showChoiceDialogWL(
-    struct WrapLine* lines, unsigned choices_size, const struct ChoiceDialogChoice choices[choices_size], DialogOptions options
+    struct WrapLine* lines, unsigned choices_size, const struct ChoiceDialogChoice choices[], DialogOptions options
 );
 void showInfoDialog(const char title[], const char text[]);
 void showLongInfoDialog(const char title[], const char text[], enum Color border_color);
-void showStoryDialog(size_t count, const struct StoryPage pages[count]);
+void showStoryDialog(size_t count, const struct StoryPage pages[]);
 bool showConfirmationDialog(char* text);
 void showPromptDialog(const char text[], char* buffer, short buffer_size);
 void showErrorDialog(const char context[], const char error_text[]);
@@ -145,7 +145,7 @@ void putBlockWL(struct WrapLine* lines, byte x, byte y, byte width);
 /**
  * @brief Draws block of lines at <x> and <y> and fills background with whitespace
  */
-void putBlockWLFill(byte count, struct WrapLine lines[count], byte x, byte y, byte width);
+void putBlockWLFill(byte count, struct WrapLine lines[], byte x, byte y, byte width);
 
 void indentLines(struct WrapLine* begin, struct WrapLine* end, const byte amount);
 

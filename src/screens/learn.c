@@ -11,7 +11,7 @@ static declare_choice_callback_g(license) { showLongInfoDialog(LICENSES[index].n
 
 static declare_choice_callback(licenses)
 {
-  struct ChoiceDialogChoice choices[LICENSES_COUNT + 1];
+  VLA(struct ChoiceDialogChoice, choices, LICENSES_COUNT + 1);
   for (unsigned i = 0; i < LICENSES_COUNT; i++)
   {
     choices[i].name = LICENSES[i].name;
@@ -22,7 +22,7 @@ static declare_choice_callback(licenses)
 
   do
     showChoiceDialogWL(
-        NULL, countof(choices), choices,
+        NULL, LICENSES_COUNT + 1, choices,
         &(struct DialogOptions){
             .title = "Dependency Licenses",
             .callback = choice_callback(license),

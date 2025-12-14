@@ -20,9 +20,9 @@ struct State state = {
   .location = "Missing",
   .activity = "Loading",
 };
-const size_t STATE_DISK_SIZE = &state.__disk_end - (byte*)&state;
+const size_t STATE_DISK_SIZE = offsetof(struct State, location);
 
-const struct Settings DEFAULT_SETTINGS = {
+static const struct Settings DEFAULT_SETTINGS = {
   .volume = 8,
   .auto_save_path = "save.dat",
   .screen_width = 40,
@@ -30,7 +30,7 @@ const struct Settings DEFAULT_SETTINGS = {
   .discord_rp = 1,
 };
 
-struct Settings settings = DEFAULT_SETTINGS;
+struct Settings settings;
 
 const char*
 getSettingsPath(void)
@@ -75,6 +75,8 @@ saveSettings(void)
 int
 loadSettings(void)
 {
+  settings = DEFAULT_SETTINGS;
+
   get_user_config_file(cfgfile, sizeof(cfgfile), "asoftglow-tot");
   if (!cfgfile[0]) strcpy(cfgfile, "asoftglow-tot.config");
 

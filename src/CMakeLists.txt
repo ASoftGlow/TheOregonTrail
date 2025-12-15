@@ -48,7 +48,7 @@ add_license("Native File Dialog Extended" nativefiledialog-extended/LICENSE)
 add_license("PortAudio" portaudio/LICENSE.txt)
 add_license("c-vector" cvector/LICENSE)
 
-file(APPEND "${CMAKE_BINARY_DIR}/licenses.c" "};\nconst unsigned LICENSES_COUNT = sizeof(LICENSES)/sizeof(*LICENSES);")
+file(APPEND "${CMAKE_BINARY_DIR}/licenses.c" "};\nconst unsigned LICENSES_COUNT = sizeof(LICENSES)/sizeof(*LICENSES);\n")
 
 add_executable(tot ${SOURCE_FILES})
 set_target_properties(tot PROPERTIES OUTPUT_NAME ${PROJECT_NAME})

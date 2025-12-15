@@ -185,7 +185,7 @@ autoSave(void)
 byte MAP_VIEWPORT_HEIGHT;
 
 void
-updateScreenSize()
+updateScreenSize(void)
 {
   if (settings.auto_screen_size)
   {

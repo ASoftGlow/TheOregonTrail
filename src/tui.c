@@ -541,7 +541,7 @@ showErrorDialog(const char context[], const char error_text[])
 }
 
 static void
-drawEmptyBox(byte width, byte height, enum BorderStyle border, enum Color color)
+drawEmptyBox(byte width, byte height, const char title[], enum BorderStyle border, enum Color color)
 {
   width -= 2;
   int w = width;
@@ -558,7 +558,22 @@ drawEmptyBox(byte width, byte height, enum BorderStyle border, enum Color color)
 
   if (color) putsn(ANSI_COLORS[color]);
   putBoxChar(BORDER_DR);
-  while (w--) putBoxChar(BORDER_H);
+  if (title)
+  {
+    const int l = width - (int)strlen(title) - 2;
+    const int seg = w = (int)(l / 2);
+    while (w--) putBoxChar(BORDER_H);
+    putchar(' ');
+    if (color) putsn(ANSI_COLOR_RESET);
+    putsn(title);
+    if (color) putsn(ANSI_COLORS[color]);
+    putchar(' ');
+    w = seg;
+    if (l % 2) w++;
+    while (w--) putBoxChar(BORDER_H);
+  }
+  else
+    while (w--) putBoxChar(BORDER_H);
   putBoxChar(BORDER_DL);
   putchar('\n');
 
@@ -578,7 +593,6 @@ drawEmptyBox(byte width, byte height, enum BorderStyle border, enum Color color)
   while (w--) putBoxChar(BORDER_H);
   putBoxChar(BORDER_UL);
   if (color) putsn(ANSI_COLOR_RESET);
-  putchar('\n');
 }
 
 static void
@@ -595,7 +609,7 @@ drawScrollIndicator(void)
 static void
 removeScrollIndicator(void)
 {
-  setCursorPos(SCREEN_WIDTH, SCREEN_HEIGHT - 2);
+  setCursorPos(SCREEN_WIDTH - 2, SCREEN_HEIGHT - 2);
   putchar(' ');
 }
 
@@ -610,7 +624,7 @@ showLongInfoDialog(const char title[], const char text[], enum Color border_colo
   putsn(ANSI_CURSOR_HIDE);
   clearStdout();
 
-  drawEmptyBox(DIALOG_WIDTH, min(SCREEN_HEIGHT, (byte)cvector_size(lines) + 2), BORDER_SINGLE, border_color);
+  drawEmptyBox(DIALOG_WIDTH, min(SCREEN_HEIGHT, (byte)cvector_size(lines) + 2), title, BORDER_SINGLE, border_color);
   putBlockWLFill(min(SCREEN_HEIGHT - 2, (byte)cvector_size(lines)), lines, 2, 1, SCREEN_WIDTH - 3);
 
   int max_scroll = max((int)cvector_size(lines) - SCREEN_HEIGHT + 2, 0);

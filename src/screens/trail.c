@@ -1,4 +1,4 @@
-#include "cvector/cvector.h"
+#include <string.h>
 
 #include "screens.h"
 #include "state.h"
@@ -35,24 +35,22 @@ formatDate(char* buffer)
 
 static declare_choice_callback(travel)
 {
-  struct WrapLine* lines = NULL;
-  cvector_init(lines, 2, NULL);
+  FormattedLines lines = formatted_lines_create(2);
 
   lines = addLine(lines, "Date:", WRAPLINEKIND_RTL);
   lines = addLine(lines, "Weather:", WRAPLINEKIND_RTL);
 
   clearStdout();
-  putBlockWL(lines, 1, SCREEN_HEIGHT - (byte)cvector_size(lines), SCREEN_WIDTH / 2);
+  putBlockWL(lines, 1, SCREEN_HEIGHT - (byte)formatted_lines_size(lines), SCREEN_WIDTH / 2);
 
-  lines = NULL;
-  cvector_init(lines, 2, NULL);
+  formatted_lines_clear(lines);
   char date[16];
   formatDate(date);
 
   lines = addLine(lines, date, WRAPLINEKIND_LTR);
   lines = addLine(lines, WEATHERS[state.weather], WRAPLINEKIND_LTR);
 
-  putBlockWL(lines, SCREEN_WIDTH / 2 + 2, SCREEN_HEIGHT - (byte)cvector_size(lines), 0);
+  putBlockWL(lines, SCREEN_WIDTH / 2 + 2, SCREEN_HEIGHT - (byte)formatted_lines_size(lines), 0);
   fflush(stdout);
 }
 
@@ -67,7 +65,7 @@ static declare_choice_callback(supplies)
 static struct WrapLine*
 addQuickInfo(struct WrapLine* lines)
 {
-  lines = addBar(lines);
+  lines = addBar(lines, '-', COLOR_CYAN);
 
   // Weather
   char buffer[32] = "Weather: ";
@@ -89,7 +87,7 @@ addQuickInfo(struct WrapLine* lines)
   strcat(buffer, RATIONS[state.ration]);
   lines = addLine(lines, buffer, WRAPLINEKIND_LTR);
 
-  lines = addBar(lines);
+  lines = addBar(lines, '-', COLOR_CYAN);
   return lines;
 }
 
@@ -103,8 +101,7 @@ screen_trail(void)
     { .name = "Check supplies",    .callback = choice_callback(supplies) },
     { .name = "Look at map",       .callback = choice_callback(map)      }
   };
-  struct WrapLine* lines = NULL;
-  cvector_init(lines, 4, NULL);
+  FormattedLines lines = formatted_lines_create(4);
 
   char date[16];
   formatDate(date);

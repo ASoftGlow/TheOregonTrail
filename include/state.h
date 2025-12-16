@@ -132,9 +132,9 @@ struct Settings
 #define SETTINGS_VERSION  'A'
 #define SAVE_VERSION      'A'
 #define MIN_SCREEN_WIDTH  32
-#define MAX_SCREEN_WIDTH  100
+#define MAX_SCREEN_WIDTH  248
 #define MIN_SCREEN_HEIGHT 20
-#define MAX_SCREEN_HEIGHT 60
+#define MAX_SCREEN_HEIGHT 93
 #define DEBUG_SAVE_PATH   "../../resources/save.dat"
 
 extern struct State state;

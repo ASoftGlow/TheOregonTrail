@@ -1,4 +1,5 @@
-#include "cvector/cvector.h"
+#include <stdlib.h>
+#include <string.h>
 
 #include "input.h"
 #include "state.h"
@@ -26,8 +27,8 @@ showStoreCategoryMenu(struct StoreCategory* category)
   const struct StoreItem* items_end = &category->items[category->items_count];
   category->spent = 0;
 
-  const char question_start[] = "\n\nHow many " CONTROL_CHAR_STR;
-  const char question_end[] = "? " CONTROL_CHAR_STR;
+  const char question_start[] = "\n\nHow many " CAPTURE_STRING;
+  const char question_end[] = "? " CAPTURE_STRING;
   const size_t len1 = strlen(category->desciption), len2 = strlen(item->name);
   char* text = malloc(len1 + len2 + sizeof(question_start) + sizeof(question_end));
   assert(text);
@@ -94,20 +95,19 @@ drawChoiceStore(byte index, bool selected)
 void
 showStoreAlert(char* text)
 {
-  struct WrapLine* lines = wrapText(text, DIALOG_CONTENT_WIDTH, NULL);
+  FormattedLines lines = wrapText(text, DIALOG_CONTENT_WIDTH, NULL);
 
   lines = addLine(lines, "Press SPACE BAR to continue", WRAPLINEKIND_CENTER);
 
   putsn(ANSI_CURSOR_SAVE);
-  putBlockWLFill((byte)cvector_size(lines), lines, 5, 8 + store->categories_count, DIALOG_CONTENT_WIDTH);
-  cvector_free(lines);
+  putBlockWLFill(lines, 0, (byte)formatted_lines_size(lines), 5, 8 + store->categories_count, DIALOG_CONTENT_WIDTH);
+  formatted_lines_free(lines);
   putsn(ANSI_CURSOR_HIDE);
   fflush(stdout);
   waitForKey(' ');
   if (HALT) return;
 
-  lines = NULL;
-  cvector_init(lines, 4, NULL);
+  lines = formatted_lines_create(4);
   char buffer[32];
   sprintf(buffer, "Amount you have: $%.2f", state.money);
   lines = addLine(lines, buffer, WRAPLINEKIND_RTL);
@@ -118,12 +118,12 @@ showStoreAlert(char* text)
       "Which item would you like to buy?\n", DIALOG_CONTENT_WIDTH - INDENT_SIZE,
       &(struct WrapLineOptions){ .lines = lines, .added_count = &added_lines_count }
   );
-  indentLines(cvector_end(lines) - added_lines_count, cvector_end(lines), INDENT_SIZE);
+  indentLines(lines, formatted_lines_size(lines) - 1 - added_lines_count, formatted_lines_size(lines) - 1, INDENT_SIZE);
   lines = addLine(lines, "Press SPACE BAR to leave store", WRAPLINEKIND_CENTER);
-  putBlockWLFill((byte)cvector_size(lines), lines, 5, 8 + store->categories_count, DIALOG_CONTENT_WIDTH);
+  putBlockWLFill(lines, 0, (byte)formatted_lines_size(lines), 5, 8 + store->categories_count, DIALOG_CONTENT_WIDTH);
   putsn(ANSI_CURSOR_SHOW ANSI_CURSOR_RESTORE);
   fflush(stdout);
-  cvector_free(lines);
+  formatted_lines_free(lines);
 }
 
 static enum QKeyCallbackReturn
@@ -220,21 +220,20 @@ storeInputCallback(int key, va_list args)
 static Coord
 drawStore(void)
 {
-  struct WrapLine* lines = NULL;
-  cvector_init(lines, 12, NULL);
+  FormattedLines lines = formatted_lines_create(12);
   lines = addLine(lines, &state.location[0], WRAPLINEKIND_CENTER);
   lines = addNewline(lines);
   char date[16];
   sprintf(date, "%s, %i, 1868", MONTHS[state.month], state.day);
   lines = addLine(lines, date, WRAPLINEKIND_RTL);
-  lines = addBar(lines);
+  lines = addBar(lines, '-', COLOR_CYAN);
 
   for (byte i = 0; i < store->categories_count; i++)
   {
     total_bill += store->categories[i].spent;
     lines = showStoreCategory(lines, store->categories, i);
   }
-  lines = addBar(lines);
+  lines = addBar(lines, '-', COLOR_CYAN);
   char text[32];
   sprintf(text, "Total bill: $%.2f", total_bill);
   lines = addLine(lines, text, WRAPLINEKIND_RTL);
@@ -246,14 +245,14 @@ drawStore(void)
   Coord capture = { 0 };
   byte added_lines_count = 0;
   lines = wrapText(
-      "Which item would you like to buy? " CONTROL_CHAR_STR "\n", DIALOG_CONTENT_WIDTH - INDENT_SIZE,
+      "Which item would you like to buy? " CAPTURE_STRING "\n", DIALOG_CONTENT_WIDTH - INDENT_SIZE,
       &(struct WrapLineOptions){
           .captures = &capture,
           .lines = lines,
           .added_count = &added_lines_count,
       }
   );
-  indentLines(cvector_end(lines) - added_lines_count, cvector_end(lines), INDENT_SIZE);
+  indentLines(lines, formatted_lines_size(lines) - 1 - added_lines_count, formatted_lines_size(lines) - 1, INDENT_SIZE);
   lines = addLine(lines, "Press SPACE BAR to leave store", WRAPLINEKIND_CENTER);
 
   clearStdout();

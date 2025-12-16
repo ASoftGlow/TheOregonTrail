@@ -44,6 +44,7 @@ extern const char* EXIT_MSG;
 #endif
 #define MAYBE_UNUSED
 #define FALLTHROUGH
+#define CHECK_RETURN         _Check_return_
 /*
  * MSVC doesn't support VLAs (as it's optional in C11), so _alloca is used to allocate
  * memory for one on the stack. It is deprecated for _malloca, but that requires manually
@@ -54,8 +55,9 @@ extern const char* EXIT_MSG;
 #define ETR_CHAR '\n'
 #ifndef NDEBUG
 #define DEBUG
-#define MAYBE_UNUSED __attribute__((unused))
-#define FALLTHROUGH  __attribute__((fallthrough))
+#define MAYBE_UNUSED         __attribute__((unused))
+#define FALLTHROUGH          __attribute__((fallthrough))
+#define CHECK_RETURN         __attribute__((warn_unused_result))
 #define VLA(type, var, size) type var[size]
 #endif
 #endif

@@ -15,7 +15,7 @@ void showSavePrompt(void);
 void
 screen_savePrompt(void)
 {
-  bool result = showConfirmationDialog("Would you like to save? " CONTROL_CHAR_STR);
+  bool result = showConfirmationDialog("Would you like to save? " CAPTURE_STRING);
   if (HALT) return;
   if (result)
   {

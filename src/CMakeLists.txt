@@ -8,6 +8,7 @@ SET(SOURCE_FILES
 	static.c
 	store.c
 	tui.c
+  formatted_lines.c
 	utils.c
 	blackjack/game.c
 	blackjack/card.c
@@ -46,7 +47,7 @@ add_license("Discord RPC" discord-rpc/LICENSE)
 add_license("cfgpath.h" cfgpath/LICENSE)
 add_license("Native File Dialog Extended" nativefiledialog-extended/LICENSE)
 add_license("PortAudio" portaudio/LICENSE.txt)
-add_license("c-vector" cvector/LICENSE)
+#add_license("c-vector" cvector/LICENSE)
 
 file(APPEND "${CMAKE_BINARY_DIR}/licenses.c" "};\nconst unsigned LICENSES_COUNT = sizeof(LICENSES)/sizeof(*LICENSES);\n")
 

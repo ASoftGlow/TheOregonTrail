@@ -2,7 +2,7 @@
 #include <stddef.h>
 
 #include "ansi_codes.h"
-#include "base.h"
+#include "formatted_lines.h"
 
 struct ChoiceDialogChoice;
 
@@ -18,7 +18,8 @@ struct ChoiceDialogChoice
 enum BorderStyle
 {
   BORDER_SINGLE,
-  BORDER_DOUBLE
+  BORDER_DOUBLE,
+  __BORDER_END,
 };
 
 typedef struct BoxOptions
@@ -31,7 +32,7 @@ typedef struct BoxOptions
   Coord* captures;
   byte captures_count;
   bool do_not_free;
-}* BoxOptions;
+} BoxOptions;
 
 typedef struct DialogOptions
 {
@@ -39,31 +40,7 @@ typedef struct DialogOptions
   ChoiceDialogCallback callback;
   enum Color color;
   bool noPaddingY;
-}* DialogOptions;
-
-typedef byte WrapLineKind;
-#define WRAPLINEKIND_LTR    0
-#define WRAPLINEKIND_RTL    1
-#define WRAPLINEKIND_CENTER 2
-#define WRAPLINEKIND_NONE   3
-
-struct WrapLine
-{
-  byte length;
-  byte display_length;
-  char text[61];
-  WrapLineKind kind;
-};
-
-typedef struct WrapLineOptions
-{
-  int height;
-  Coord* captures;
-  byte captures_count;
-  struct WrapLine* lines;
-  byte* added_count;
-  WrapLineKind kind;
-}* WrapLineOptions;
+} DialogOptions;
 
 struct StoryPage
 {
@@ -73,62 +50,44 @@ struct StoryPage
   const enum Color border_color;
 };
 
-// @param options - is optional
-struct WrapLine* wrapText(const char* text, int width, WrapLineOptions options);
-
-/**
- * @brief Convert a string to a single line
- * @returns a new cvector of lines
- */
-struct WrapLine* textToLines(const char* text);
-
-/**
- * @brief Convert a string to a single line
- * @param lines - an existing cvector
- * @returns the new pointer to <lines>
- */
-struct WrapLine* textToLinesWL(struct WrapLine* lines, const char* text);
-
 /**
  * @brief Wraps <text> and applies a border
  * @param options - is optional
  * @returns a new cvector of lines
  */
-struct WrapLine* wrapBox(const char* text, unsigned width, const BoxOptions options);
+FormattedLines wrapBox(const char* text, unsigned width, BoxOptions* options);
 
 /**
  * @brief Wraps <text>, applies a border, and draws it
  * @param border - possible values: BORDER_SINGLE, BORDER_DOUBLE
  * @param options - is optional
  */
-void drawBox(char* text, unsigned width, enum BorderStyle border, BoxOptions options);
+void drawBox(const char* text, unsigned width, enum BorderStyle border, BoxOptions* options);
 
 /**
  * @brief Applies a border to <lines> and draws it
  * @param border - possible values: BORDER_SINGLE, BORDER_DOUBLE
  * @param options - is optional
  */
-void drawBoxWL(struct WrapLine* lines, unsigned width, enum BorderStyle border, BoxOptions options);
+void drawBoxWL(const FormattedLines lines, unsigned width, enum BorderStyle border, BoxOptions* options);
 
 /**
  * @brief Wraps <text>
  * @param options - is optional
  */
-void showChoiceDialog(
-    const char* text, unsigned choices_size, const struct ChoiceDialogChoice choices[], DialogOptions options
-);
+void
+showChoiceDialog(const char* text, unsigned choices_size, const struct ChoiceDialogChoice choices[], DialogOptions* options);
 
 /**
- * @brief Uses cvector of lines
  * @param options - is optional
  */
 void showChoiceDialogWL(
-    struct WrapLine* lines, unsigned choices_size, const struct ChoiceDialogChoice choices[], DialogOptions options
+    FormattedLines lines, unsigned choices_size, const struct ChoiceDialogChoice choices[], DialogOptions* options
 );
 void showInfoDialog(const char title[], const char text[]);
 void showLongInfoDialog(const char title[], const char text[], enum Color border_color);
 void showStoryDialog(size_t count, const struct StoryPage pages[]);
-bool showConfirmationDialog(char* text);
+bool showConfirmationDialog(const char* text);
 void showPromptDialog(const char text[], char* buffer, short buffer_size);
 void showErrorDialog(const char context[], const char error_text[]);
 
@@ -140,61 +99,36 @@ void putBlock(const char* text, byte x, byte y);
 /**
  * @brief Draws lines at <x> and <y>
  */
-void putBlockWL(struct WrapLine* lines, byte x, byte y, byte width);
+void putBlockWL(const FormattedLines lines, byte x, byte y, byte width);
 
 /**
  * @brief Draws block of lines at <x> and <y> and fills background with whitespace
  */
-void putBlockWLFill(byte count, struct WrapLine lines[], byte x, byte y, byte width);
-
-void indentLines(struct WrapLine* begin, struct WrapLine* end, const byte amount);
-
-struct WrapLine* addNewline(struct WrapLine* lines);
-struct WrapLine* justifyLineWL(struct WrapLine* lines, const char* text1, const char* text2, const byte width);
-struct WrapLine* addBar(struct WrapLine* lines);
-
-/**
- * @brief Adds a line with <text> to cvector <lines>
- * @returns new pointer to <lines>
- */
-struct WrapLine* addLine(struct WrapLine* lines, const char* text, WrapLineKind kind);
+void putBlockWLFill(const FormattedLines lines, byte begin_i, byte end_i, byte x, byte y, byte width);
 
 // box drawing chars
 #ifdef TOT_ASCII
-#define BOX_CHAR_D_DR '@'
-#define BOX_CHAR_D_DL '@'
-#define BOX_CHAR_D_H  '='
-#define BOX_CHAR_D_V  '|'
-#define BOX_CHAR_D_UR '@'
-#define BOX_CHAR_D_UL '@'
-#define BOX_CHAR_DR   '+'
-#define BOX_CHAR_DL   '+'
-#define BOX_CHAR_H    '-'
-#define BOX_CHAR_V    '|'
-#define BOX_CHAR_UR   '+'
-#define BOX_CHAR_UL   '+'
-
 typedef char box_char_t;
-
 #define putBoxChar(ascii) putchar(ascii)
 #else
-#define BOX_CHAR_D_DR    "\u2554"
-#define BOX_CHAR_D_DL    "\u2557"
-#define BOX_CHAR_D_H     "\u2550"
-#define BOX_CHAR_D_V     "\u2551"
-#define BOX_CHAR_D_UR    "\u255A"
-#define BOX_CHAR_D_UL    "\u255D"
-#define BOX_CHAR_DR      "\u250C"
-#define BOX_CHAR_DL      "\u2510"
-#define BOX_CHAR_H       "\u2500"
-#define BOX_CHAR_V       "\u2502"
-#define BOX_CHAR_UR      "\u2514"
-#define BOX_CHAR_UL      "\u2518"
-
 typedef char* box_char_t;
-
 #define putBoxChar(utf8) putsn(utf8)
 #endif
+
+/*
+ * D = down
+ * U = up
+ * R = right
+ * L = left
+ * H = horizontal
+ * V = vertical
+ */
+typedef struct
+{
+  box_char_t DR, DL, H, V, UR, UL;
+} BoxCharCollection;
+
+extern const BoxCharCollection BOX_CHAR_BORDERS[__BORDER_END];
 
 extern byte SCREEN_WIDTH;
 extern byte SCREEN_HEIGHT;
@@ -205,11 +139,6 @@ extern byte DIALOG_CONTENT_WIDTH;
 #define DIALOG_PADDING_Y      1
 #define DIALOG_WIDTH          SCREEN_WIDTH
 #define INDENT_SIZE           DIALOG_PADDING_X
-
-// @brief Signifies a position to capture
-#define CONTROL_CHAR          '\5'
-// @brief Signifies a position to capture
-#define CONTROL_CHAR_STR      "\5"
 
 #define TAB                   "   "
 

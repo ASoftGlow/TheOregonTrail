@@ -2,7 +2,8 @@
 #include <stdbool.h>
 
 #define MUSIC_NUM_CHANNELS 4
-#define MUSIC_SPECIAL_VAL  1.17549435e-38f // FLT_MIN
+#define MUSIC_SPECIAL_KEEP -1.17549435e-38f // FLT_MIN
+#define MUSIC_SPECIAL_LOOP -1.17549425e-38f
 
 struct Channel
 {
@@ -18,7 +19,7 @@ struct Channel
   struct ChannelEvent
   {
     float offset;
-    float pitch;
+    float freq;
     float volume;
   }* events;
 

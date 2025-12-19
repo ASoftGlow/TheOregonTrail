@@ -232,7 +232,7 @@ updateDiscordSupport(void)
 void
 updateVolume(void)
 {
-  music_setVolume(settings.volume / 9.0f);
+  music_setVolume(settings.volume / 32.0f);
 }
 #endif
 

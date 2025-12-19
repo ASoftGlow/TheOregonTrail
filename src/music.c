@@ -19,17 +19,21 @@ typedef struct
   bool loop;
   const struct Track* track;
 
-  float time;
-
   struct ChannelState
   {
     unsigned i;
-    float time;
+    float last_time, time;
     float value;
     int edge;
     float freq;
     float volume;
     float edge_time;
+
+    struct
+    {
+      unsigned start_i, x;
+      float start_time;
+    } loop;
   } states[MUSIC_NUM_CHANNELS];
 } MusicData;
 
@@ -43,7 +47,13 @@ static void
 resetTimeline(MusicData* data)
 {
   memset(data->states, 0, sizeof(data->states));
-  data->time = 0.0f;
+  for (unsigned c = 0; c < MUSIC_NUM_CHANNELS; c++)
+  {
+    /*if (data->track->channels[c].num_events)
+    {
+      data->states[c].target_time = data->track->channels[c].events[0].offset;
+    }*/
+  }
 }
 
 /*
@@ -66,7 +76,6 @@ musicCallback(
 
   for (unsigned i = 0; i < num_frames; i++)
   {
-    data->time += data->track->tempo / MUSIC_SAMPLE_RATE;
     unsigned finished_channels = 0;
     float value = 0.0f;
     for (unsigned c = 0; c < MUSIC_NUM_CHANNELS; c++)
@@ -74,6 +83,9 @@ musicCallback(
 #define state   data->states[c]
 #define channel data->track->channels[c]
 
+      // timeline control logic
+
+      // check for end
       if (state.i == channel.num_events)
       {
         if (++finished_channels == MUSIC_NUM_CHANNELS)
@@ -86,14 +98,57 @@ musicCallback(
           {
             result = paComplete;
           }
+          // the last channel, so the continue acts as a break
         }
         continue;
       }
 
+      // loops / next event
+      struct ChannelEvent event = channel.events[state.i];
+      // last_time <= time, so (offset <= 0) will cause it to
+      // trigger instantly, like MUSIC_SPECIAL_LOOP
+      if (state.last_time + event.offset <= state.time)
+      {
+        if (event.offset == MUSIC_SPECIAL_LOOP)
+        {
+          if (state.loop.x)
+          {
+            // existing loop
+            state.loop.x--;
+            state.i = state.loop.start_i;
+            state.time = state.loop.start_time;
+            state.last_time = state.loop.start_time;
+          }
+          else
+          {
+            // new loop
+            state.loop.start_i = state.i + 1;
+            state.loop.start_time = state.last_time + event.offset;
+            state.loop.x = event.freq; // times
+            state.i++;
+            c--; // process channel again, next event
+            continue;
+          }
+        }
+        else
+        {
+          state.i++;
+        }
+
+        state.value = 0;
+        state.edge = 1;
+        state.edge_time = 0;
+        state.last_time += event.offset;
+        state.freq = event.freq;
+        state.volume = event.volume;
+      }
+
+      // waveform generation
+
       float volume = state.volume * data->volume;
       switch (channel.waveform_type)
       {
-      case WAVEFORM_NONE: abort(); // should never get here
+      case WAVEFORM_NONE: break; // should never get here
 
       case WAVEFORM_SAWTOOTH:
         state.value += volume * state.freq / MUSIC_SAMPLE_RATE;
@@ -112,31 +167,20 @@ musicCallback(
         break;
 
       case WAVEFORM_SQUARE:
-        if (state.edge_time <= data->time)
+        if (state.edge_time <= state.time)
         {
-          state.edge_time = data->time + 1 / state.freq * data->track->tempo;
+          state.edge_time = state.time + 1 / state.freq * data->track->tempo;
           state.edge *= -1;
           state.value = volume * state.edge;
         }
         break;
 
       case WAVEFORM_NOISE:
-        state.value = volume * (rand() / (float)RAND_MAX * 2 - 1); //
+        state.value = volume * (rand() / (float)RAND_MAX * 2 - 1); // white noise
         break;
       }
       value += state.value;
-
-      const struct ChannelEvent event = channel.events[state.i];
-      if (state.time + event.offset <= data->time)
-      {
-        state.time += event.offset;
-        state.value = 0;
-        state.edge = 1;
-        state.edge_time = 0;
-        if (event.pitch != MUSIC_SPECIAL_VAL) state.freq = pitchToFreq(event.pitch);
-        if (event.volume != MUSIC_SPECIAL_VAL) state.volume = event.volume;
-        state.i++;
-      }
+      state.time += data->track->tempo / MUSIC_SAMPLE_RATE;
 
 #undef state
 #undef channel
@@ -159,17 +203,41 @@ preprocessTrack(struct Track* track)
       continue;
     }
 
+    float last_freq = 0.0f, last_volume = 0.0f;
+    float loop_times = 0.0f;
+    float loop_start = 0.0f;
     float channel_end = 0.0f;
     for (unsigned i = 0; i < track->channels[c].num_events; i++)
     {
-      float offset = track->channels[c].events[i].offset;
-      if (offset == MUSIC_SPECIAL_VAL)
+      struct ChannelEvent* event = &track->channels[c].events[i];
+      if (event->offset == MUSIC_SPECIAL_KEEP)
       {
         if (i == track->channels[c].num_events - 1) continue;
         // erroneous special value
         abort();
       }
-      channel_end += offset;
+      if (event->offset == MUSIC_SPECIAL_LOOP)
+      {
+        if (loop_times)
+        {
+          channel_end += (channel_end - loop_start) * (int)loop_times;
+        }
+        float frac = modff(event->freq, &loop_times);
+        assert(frac == 0.0f);
+
+        loop_start = channel_end;
+        continue;
+      }
+
+      event->freq = pitchToFreq(event->freq);
+
+      if (event->freq == MUSIC_SPECIAL_KEEP) event->freq = last_freq;
+      else last_freq = event->freq;
+
+      if (event->volume == MUSIC_SPECIAL_KEEP) event->volume = last_volume;
+      else last_volume = event->volume;
+
+      channel_end += event->offset;
     }
     if (channel_end > end) end = channel_end;
   }
@@ -179,7 +247,7 @@ preprocessTrack(struct Track* track)
     if (track->channels[c].num_events)
     {
       float* offset = &track->channels[c].events[track->channels[c].num_events - 1].offset;
-      if (*offset == MUSIC_SPECIAL_VAL) *offset = end;
+      if (*offset == MUSIC_SPECIAL_KEEP) *offset = end;
     }
   }
 }
@@ -236,9 +304,9 @@ music_play(struct Track* track, bool loop)
     track->processed = true;
   }
 
-  resetTimeline(&data);
   data.track = track;
   data.loop = loop;
+  resetTimeline(&data);
   return Pa_StartStream(stream);
 }
 

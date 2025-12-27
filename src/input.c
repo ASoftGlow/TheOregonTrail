@@ -124,6 +124,12 @@ disableInputWait(void)
 int
 getKeyInput(void)
 {
+  if (HALT) switch (HALT)
+    {
+    case HALT_QUIT:
+    case HALT_GAME: return KEY_QUIT;
+    }
+
   // https://stackoverflow.com/a/912796
   int key = tot_getchar();
 
@@ -131,13 +137,13 @@ getKeyInput(void)
   if (key < 0)
   {
     HALT = HALT_QUIT;
-    return KEY_QUIT_ALL;
+    return KEY_QUIT;
   }
 
   switch (key)
   {
   case 3:
-  case 4: HALT = HALT_QUIT; return KEY_QUIT_ALL;
+  case 4: HALT = HALT_QUIT; return KEY_QUIT;
 
   case 0:
   case 224:
@@ -219,15 +225,17 @@ getNumberInput(unsigned start, unsigned end, bool erase, const QKeyCallback key_
     {
       va_list argptr;
       va_start(argptr, key_callback);
-      enum QKeyCallbackReturn result = ((*key_callback)(key, argptr));
+      const QKeyCallbackReturn result = ((*key_callback)(key, argptr));
       va_end(argptr);
-      if (result == QKEY_CALLBACK_RETURN_IGNORE) continue;
-      if (result == QKEY_CALLBACK_RETURN_END)
+      if (HALT) return -1;
+      if (result.behavior == QKEY_BEHAVIOR_IGNORE) continue;
+      if (result.behavior == QKEY_BEHAVIOR_END)
       {
         // overwrite previous char
         if (erase)
           while (i--) putsn("\b \b");
-        return -1;
+
+        return result.value.number;
       }
     }
     // enter pressed
@@ -285,10 +293,10 @@ getStringInput(char* buffer, int min_len, int max_len, const QKeyCallback key_ca
     {
       va_list argptr;
       va_start(argptr, key_callback);
-      const enum QKeyCallbackReturn ret = key_callback(key, argptr);
+      const QKeyCallbackReturn result = key_callback(key, argptr);
       va_end(argptr);
-      if (ret == QKEY_CALLBACK_RETURN_IGNORE) continue;
-      if (ret == QKEY_CALLBACK_RETURN_END) break;
+      if (result.behavior == QKEY_BEHAVIOR_IGNORE) continue;
+      if (result.behavior == QKEY_BEHAVIOR_END) break;
     }
 
     if (key == ETR_CHAR)
@@ -313,6 +321,9 @@ getStringInput(char* buffer, int min_len, int max_len, const QKeyCallback key_ca
       fflush(stdout);
       break;
 
+    case ' ':
+      if (!i) continue;
+      FALLTHROUGH;
     default:
       if (i < max_len)
       {
@@ -343,10 +354,10 @@ getWrappedStringInput(char* buffer, byte width, Coord offset, int min_len, int m
     {
       va_list argptr;
       va_start(argptr, key_callback);
-      const enum QKeyCallbackReturn ret = key_callback(key, argptr);
+      const QKeyCallbackReturn result = key_callback(key, argptr);
       va_end(argptr);
-      if (ret == QKEY_CALLBACK_RETURN_IGNORE) continue;
-      if (ret == QKEY_CALLBACK_RETURN_END) break;
+      if (result.behavior == QKEY_BEHAVIOR_IGNORE) continue;
+      if (result.behavior == QKEY_BEHAVIOR_END) break;
     }
     if (KEY_IS_ARROW(key)) continue;
 
@@ -426,12 +437,12 @@ getWrappedStringInput(char* buffer, byte width, Coord offset, int min_len, int m
   return 0;
 }
 
-static enum QKeyCallbackReturn
+static QKeyCallbackReturn
 booleanInputCallback(int key, va_list args)
 {
   const QKeyCallback callback = va_arg(args, const QKeyCallback);
 
-  if (KEY_IS_ARROWS(key)) return QKEY_CALLBACK_RETURN_NORMAL;
+  if (KEY_IS_ARROWS(key)) return (QKeyCallbackReturn){ QKEY_BEHAVIOR_NORMAL };
 
   switch (key)
   {
@@ -448,16 +459,16 @@ booleanInputCallback(int key, va_list args)
 
   case '\b':
   case ETR_CHAR:
-  case DEL_CHAR: return QKEY_CALLBACK_RETURN_NORMAL;
+  case DEL_CHAR: return (QKeyCallbackReturn){ QKEY_BEHAVIOR_NORMAL };
 
   default:
     if (callback)
     {
-      const enum QKeyCallbackReturn ret = callback(key, args);
-      if (ret == QKEY_CALLBACK_RETURN_NORMAL) return QKEY_CALLBACK_RETURN_IGNORE;
-      return ret;
+      const QKeyCallbackReturn result = callback(key, args);
+      if (result.behavior == QKEY_BEHAVIOR_NORMAL) return (QKeyCallbackReturn){ QKEY_BEHAVIOR_IGNORE };
+      return result;
     }
-    return QKEY_CALLBACK_RETURN_IGNORE;
+    return (QKeyCallbackReturn){ QKEY_BEHAVIOR_IGNORE };
   }
 }
 

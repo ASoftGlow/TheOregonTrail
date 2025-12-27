@@ -47,9 +47,8 @@ screen_savePrompt(void)
   }
 }
 
-static declare_choice_callback(main_start) { screen_role(); }
-
-static declare_choice_callback(main_load)
+static void
+main_showLoad(void)
 {
   char path[FILENAME_MAX];
 #if defined(DEBUG) && 0
@@ -90,25 +89,28 @@ static declare_choice_callback(main_load)
   }
 }
 
-static declare_choice_callback(main_settings) { screen_mainSettings(); }
-
-static declare_choice_callback(main_learn) { screen_learn(); }
-
-static declare_choice_callback(main_exit) { HALT = HALT_QUIT; }
-
 void
 screen_mainMenu(void)
 {
   static const struct ChoiceDialogChoice choices[] = {
-    { ANSI_COLOR_CYAN "Start traveling trail" ANSI_COLOR_RESET, .callback = choice_callback(main_start)    },
-    { "Continue traveling trail",                               .callback = choice_callback(main_load)     },
-    { "Learn about the trail",                                  .callback = choice_callback(main_learn)    },
-    { "Change settings",                                        .callback = choice_callback(main_settings) },
-    { "Exit",                                                   .callback = choice_callback(main_exit)     }
+    { ANSI_COLOR_CYAN "Start traveling trail" ANSI_COLOR_RESET },
+    { "Continue traveling trail" },
+    { "Learn about the trail" },
+    { "Change settings" },
+    { "Exit" },
   };
 
   setActivity("Pondering the main menu");
-  showChoiceDialog("You may:", countof(choices), choices, &(struct DialogOptions){ .title = "The Oregon Trail" });
+  int choice = showChoiceDialog("You may:", countof(choices), choices, &(struct DialogOptions){ .title = "The Oregon Trail" });
+  switch (choice)
+  {
+  case -1: break;
+  case 0:  screen_role(); break;
+  case 1:  main_showLoad(); break;
+  case 2:  screen_learn(); break;
+  case 3:  screen_mainSettings(); break;
+  case 4:  HALT = HALT_QUIT; break;
+  }
 }
 
 int

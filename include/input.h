@@ -5,6 +5,7 @@
 
 enum
 {
+  KEY_QUIT = -1,
   KEY_UNKNOWN = 256,
   KEY_ARROW_UP,
   KEY_ARROW_DOWN,
@@ -15,22 +16,29 @@ enum
   KEY_PAGE_DOWN,
 };
 
-#define KEY_QUIT                -1
-#define KEY_QUIT_ALL            -2
-
 #define KEY_IS_ARROWS(key)      (key >= KEY_ARROW_UP && key <= KEY_PAGE_DOWN)
 #define KEY_IS_ARROW(key)       (key >= KEY_ARROW_UP && key <= KEY_ARROW_LEFT)
 #define KEY_IS_TERMINATING(key) (key < 0)
 #define KEY_IS_NORMAL(key)      (key >= 0 && key <= 255)
 
-enum QKeyCallbackReturn
+typedef struct
 {
-  QKEY_CALLBACK_RETURN_NORMAL,
-  QKEY_CALLBACK_RETURN_IGNORE,
-  QKEY_CALLBACK_RETURN_END
-};
+  enum QKeyBehavior
+  {
+    QKEY_BEHAVIOR_NORMAL,
+    QKEY_BEHAVIOR_IGNORE,
+    QKEY_BEHAVIOR_END
+  } behavior;
 
-typedef enum QKeyCallbackReturn (*QKeyCallback)(int, va_list);
+  union
+  {
+    int number;
+    bool boolean;
+    const char* string;
+  } value;
+} QKeyCallbackReturn;
+
+typedef QKeyCallbackReturn (*QKeyCallback)(int, va_list);
 
 #define ESC_CHAR 27
 #define DEL_CHAR 127

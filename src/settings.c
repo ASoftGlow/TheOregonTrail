@@ -64,9 +64,9 @@ struct ChoiceDialogChoice* gp_dialog_choices;
 byte gp_dialog_choices_count;
 bool do_exit;
 
-struct DialogOptions dialog_options = { .color = COLOR_GREEN, .title = "Settings", .callback = &settingCallback };
+static struct DialogOptions dialog_options = { .color = COLOR_GREEN, .title = "Settings" };
 
-static enum QKeyCallbackReturn
+static QKeyCallbackReturn
 settingInputCallback(int key, va_list args)
 {
   (void)args;
@@ -75,16 +75,14 @@ settingInputCallback(int key, va_list args)
   {
     do_exit = 1;
     escape_combo = 0;
-    return QKEY_CALLBACK_RETURN_END;
+    return (QKeyCallbackReturn){ QKEY_BEHAVIOR_END, { .number = -1 } };
   }
-  return QKEY_CALLBACK_RETURN_NORMAL;
+  return (QKeyCallbackReturn){ QKEY_BEHAVIOR_NORMAL };
 }
 
 void
-settingCallback(const struct ChoiceDialogChoice* choice, const int index)
+settingCallback(int index)
 {
-  (void)choice;
-
   clearStdout();
   if (gp_settings[index].description[0])
   {
@@ -108,7 +106,7 @@ settingCallback(const struct ChoiceDialogChoice* choice, const int index)
   {
   case SETTING_TYPE_NUMBER:;
     int num = getNumberInput(gp_settings[index].min, elvis(gp_settings[index].max, -1u), 1, settingInputCallback);
-    if (num < 0) goto skip;
+    if (num < 0) return;
     *gp_settings[index].p.number = num;
     break;
 
@@ -127,7 +125,7 @@ settingCallback(const struct ChoiceDialogChoice* choice, const int index)
         escape_combo = 0;
         *value = inital_value;
         if (gp_settings[index].callback) gp_settings[index].callback();
-        goto skip;
+        return;
 
       case KEY_ARROW_LEFT:
         if (*value > gp_settings[index].min)
@@ -158,7 +156,7 @@ settingCallback(const struct ChoiceDialogChoice* choice, const int index)
   case SETTING_TYPE_FIXED_STRING:
   {
     VLA(char, buffer, gp_settings[index].max);
-    if (getStringInput(buffer, 0, gp_settings[index].max, settingInputCallback)) goto skip;
+    if (getStringInput(buffer, 0, gp_settings[index].max, settingInputCallback)) return;
     strcpy(gp_settings[index].p.fixed_string, buffer);
     break;
   }
@@ -173,7 +171,7 @@ settingCallback(const struct ChoiceDialogChoice* choice, const int index)
     {
       // TODO: use dynamic string
       char buffer[FILENAME_MAX];
-      if (getStringInput(buffer, 0, sizeof(buffer), settingInputCallback)) goto skip;
+      if (getStringInput(buffer, 0, sizeof(buffer), settingInputCallback)) return;
       memcpy(gp_settings[index].p.fixed_string, buffer, sizeof(buffer));
     }
 #ifndef TOT_TTY
@@ -191,7 +189,7 @@ settingCallback(const struct ChoiceDialogChoice* choice, const int index)
       }
       else
       {
-        goto skip;
+        return;
       }
     }
 #endif
@@ -208,17 +206,6 @@ settingCallback(const struct ChoiceDialogChoice* choice, const int index)
   }
   if (gp_settings[index].callback) gp_settings[index].callback();
   saveSettings();
-skip:
-  if (HALT) return;
-  showChoiceDialogWL(NULL, gp_dialog_choices_count, gp_dialog_choices, &dialog_options);
-}
-
-static void
-exitCallback(const struct ChoiceDialogChoice* choice)
-{
-  (void)choice;
-  // custom handler so it doesn't use the option type handler
-  // purposefully empty!
 }
 
 void
@@ -229,14 +216,17 @@ showSettings(byte settings_count, const struct Setting settings[])
   for (byte i = 0; i < settings_count; i++)
   {
     choices[i].name = (char*)settings[i].name;
-    choices[i].callback = NULL;
   }
   choices[settings_count].name = "Back";
-  choices[settings_count].callback = &exitCallback;
   gp_settings = settings;
   gp_dialog_choices = choices;
   gp_dialog_choices_count = settings_count + 1;
 
-  showChoiceDialogWL(NULL, gp_dialog_choices_count, gp_dialog_choices, &dialog_options);
+  while (1)
+  {
+    int choice = showChoiceDialogWL(NULL, gp_dialog_choices_count, gp_dialog_choices, &dialog_options);
+    if (choice < 0 || choice == settings_count) break; // back
+    settingCallback(choice);
+  }
   free(choices);
 }

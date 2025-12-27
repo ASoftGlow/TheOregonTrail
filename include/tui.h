@@ -6,13 +6,9 @@
 
 struct ChoiceDialogChoice;
 
-typedef void (*ChoiceCallback)(const struct ChoiceDialogChoice*);
-typedef void (*ChoiceDialogCallback)(const struct ChoiceDialogChoice*, const int);
-
 struct ChoiceDialogChoice
 {
   const char* name;
-  ChoiceCallback callback;
 };
 
 enum BorderStyle
@@ -37,7 +33,6 @@ typedef struct BoxOptions
 typedef struct DialogOptions
 {
   char* title;
-  ChoiceDialogCallback callback;
   enum Color color;
   bool noPaddingY;
 } DialogOptions;
@@ -75,13 +70,13 @@ void drawBoxWL(const FormattedLines lines, unsigned width, enum BorderStyle bord
  * @brief Wraps <text>
  * @param options - is optional
  */
-void
+int
 showChoiceDialog(const char* text, unsigned choices_size, const struct ChoiceDialogChoice choices[], DialogOptions* options);
 
 /**
  * @param options - is optional
  */
-void showChoiceDialogWL(
+int showChoiceDialogWL(
     FormattedLines lines, unsigned choices_size, const struct ChoiceDialogChoice choices[], DialogOptions* options
 );
 void showInfoDialog(const char title[], const char text[]);
@@ -135,25 +130,9 @@ extern byte SCREEN_HEIGHT;
 
 extern byte DIALOG_CONTENT_WIDTH;
 
-#define DIALOG_PADDING_X      4
-#define DIALOG_PADDING_Y      1
-#define DIALOG_WIDTH          SCREEN_WIDTH
-#define INDENT_SIZE           DIALOG_PADDING_X
+#define DIALOG_PADDING_X 4
+#define DIALOG_PADDING_Y 1
+#define DIALOG_WIDTH     SCREEN_WIDTH
+#define INDENT_SIZE      DIALOG_PADDING_X
 
-#define TAB                   "   "
-
-#define __callback_prefix     __menu_
-/**
- * @brief Gets the choice callback with <name>
- */
-#define choice_callback(name) &TOKENPASTE2(__callback_prefix, name)
-/**
- * @brief Delare a callback function for a specific choice
- */
-#define declare_choice_callback(name) \
-  void TOKENPASTE2(__callback_prefix, name)(const struct ChoiceDialogChoice* choice MAYBE_UNUSED)
-/**
- * @brief Declare a default callback function
- */
-#define declare_choice_callback_g(name) \
-  void TOKENPASTE2(__callback_prefix, name)(const struct ChoiceDialogChoice* choice MAYBE_UNUSED, const int index MAYBE_UNUSED)
+#define TAB              "   "

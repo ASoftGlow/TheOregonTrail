@@ -49,4 +49,3 @@ extern const nfdfilteritem_t SAVE_FILE_NFD_FILTER_ITEM;
 #endif
 
 void showSettings(byte settings_count, const struct Setting settings[]);
-void settingCallback(const struct ChoiceDialogChoice*, const int);

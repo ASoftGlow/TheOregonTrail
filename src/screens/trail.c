@@ -33,7 +33,8 @@ formatDate(char* buffer)
   sprintf(buffer, "%s %d, 1868", MONTHS[state.month], state.day);
 }
 
-static declare_choice_callback(travel)
+static void
+showTravel(void)
 {
   FormattedLines lines = formatted_lines_create(2);
 
@@ -54,7 +55,8 @@ static declare_choice_callback(travel)
   fflush(stdout);
 }
 
-static declare_choice_callback(supplies)
+static void
+showSupplies(void)
 {
   // TODO
 }
@@ -91,26 +93,37 @@ addQuickInfo(struct WrapLine* lines)
   return lines;
 }
 
-declare_choice_callback(map) { screen_map(); }
-
 void
 screen_trail(void)
 {
   static const struct ChoiceDialogChoice choices[] = {
-    { .name = "Continue on trail", .callback = choice_callback(travel)   },
-    { .name = "Check supplies",    .callback = choice_callback(supplies) },
-    { .name = "Look at map",       .callback = choice_callback(map)      }
+    { .name = "Continue on trail" },
+    { .name = "Check supplies" },
+    { .name = "Look at map" },
   };
-  FormattedLines lines = formatted_lines_create(4);
 
-  char date[16];
-  formatDate(date);
+  while (1)
+  {
+    FormattedLines lines = formatted_lines_create(4);
 
-  lines = addLine(lines, date, WRAPLINEKIND_CENTER);
-  lines = addNewline(lines);
+    char date[16];
+    formatDate(date);
 
-  lines = addQuickInfo(lines);
-  lines = addNewline(lines);
+    lines = addLine(lines, date, WRAPLINEKIND_CENTER);
+    lines = addNewline(lines);
 
-  showChoiceDialogWL(lines, countof(choices), choices, &(struct DialogOptions){ .title = state.location, .noPaddingY = 1 });
+    lines = addQuickInfo(lines);
+    lines = addNewline(lines);
+
+    int choice = showChoiceDialogWL(
+        lines, countof(choices), choices, &(struct DialogOptions){ .title = state.location, .noPaddingY = 1 }
+    );
+    switch (choice)
+    {
+    case -1: return;
+    case 0:  showTravel(); break;
+    case 1:  showSupplies(); break;
+    case 2:  screen_map(); break;
+    }
+  }
 }

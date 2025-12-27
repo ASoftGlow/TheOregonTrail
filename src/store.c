@@ -126,7 +126,7 @@ showStoreAlert(char* text)
   formatted_lines_free(lines);
 }
 
-static enum QKeyCallbackReturn
+static QKeyCallbackReturn
 storeInputCallback(int key, va_list args)
 {
   unsigned* cur_pos = va_arg(args, unsigned*);
@@ -181,24 +181,23 @@ storeInputCallback(int key, va_list args)
           total_bill, state.money
       );
       showStoreAlert(text);
-      if (HALT) return QKEY_CALLBACK_RETURN_END;
-      return QKEY_CALLBACK_RETURN_IGNORE;
+      // if (HALT) return (QKeyCallbackReturn){ QKEY_BEHAVIOR_END, { .number = -1 } };
+      return (QKeyCallbackReturn){ QKEY_BEHAVIOR_IGNORE };
     }
 
     if (store->callback_leave && store->callback_leave(store))
     {
-      if (HALT) return QKEY_CALLBACK_RETURN_END;
-      return QKEY_CALLBACK_RETURN_IGNORE;
+      // if (HALT) return (QKeyCallbackReturn){ QKEY_BEHAVIOR_END, { .number = -1 } };
+      return (QKeyCallbackReturn){ QKEY_BEHAVIOR_IGNORE };
     }
     state.money -= total_bill;
-    return QKEY_CALLBACK_RETURN_END;
+    return (QKeyCallbackReturn){ QKEY_BEHAVIOR_END, { .number = -1 } };
 
   case ETR_CHAR:
     if (*cur_pos != -1u)
     {
       putsn(ANSI_CURSOR_SHOW);
-      showStoreCategoryMenu(&store->categories[*cur_pos]);
-      return QKEY_CALLBACK_RETURN_END;
+      return (QKeyCallbackReturn){ QKEY_BEHAVIOR_END, { .number = *cur_pos + 1 } };
     }
     break;
 
@@ -214,7 +213,7 @@ storeInputCallback(int key, va_list args)
     }
     break;
   }
-  return *cur_pos == -1u ? QKEY_CALLBACK_RETURN_NORMAL : QKEY_CALLBACK_RETURN_IGNORE;
+  return (QKeyCallbackReturn){ *cur_pos == -1u ? QKEY_BEHAVIOR_NORMAL : QKEY_BEHAVIOR_IGNORE };
 }
 
 static Coord
@@ -277,14 +276,15 @@ showStore(struct Store* store_in)
   store = store_in;
   total_bill = 0.f;
 
-  do {
+  while (1)
+  {
     unsigned cur_pos = -1u;
     Coord capture = drawStore();
     setCursorPos(capture.x, capture.y);
     putsn(ANSI_CURSOR_SHOW);
     fflush(stdout);
-    const int choice = getNumberInput(1, store->categories_count, 1, &storeInputCallback, &cur_pos, capture) - 1;
+    const int choice = getNumberInput(1, store->categories_count, 1, &storeInputCallback, &cur_pos, capture);
     if (choice < 0) return;
-    showStoreCategoryMenu(&store->categories[choice]);
-  } while (!HALT);
+    showStoreCategoryMenu(&store->categories[choice - 1]);
+  }
 }

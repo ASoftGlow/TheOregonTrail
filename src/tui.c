@@ -45,13 +45,12 @@ const BoxCharCollection BOX_CHAR_BORDERS[__BORDER_END] = {
 };
 #endif
 
-static enum QKeyCallbackReturn
-inputCallback(int key, va_list args)
+static QKeyCallbackReturn
+dialogInputCallback(int key, va_list args)
 {
   int* cur_pos = va_arg(args, int*);
   const int choices_size = va_arg(args, const int);
   const struct ChoiceDialogChoice* choices = va_arg(args, const struct ChoiceDialogChoice*);
-  const ChoiceDialogCallback callback = va_arg(args, const ChoiceDialogCallback);
   const FormattedLines lines = va_arg(args, const FormattedLines);
   const struct ChoiceInfo* choices_info = va_arg(args, const struct ChoiceInfo*);
   const Coord offset = va_arg(args, const Coord);
@@ -63,10 +62,8 @@ inputCallback(int key, va_list args)
     if (*cur_pos != -1)
     {
       putsn(ANSI_CURSOR_SHOW);
-      const struct ChoiceDialogChoice* choice = &choices[*cur_pos];
-      if (choice->callback) (*choice->callback)(choice);
-      else if (callback) (*callback)(choice, *cur_pos);
-      return QKEY_CALLBACK_RETURN_END;
+      // const struct ChoiceDialogChoice* choice = &choices[*cur_pos];
+      return (QKeyCallbackReturn){ QKEY_BEHAVIOR_END, { .number = *cur_pos + 1 } };
     }
     break;
 
@@ -116,18 +113,18 @@ inputCallback(int key, va_list args)
     break;
   }
 
-  return *cur_pos == -1 ? QKEY_CALLBACK_RETURN_NORMAL : QKEY_CALLBACK_RETURN_IGNORE;
+  return (QKeyCallbackReturn){ *cur_pos == -1 ? QKEY_BEHAVIOR_NORMAL : QKEY_BEHAVIOR_IGNORE };
 }
 
-void
+int
 showChoiceDialog(const char* text, unsigned choices_size, const struct ChoiceDialogChoice choices[], DialogOptions* options)
 {
   FormattedLines lines = wrapText(text, DIALOG_CONTENT_WIDTH, NULL);
   lines = addNewline(lines);
-  showChoiceDialogWL(lines, choices_size, choices, options);
+  return showChoiceDialogWL(lines, choices_size, choices, options);
 }
 
-void
+int
 showChoiceDialogWL(
     FormattedLines lines, unsigned choices_size, const struct ChoiceDialogChoice choices[], DialogOptions* options
 )
@@ -183,21 +180,17 @@ showChoiceDialogWL(
   int cur_pos = -1;
   const Coord offset = { .x = 1 + DIALOG_PADDING_X, .y = 1 + padding_y };
   const int num = getNumberInput(
-                      1, choices_size, 0, &inputCallback, &cur_pos, choices_size, choices, options->callback, lines,
-                      choices_info, offset, capture
-                  )
-                  - 1;
+      1, choices_size, 0, &dialogInputCallback, &cur_pos, choices_size, choices, lines, choices_info, offset, capture
+  );
 
-  ChoiceDialogCallback options_callback = options->callback;
   formatted_lines_free(lines);
   free(choices_info);
 
-  if (num >= 0)
+  /*if (num > 0)
   {
-    const struct ChoiceDialogChoice* choice = &choices[num];
-    if (choice->callback) (*choice->callback)(choice);
-    else if (options_callback) (*options_callback)(choice, num);
-  }
+    const struct ChoiceDialogChoice* choice = &choices[num - 1];
+  }*/
+  return num - 1;
 }
 
 void

@@ -26,7 +26,7 @@ drawCard(Card card, byte x, byte y)
 {
   setCursorPos(x, y);
   putsn(card.suit == SUIT_HEARTS || card.suit == SUIT_DIAMONDS ? SUIT_COLOR_RED : SUIT_COLOR_BLACK);
-  if (CARD_TYPES[card.type][1] == 0) putchar(' ');
+  if (CARD_TYPES[card.type][1] == 0) putchar(' '); // padding
   putsn(CARD_TYPES[card.type]);
   setCursorPos(x, y + 1);
 

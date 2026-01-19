@@ -3,12 +3,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "ansi_codes.h"
 #include "utils.h"
 
 void
 setCursorPos(byte x, byte y)
 {
-  printf("\33[%i;%iH", (int)y + 1, (int)x + 1);
+  printf(ANSI_CURSOR_POS("%i", "%i"), (int)y + 1, (int)x + 1);
 }
 
 char*
@@ -27,17 +28,31 @@ _strcat_ch(char* dst, const char src)
 size_t
 _strlen_iae(const char* str)
 {
-  size_t len = 0, pos = 0;
+  size_t len = 0;
 
-  while (1)
+  for (size_t pos = 0; str[pos]; pos++)
   {
-    if (str[pos] == 0) break;
     if (str[pos] == 27)
     {
       while (!isalpha(str[++pos]));
     }
     else ++len;
-    ++pos;
+  }
+  return len;
+}
+
+size_t
+_strlen_iae_n(const char* str, size_t full_len)
+{
+  size_t len = 0;
+
+  for (size_t pos = 0; pos < full_len; pos++)
+  {
+    if (str[pos] == 27)
+    {
+      while (!isalpha(str[++pos]));
+    }
+    else ++len;
   }
   return len;
 }

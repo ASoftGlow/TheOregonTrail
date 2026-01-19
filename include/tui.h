@@ -9,6 +9,7 @@ struct ChoiceDialogChoice;
 struct ChoiceDialogChoice
 {
   const char* name;
+  bool disabled;
 };
 
 enum BorderStyle
@@ -21,7 +22,7 @@ enum BorderStyle
 typedef struct BoxOptions
 {
   const char* title;
-  int height;
+  unsigned height; // zero for auto min height
   enum Color color;
   byte paddingX;
   byte paddingY;
@@ -41,7 +42,6 @@ struct StoryPage
 {
   const char* title;
   const char* text;
-  const char* music_path;
   const enum Color border_color;
 };
 
@@ -51,6 +51,7 @@ struct StoryPage
  * @returns a new cvector of lines
  */
 FormattedLines wrapBox(const char* text, unsigned width, BoxOptions* options);
+CHECK_RETURN FormattedLines addBar(FormattedLines lines, byte length, char c, enum Color color);
 
 /**
  * @brief Wraps <text>, applies a border, and draws it
@@ -80,7 +81,7 @@ int showChoiceDialogWL(
     FormattedLines lines, unsigned choices_size, const struct ChoiceDialogChoice choices[], DialogOptions* options
 );
 void showInfoDialog(const char title[], const char text[]);
-void showLongInfoDialog(const char title[], const char text[], enum Color border_color);
+void showLongInfoDialog(const char title[], const char text[], enum Color border_color, bool must_read);
 void showStoryDialog(size_t count, const struct StoryPage pages[]);
 bool showConfirmationDialog(const char* text);
 void showPromptDialog(const char text[], char* buffer, short buffer_size);
@@ -99,7 +100,7 @@ void putBlockWL(const FormattedLines lines, byte x, byte y, byte width);
 /**
  * @brief Draws block of lines at <x> and <y> and fills background with whitespace
  */
-void putBlockWLFill(const FormattedLines lines, byte begin_i, byte end_i, byte x, byte y, byte width);
+void putBlockWLFill(FormattedLinesIterator it, unsigned count, byte x, byte y, byte width);
 
 // box drawing chars
 #ifdef TOT_ASCII

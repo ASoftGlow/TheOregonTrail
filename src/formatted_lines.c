@@ -6,79 +6,131 @@
 #include "input.h"
 #include "utils.h"
 
+#pragma region Data structure implementation
+
+// FormattedLines beginning structure
 typedef struct
 {
-  size_t size, capacity;
-} Metadata;
+  // store last to allow fast location of last line
+  byte last_length;
+  unsigned short size; // number of lines
+  unsigned total_size; // byte size
+} Im;
 
-extern byte SCREEN_WIDTH, DIALOG_CONTENT_WIDTH;
-static const char EMPTY_STRING[] = "";
-
-static struct WrapLineOptions DEFAULT_WrapLineOptions = {
-  .kind = WRAPLINEKIND_LTR,
-};
-
-#define formatted_line_size                       (sizeof(Metadata) + SCREEN_WIDTH)
-#define __formatted_lines_capacity_size(capacity) ((sizeof(Metadata) + (capacity) * formatted_line_size))
+#define formatted_line_size(line)   (sizeof(FormattedLine) + (line).length + sizeof((char)0))
+#define formatted_line_back_pos(im) im->total_size - (sizeof(FormattedLine) + im->last_length + sizeof((char)0))
 
 CHECK_RETURN FormattedLines
-formatted_lines_create(size_t capacity)
+formatted_lines_new(void)
 {
-  Metadata* lines = malloc(__formatted_lines_capacity_size(capacity));
+  Im* lines = malloc(sizeof(Im));
   assert(lines);
-  lines->size = 0;
-  lines->capacity = capacity;
+  formatted_lines_clear(lines);
 
   return lines;
-}
-
-FormattedLine*
-formatted_lines_at(const FormattedLines lines, size_t i)
-{
-  return (FormattedLine*)((byte*)lines + __formatted_lines_capacity_size(i));
 }
 
 FormattedLine*
 formatted_lines_front(const FormattedLines lines)
 {
-  return formatted_lines_at(lines, 0);
+  assert(((Im*)lines)->size);
+  return (FormattedLine*)((byte*)lines + sizeof(Im));
 }
 
 FormattedLine*
 formatted_lines_back(const FormattedLines lines)
 {
-  return formatted_lines_at(lines, formatted_lines_size(lines) - 1);
+  Im* im = lines;
+  assert(im->size);
+  return (FormattedLine*)((byte*)lines + formatted_line_back_pos(im));
+}
+
+FormattedLinesIterator
+formatted_lines_it(const FormattedLines lines, unsigned index)
+{
+  assert(lines);
+  FormattedLinesIterator it = { .lines = lines };
+  formatted_lines_it_seek(&it, index);
+  return it;
+}
+
+FormattedLine*
+formatted_lines_it_cur(const FormattedLinesIterator* it)
+{
+  return (FormattedLine*)((byte*)it->lines + it->_pos);
+}
+
+FormattedLine*
+formatted_lines_it_next(FormattedLinesIterator* it)
+{
+  if (((Im*)it->lines)->total_size == it->_pos + formatted_line_size(*formatted_lines_it_cur(it))) return NULL;
+  it->_pos += formatted_line_size(*formatted_lines_it_cur(it));
+  return formatted_lines_it_cur(it);
+}
+
+FormattedLine*
+formatted_lines_it_seek(FormattedLinesIterator* it, unsigned index)
+{
+  Im* im = it->lines;
+  if (index == (unsigned)-1)
+  {
+    assert(im->size);
+    it->_pos = formatted_line_back_pos(im);
+  }
+  else
+  {
+    assert(index < im->size);
+    it->_pos = sizeof(Im);
+    while (index--)
+    {
+      formatted_lines_it_next(it);
+    }
+  }
+  return formatted_lines_it_cur(it);
 }
 
 CHECK_RETURN FormattedLines
-formatted_lines_add(FormattedLines lines, FormattedLine line, const char* text)
+formatted_lines_add(FormattedLines lines, FormattedLine line)
 {
-  lines = realloc(lines, __formatted_lines_capacity_size(formatted_lines_size(lines) + 1));
+  Im* im = lines;
+  im->size++;
+  im->last_length = line.length;
+  im->total_size += formatted_line_size(line);
+  lines = realloc(lines, im->total_size);
   assert(lines);
-  ((Metadata*)lines)->size++;
+
   FormattedLine* last = formatted_lines_back(lines);
   *last = line;
-  if (text) strcpy(last->text, text);
+  last->text[0] = '\0';
   return lines;
 }
 
-CHECK_RETURN size_t
+CHECK_RETURN FormattedLinesSize_t
 formatted_lines_size(const FormattedLines lines)
 {
-  return ((Metadata*)lines)->size;
+  return ((Im*)lines)->size;
 }
 
 void
 formatted_lines_clear(FormattedLines lines)
 {
-  ((Metadata*)lines)->size = 0;
+  Im* im = lines;
+  im->size = 0;
+  im->last_length = 0;
+  im->total_size = sizeof(Im);
 }
 
-CHECK_RETURN FormattedLines
-addNewline(FormattedLines lines)
+void
+formatted_lines_free(FormattedLines lines)
 {
-  return formatted_lines_add(lines, (struct FormattedLine){ .kind = WRAPLINEKIND_LTR }, EMPTY_STRING);
+  free(lines);
 }
+
+#pragma endregion
+
+static struct WrapLineOptions DEFAULT_WrapLineOptions = {
+  .kind = WRAPLINEKIND_LTR,
+};
 
 CHECK_RETURN FormattedLines
 addLine(FormattedLines lines, const char* text, WrapLineKind kind)
@@ -88,16 +140,28 @@ addLine(FormattedLines lines, const char* text, WrapLineKind kind)
     .display_length = (byte)_strlen_iae(text),
     .kind = kind,
   };
-  return formatted_lines_add(lines, line, text);
+  lines = formatted_lines_add(lines, line);
+  memcpy(formatted_lines_back(lines)->text, text, line.length + 1);
+  return lines;
 }
 
 CHECK_RETURN FormattedLines
-wrapText(const char* text, int width, WrapLineOptions* options)
+addEmptyLine(FormattedLines lines, byte length, WrapLineKind kind)
 {
-  if (!options)
-  {
-    options = &DEFAULT_WrapLineOptions;
-  }
+  return formatted_lines_add(lines, (FormattedLine){ .length = length, .kind = kind });
+}
+
+CHECK_RETURN FormattedLines
+addNewline(FormattedLines lines)
+{
+  return addEmptyLine(lines, 0, WRAPLINEKIND_LTR);
+}
+
+CHECK_RETURN FormattedLines
+wrapText(const char* text, unsigned width, WrapLineOptions* options)
+{
+  assert(text && text[0]); // don't wrap an empty string
+  if (!options) options = &DEFAULT_WrapLineOptions;
 
   byte start = 0;
   FormattedLines lines = options->lines;
@@ -107,59 +171,106 @@ wrapText(const char* text, int width, WrapLineOptions* options)
   }
   else
   {
-    lines = formatted_lines_create(1);
+    lines = formatted_lines_new();
   }
-  byte l = start;
-  lines = formatted_lines_add(lines, (struct FormattedLine){ .kind = options->kind }, NULL);
+  byte li = start;
 
-  int i = -1;
+  unsigned i = -1, line_start = 0;
   bool is_escaping = 0;
   byte escaped_chars = 0;
-  int last_break = 0;
-  int capture_i = 0;
 
-  while (text[++i])
+  struct
   {
-    FormattedLine* line = formatted_lines_at(lines, l);
-    if (text[i] == '\n')
+    unsigned pos;
+    unsigned escaped_chars;
+  } last_break = { 0 };
+
+  options->captures_count = 0;
+
+  FormattedLine line = { .kind = options->kind };
+
+  while (1)
+  {
+    switch (text[++i])
     {
+    case '\0':
+      if (!line.length) return lines;
+      FALLTHROUGH;
+    case '\n':
     newline:
-      line->display_length = line->length - escaped_chars;
-      line->text[line->length++] = 0;
-      ++l;
-      lines = formatted_lines_add(lines, (struct FormattedLine){ .kind = options->kind }, NULL);
+      line.display_length = line.length - escaped_chars;
       escaped_chars = 0;
+      lines = formatted_lines_add(lines, line);
+      FormattedLine* last = formatted_lines_back(lines);
+      for (unsigned j = line_start, h = 0; j < i; j++)
+      {
+        if (text[j] == CAPTURE_CHAR) continue;
+        last->text[h++] = text[j];
+      }
+      last->text[line.length] = '\0';
+
+      ++li;
+      line_start = i + 1;
+      line.length = 0;
+      // if at end
+      if (!text[i])
+      {
+#ifdef DEBUG
+        assert(!is_escaping);
+
+        FormattedLinesIterator it = formatted_lines_it(lines, 0);
+        FormattedLine* l = formatted_lines_it_cur(&it);
+        do {
+          assert(l->display_length <= l->length);
+          assert(l->display_length <= width);
+          for (char* c = l->text; *c; c++)
+          {
+            assert(*c != CAPTURE_CHAR);
+          }
+        } while ((l = formatted_lines_it_next(&it)));
+#endif
+        return lines;
+      }
       continue;
-    }
-    else if (text[i] == ESC_CHAR) is_escaping = 1;
-    else if (text[i] == ' ') last_break = i;
-    else if (text[i] == CAPTURE_CHAR && options->captures)
-    {
-      options->captures[capture_i].y = l;
-      options->captures[capture_i++].x = line->length;
+
+    case ESC_CHAR:
+      assert(!is_escaping);
+      is_escaping = 1;
+      break;
+
+    case ' ':
+      last_break.pos = i;
+      last_break.escaped_chars = escaped_chars;
+      break;
+
+    case CAPTURE_CHAR:
+      assert(options->captures && !is_escaping);
+      options->captures[options->captures_count].y = li;
+      options->captures[options->captures_count++].x = line.length;
       continue;
     }
 
+    ++line.length;
     if (is_escaping)
     {
       ++escaped_chars;
-      if (isalpha(text[i])) is_escaping = 0;
+      if (isalpha(text[i]) || (i && text[i - 1] == ESC_CHAR && isdigit(text[i]))) is_escaping = 0;
     }
-    line->text[line->length++] = text[i];
-    if (line->length - escaped_chars == width)
+    // only check when the display length changes
+    else if (line.length - escaped_chars == width)
     {
-      line->text[line->length -= i - last_break + 1] = 0;
-      i = last_break;
+      if (!text[i + 1] || i - last_break.pos + 1 - escaped_chars >= width)
+      {
+        // end || no break
+        goto newline;
+      }
+
+      // TODO: start at wrapped word on next line
+      i = last_break.pos;
+      escaped_chars = last_break.escaped_chars;
       goto newline;
     }
   }
-  FormattedLine* line = formatted_lines_at(lines, l);
-  line->display_length = line->length - escaped_chars;
-  line->text[line->length++] = 0;
-
-  if (options->added_count) *options->added_count = l - start + (byte)1;
-  options->captures_count = capture_i;
-  return lines;
 }
 
 CHECK_RETURN FormattedLines
@@ -170,7 +281,7 @@ justifyLineWL(FormattedLines lines, const char* text_l, const char* text_r, byte
     .display_length = width,
     .kind = WRAPLINEKIND_NONE,
   };
-  lines = formatted_lines_add(lines, line, NULL);
+  lines = formatted_lines_add(lines, line);
   FormattedLine* last = formatted_lines_back(lines);
 
   const byte len2 = (byte)strlen(text_r);
@@ -185,36 +296,42 @@ justifyLineWL(FormattedLines lines, const char* text_l, const char* text_r, byte
   return lines;
 }
 
-void
-indentLines(FormattedLines lines, size_t begin_i, size_t end_i, byte amount)
+CHECK_RETURN FormattedLines
+indentLines(FormattedLines lines, byte amount, FormattedLines new_lines)
 {
-  while (begin_i < end_i)
-  {
-    FormattedLine* line = formatted_lines_at(lines, begin_i);
-    assert(line->length + amount <= SCREEN_WIDTH);
-    memmove(line->text + amount, line->text, line->length);
-    memset(line->text, ' ', amount);
-    line->length += amount;
-    line->display_length += amount;
-    ++begin_i;
-  }
+  FormattedLinesIterator it = formatted_lines_it(lines, 0);
+  FormattedLine* line = formatted_lines_it_cur(&it);
+  do {
+    // copy each line, prefixing indent
+    FormattedLine new_line = {
+      .kind = line->kind,
+      .length = line->length + amount,
+      .display_length = line->display_length + amount,
+    };
+    new_lines = formatted_lines_add(new_lines, new_line);
+    char* new_text = formatted_lines_back(new_lines)->text;
+    memset(new_text, ' ', amount);
+    memcpy(new_text + amount, line->text, line->length + 1);
+  } while ((line = formatted_lines_it_next(&it)));
+
+  formatted_lines_free(lines);
+  return new_lines;
 }
 
 CHECK_RETURN FormattedLines
 textToLines(const char* text)
 {
-  FormattedLines lines = formatted_lines_create(1);
+  FormattedLines lines = formatted_lines_new();
   return textToLinesWL(lines, text);
 }
 
 CHECK_RETURN FormattedLines
-textToLinesWL(FormattedLines lines, const char* text)
+textToLinesWL(FormattedLines lines, const char* in_text)
 {
-  char* _text = strdup(text);
-  char* line_text;
+  char* text = strdup(in_text);
 
   // split by newline
-  line_text = strtok(_text, "\n");
+  char* line_text = strtok(text, "\n");
   while (line_text)
   {
     FormattedLine line = {
@@ -222,26 +339,27 @@ textToLinesWL(FormattedLines lines, const char* text)
       .display_length = line.length,
       .kind = WRAPLINEKIND_LTR,
     };
-    lines = formatted_lines_add(lines, line, NULL);
+    lines = formatted_lines_add(lines, line);
     FormattedLine* last = formatted_lines_back(lines);
     memcpy(last->text, line_text, line.length);
-    last->text[line.length] = 0;
+    last->text[line.length] = '\0';
 
     line_text = strtok(0, "\n");
   }
-  free(_text);
+  free(text);
   return lines;
 }
 
-CHECK_RETURN FormattedLines
-addBar(FormattedLines lines, char c, enum Color color)
+void
+fl_summary(const FormattedLines lines)
 {
-  byte l = DIALOG_CONTENT_WIDTH;
-  VLA(char, buf, l + 16);
-
-  strcpy(buf, ANSI_COLORS[color]);
-  char* end = buf + strlen(ANSI_COLORS[color]);
-  memset(end, c, l);
-  end[l] = '\0';
-  return addLine(lines, buf, WRAPLINEKIND_LTR);
+  printf("%p size: %i\n", lines, formatted_lines_size(lines));
+  if (formatted_lines_size(lines))
+  {
+    FormattedLinesIterator it = formatted_lines_it(lines, 0);
+    FormattedLine* line = formatted_lines_it_cur(&it);
+    do {
+      printf("  len: %i:%i\t txt: %s\n", line->length, line->display_length, line->text);
+    } while ((line = formatted_lines_it_next(&it)));
+  }
 }

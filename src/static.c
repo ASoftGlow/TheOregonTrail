@@ -8,9 +8,9 @@ const byte MONTH_LENGTHS[] = { 31, 30, 31, 30, 31, 31, 30, 30, 30 };
 
 const char WEATHERS[][8] = { "mild", "cold", "hot", "rain", "snow" };
 
-const char PACES[][8] = { "steady" };
+const char PACES[][16] = { "steady", "strenuous", "grueling" };
 
-const char RATIONS[][8] = { "filling" };
+const char RATIONS[][16] = { "filling", "meager", "bare bones" };
 
 const byte DISEASE_DURATIONS[] = { 0 };
 const byte DISEASE_CHANCES[] = { 0 };

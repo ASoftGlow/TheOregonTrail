@@ -1,6 +1,5 @@
 #pragma once
 #include "base.h"
-#include "tui.h"
 
 enum SettingType
 {
@@ -37,6 +36,7 @@ struct Setting
   void (*callback)(void);
   unsigned min;
   unsigned max;
+  bool disabled;
 
   union
   {

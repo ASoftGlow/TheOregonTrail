@@ -10,8 +10,8 @@
 static float total_bill = 0;
 static struct Store* store;
 
-static struct WrapLine*
-showStoreCategory(struct WrapLine* lines, const struct StoreCategory* categories, byte index)
+static FormattedLines
+showStoreCategory(FormattedLines lines, const struct StoreCategory* categories, byte index)
 {
   char text[16] = { '1' + index, '.', ' ' };
   strcpy(text + 3, categories[index].name);
@@ -44,7 +44,7 @@ showStoreCategoryMenu(struct StoreCategory* category)
   memcpy(text + pos, question_end, sizeof(question_end));
 
   Coord captures[2] = { { 0 }, { 0 } };
-  struct WrapLine* lines = wrapText(text, DIALOG_CONTENT_WIDTH, &(struct WrapLineOptions){ .captures = &captures[0] });
+  FormattedLines lines = wrapText(text, DIALOG_CONTENT_WIDTH, &(struct WrapLineOptions){ .captures = captures });
   free(text);
 
   lines = addNewline(lines);
@@ -68,7 +68,7 @@ showStoreCategoryMenu(struct StoreCategory* category)
   {
     strcpy(text2, item->name);
     strcat(text2, question_end);
-    struct WrapLine* lines = wrapText(text2, DIALOG_CONTENT_WIDTH, &(struct WrapLineOptions){ .captures = &captures[1] });
+    FormattedLines lines = wrapText(text2, DIALOG_CONTENT_WIDTH, &(struct WrapLineOptions){ .captures = &captures[1] });
     putBlockWL(lines, captures[0].x + DIALOG_PADDING_X + 1, captures[0].y + DIALOG_PADDING_Y, 0);
     setCursorPos(captures[1].x + captures[0].x + DIALOG_PADDING_X + 1, captures[1].y + captures[0].y + DIALOG_PADDING_Y);
     fflush(stdout);
@@ -100,35 +100,38 @@ showStoreAlert(char* text)
   lines = addLine(lines, "Press SPACE BAR to continue", WRAPLINEKIND_CENTER);
 
   putsn(ANSI_CURSOR_SAVE);
-  putBlockWLFill(lines, 0, (byte)formatted_lines_size(lines), 5, 8 + store->categories_count, DIALOG_CONTENT_WIDTH);
+  putBlockWLFill(
+      formatted_lines_it(lines, 0), formatted_lines_size(lines) - 1, 5, 8 + store->categories_count, DIALOG_CONTENT_WIDTH
+  );
   formatted_lines_free(lines);
   putsn(ANSI_CURSOR_HIDE);
   fflush(stdout);
   waitForKey(' ');
   if (HALT) return;
 
-  lines = formatted_lines_create(4);
+  lines = formatted_lines_new();
   char buffer[32];
   sprintf(buffer, "Amount you have: $%.2f", state.money);
   lines = addLine(lines, buffer, WRAPLINEKIND_RTL);
   lines = addNewline(lines);
 
-  byte added_lines_count = 0;
-  lines = wrapText(
-      "Which item would you like to buy?\n", DIALOG_CONTENT_WIDTH - INDENT_SIZE,
-      &(struct WrapLineOptions){ .lines = lines, .added_count = &added_lines_count }
+  lines = indentLines(
+      wrapText("Which item would you like to buy?\n", DIALOG_CONTENT_WIDTH - INDENT_SIZE, NULL), INDENT_SIZE, lines
   );
-  indentLines(lines, formatted_lines_size(lines) - 1 - added_lines_count, formatted_lines_size(lines) - 1, INDENT_SIZE);
   lines = addLine(lines, "Press SPACE BAR to leave store", WRAPLINEKIND_CENTER);
-  putBlockWLFill(lines, 0, (byte)formatted_lines_size(lines), 5, 8 + store->categories_count, DIALOG_CONTENT_WIDTH);
+  putBlockWLFill(
+      formatted_lines_it(lines, 0), formatted_lines_size(lines) - 1, 5, 8 + store->categories_count, DIALOG_CONTENT_WIDTH
+  );
   putsn(ANSI_CURSOR_SHOW ANSI_CURSOR_RESTORE);
   fflush(stdout);
   formatted_lines_free(lines);
 }
 
 static QKeyCallbackReturn
-storeInputCallback(int key, va_list args)
+storeInputCallback(int key, QKeyInputValue value, va_list args)
 {
+  (void)value;
+
   unsigned* cur_pos = va_arg(args, unsigned*);
   Coord end = va_arg(args, Coord);
 
@@ -181,13 +184,11 @@ storeInputCallback(int key, va_list args)
           total_bill, state.money
       );
       showStoreAlert(text);
-      // if (HALT) return (QKeyCallbackReturn){ QKEY_BEHAVIOR_END, { .number = -1 } };
       return (QKeyCallbackReturn){ QKEY_BEHAVIOR_IGNORE };
     }
 
     if (store->callback_leave && store->callback_leave(store))
     {
-      // if (HALT) return (QKeyCallbackReturn){ QKEY_BEHAVIOR_END, { .number = -1 } };
       return (QKeyCallbackReturn){ QKEY_BEHAVIOR_IGNORE };
     }
     state.money -= total_bill;
@@ -219,20 +220,22 @@ storeInputCallback(int key, va_list args)
 static Coord
 drawStore(void)
 {
-  FormattedLines lines = formatted_lines_create(12);
+  FormattedLines lines = formatted_lines_new();
   lines = addLine(lines, &state.location[0], WRAPLINEKIND_CENTER);
   lines = addNewline(lines);
-  char date[16];
+  char date[32];
   sprintf(date, "%s, %i, 1868", MONTHS[state.month], state.day);
   lines = addLine(lines, date, WRAPLINEKIND_RTL);
-  lines = addBar(lines, '-', COLOR_CYAN);
+  lines = addBar(lines, DIALOG_CONTENT_WIDTH, '-', COLOR_CYAN);
 
+  // (re)calculate total
+  total_bill = 0.f;
   for (byte i = 0; i < store->categories_count; i++)
   {
     total_bill += store->categories[i].spent;
     lines = showStoreCategory(lines, store->categories, i);
   }
-  lines = addBar(lines, '-', COLOR_CYAN);
+  lines = addBar(lines, DIALOG_CONTENT_WIDTH, '-', COLOR_CYAN);
   char text[32];
   sprintf(text, "Total bill: $%.2f", total_bill);
   lines = addLine(lines, text, WRAPLINEKIND_RTL);
@@ -242,16 +245,15 @@ drawStore(void)
   lines = addNewline(lines);
 
   Coord capture = { 0 };
-  byte added_lines_count = 0;
-  lines = wrapText(
-      "Which item would you like to buy? " CAPTURE_STRING "\n", DIALOG_CONTENT_WIDTH - INDENT_SIZE,
-      &(struct WrapLineOptions){
-          .captures = &capture,
-          .lines = lines,
-          .added_count = &added_lines_count,
-      }
+  byte capture_y_start = formatted_lines_size(lines);
+  lines = indentLines(
+      wrapText(
+          "Which item would you like to buy? " CAPTURE_STRING "\n", DIALOG_CONTENT_WIDTH - INDENT_SIZE,
+          &(struct WrapLineOptions){ .captures = &capture }
+      ),
+      INDENT_SIZE, lines
   );
-  indentLines(lines, formatted_lines_size(lines) - 1 - added_lines_count, formatted_lines_size(lines) - 1, INDENT_SIZE);
+  capture.y += capture_y_start;
   lines = addLine(lines, "Press SPACE BAR to leave store", WRAPLINEKIND_CENTER);
 
   clearStdout();
@@ -274,7 +276,6 @@ void
 showStore(struct Store* store_in)
 {
   store = store_in;
-  total_bill = 0.f;
 
   while (1)
   {

@@ -18,36 +18,44 @@ SET(SOURCE_FILES
   screens/trail.c
   screens/map.c
   screens/general_store.c
+
+  ../test/wrapping.c
 )
 
-if (WIN32)
+if(WIN32)
 	list(APPEND SOURCE_FILES ${VersionFilesOutputVariable})
 endif()
 
-if (NOT MUTE)
+if(NOT MUTE)
 	list(APPEND SOURCE_FILES music.c)
 endif()
 
-if (DISCORD)
+if(DISCORD)
 	list(APPEND SOURCE_FILES discord.c)
 endif()
 
 # this should be cleaned up later
 file(WRITE "${CMAKE_BINARY_DIR}/licenses.c" "#include \"licenses.h\"\nconst SoftwareLicense LICENSES[] = {\n")
-macro(add_license name path)
-        file(READ "${CMAKE_SOURCE_DIR}/lib/${path}" filedata)
-        # this sanitization is not perfect but good enough
-        string(REPLACE \" \\\" filedata ${filedata})
-        string(REPLACE \n \\n filedata ${filedata})
-        file(APPEND "${CMAKE_BINARY_DIR}/licenses.c" "{\"${name}\", \"${filedata}\"},\n")
+macro(add_license name path clean)
+  file(READ "${CMAKE_SOURCE_DIR}/lib/${path}" filedata)
+  # this sanitization is not perfect but good enough
+  string(REPLACE \" \\\" filedata ${filedata})
+  if(${clean})
+    # remove single newlines
+    string(REPLACE \n\n {tmp} filedata ${filedata})
+    string(REPLACE \n \  filedata ${filedata})
+    string(REPLACE {tmp} \\n\\n filedata ${filedata})
+  else()
+    string(REPLACE \n \\n filedata ${filedata})
+  endif()
+  file(APPEND "${CMAKE_BINARY_DIR}/licenses.c" "{\"${name}\", \"${filedata}\"},\n")
 	list(APPEND SOURCE_FILES "${CMAKE_BINARY_DIR}/licenses.c")
 endmacro()
 
-add_license("Discord RPC" discord-rpc/LICENSE)
-add_license("cfgpath.h" cfgpath/LICENSE)
-add_license("Native File Dialog Extended" nativefiledialog-extended/LICENSE)
-add_license("PortAudio" portaudio/LICENSE.txt)
-#add_license("c-vector" cvector/LICENSE)
+add_license("Discord RPC" discord-rpc/LICENSE ON)
+add_license("cfgpath.h" cfgpath/LICENSE ON)
+add_license("Native File Dialog Extended" nativefiledialog-extended/LICENSE OFF)
+add_license("PortAudio" portaudio/LICENSE.txt OFF)
 
 file(APPEND "${CMAKE_BINARY_DIR}/licenses.c" "};\nconst unsigned LICENSES_COUNT = sizeof(LICENSES)/sizeof(*LICENSES);\n")
 

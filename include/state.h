@@ -54,12 +54,15 @@ enum Weather
 enum Pace
 {
   PACE_STEADY,
-  PACE_2
+  PACE_STRENUOUS,
+  PACE_GRUELING
 };
 
 enum Ration
 {
-  RATION_FILLING
+  RATION_FILLING,
+  RATION_MEAGER,
+  RATION_BARE_BONES
 };
 
 typedef uint16_t MapMarkDensity;
@@ -77,11 +80,12 @@ enum StateStage
   STATE_STAGE_START
 };
 
-const char* saveState(const char* path);
-const char* loadState(const char* path);
+const char* state_save(const char* path);
+const char* state_load(const char* path);
 const char* getSettingsPath(void);
-int saveSettings(void);
-int loadSettings(void);
+int settings_save(void);
+int settings_load(void);
+void settings_free(void);
 void updateScreenSize(void);
 void updateAutoScreenSize(void);
 void updateDiscordSupport(void);
@@ -90,7 +94,7 @@ void updateVolume(void);
 struct State
 {
   float money;
-  uint32_t bullets, clothing_sets, oxen, wagon_axles, wagon_wheels, wagon_torques;
+  uint8_t bullets, clothing_sets, oxen, wagon_axles, wagon_wheels, wagon_tongues;
 
   byte water;
   uint16_t food;
@@ -111,7 +115,7 @@ struct State
 
   enum StateStage stage : 8;
 
-  byte __disk_end;
+  // temp below
   char location[32];
   // Use `setActivity`!
   char activity[32];
@@ -135,11 +139,11 @@ struct Settings
 #define MAX_SCREEN_WIDTH  248
 #define MIN_SCREEN_HEIGHT 20
 #define MAX_SCREEN_HEIGHT 93
-#define DEBUG_SAVE_PATH   "../../resources/save.dat"
+#define DEBUG_SAVE_PATH   "../resources/save.dat"
 
 extern struct State state;
 extern struct Settings settings;
 
 void setActivity(const char*);
 void refreshActivity(void);
-void autoSave(void);
+void state_autoSave(void);

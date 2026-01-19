@@ -4,6 +4,9 @@
 #include "screens.h"
 #include "state.h"
 #include "tui.h"
+#ifdef DEBUG
+#include "test.h"
+#endif
 
 #include "setup.c"
 #ifndef TOT_MUTE
@@ -20,7 +23,8 @@ screen_savePrompt(void)
   if (result)
   {
 #ifdef DEBUG
-    saveState(DEBUG_SAVE_PATH);
+    const char* err = state_save(DEBUG_SAVE_PATH);
+    if (err) showErrorDialog("Error saving", err);
 #else
     if (IS_TTY)
     {
@@ -51,7 +55,7 @@ static void
 main_showLoad(void)
 {
   char path[FILENAME_MAX];
-#if defined(DEBUG) && 0
+#if defined(DEBUG)
   strcpy(path, DEBUG_SAVE_PATH);
 #else
   if (IS_TTY)
@@ -79,7 +83,7 @@ main_showLoad(void)
   }
 #endif
 #endif
-  const char* err = loadState(path);
+  const char* err = state_load(path);
   if (err)
   {
 #ifndef DEBUG
@@ -121,15 +125,22 @@ main(int argc, char** argv)
   {
     if (strcmp(argv[i], "config") == 0)
     {
-      loadSettings();
+      settings_load();
       puts(getSettingsPath());
       return 0;
     }
     if (strcmp(argv[i], "tty") == 0) prefer_tty = true;
+#ifdef DEBUG
+    else if (strcmp(argv[i], "test") == 0)
+    {
+      test_wrapping();
+      return 0;
+    }
+#endif
   }
 
   if (setup(prefer_tty)) goto error;
-  int error = loadSettings();
+  int error = settings_load();
   if (error)
   {
     puts_warnf("Failed to load settings: %i.", error);
@@ -153,7 +164,7 @@ main(int argc, char** argv)
     );
     if (HALT == HALT_QUIT) goto error;
     settings.no_tutorials = 1;
-    saveSettings();
+    settings_save();
     state.stage = STATE_STAGE_NONE;
     HALT = HALT_NONE;
   }
@@ -174,8 +185,8 @@ main(int argc, char** argv)
       HALT = HALT_NONE;
       if (state.stage)
       {
-        state.stage = STATE_STAGE_NONE;
         screen_savePrompt();
+        state.stage = STATE_STAGE_NONE;
         if (HALT == HALT_QUIT) break;
       }
     }

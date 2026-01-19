@@ -53,6 +53,8 @@ else()
     target_compile_options(tot PUBLIC -Wall -Wextra -Wpedantic -Wno-missing-field-initializers)
 endif()
 
+target_link_libraries(tot PUBLIC m)
+
 set(BUILD_SHARED_LIBS OFF)
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 

@@ -180,6 +180,7 @@ setdown(void)
 #endif
   enableResizing();
   setScreenSize(original_screen_size.x, original_screen_size.y);
+  settings_free();
 
   if (EXIT_MSG) puts(EXIT_MSG);
   fflush(stdout);

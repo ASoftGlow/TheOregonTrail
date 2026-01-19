@@ -21,6 +21,13 @@ enum
 #define KEY_IS_TERMINATING(key) (key < 0)
 #define KEY_IS_NORMAL(key)      (key >= 0 && key <= 255)
 
+typedef union
+{
+  unsigned number;
+  bool boolean;
+  const char* string;
+} QKeyInputValue;
+
 typedef struct
 {
   enum QKeyBehavior
@@ -30,15 +37,10 @@ typedef struct
     QKEY_BEHAVIOR_END
   } behavior;
 
-  union
-  {
-    int number;
-    bool boolean;
-    const char* string;
-  } value;
+  QKeyInputValue value;
 } QKeyCallbackReturn;
 
-typedef QKeyCallbackReturn (*QKeyCallback)(int, va_list);
+typedef QKeyCallbackReturn (*QKeyCallback)(int, QKeyInputValue, va_list);
 
 #define ESC_CHAR 27
 #define DEL_CHAR 127

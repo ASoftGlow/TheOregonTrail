@@ -10,19 +10,21 @@ showLicenses(void)
   for (unsigned i = 0; i < LICENSES_COUNT; i++)
   {
     choices[i].name = LICENSES[i].name;
+    choices[i].disabled = 0;
   }
   choices[LICENSES_COUNT].name = "Back";
+  choices[LICENSES_COUNT].disabled = 0;
 
   while (1)
   {
-    int choice = showChoiceDialogWL(
-        NULL, LICENSES_COUNT + 1, choices,
+    int choice = showChoiceDialog(
+        "Whitespace may be modified to better fit the screen.", LICENSES_COUNT + 1, choices,
         &(struct DialogOptions){
             .title = "Dependency Licenses",
         }
     );
     if (choice < 0 || (unsigned)choice == LICENSES_COUNT) break;
-    showLongInfoDialog(LICENSES[choice].name, LICENSES[choice].terms, COLOR_DEFAULT);
+    showLongInfoDialog(LICENSES[choice].name, LICENSES[choice].terms, COLOR_DEFAULT, false);
   }
 }
 

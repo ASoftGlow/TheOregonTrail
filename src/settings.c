@@ -8,6 +8,7 @@
 #include "input.h"
 #include "settings.h"
 #include "state.h"
+#include "tui.h"
 #include "utils.h"
 
 const char SETTING_TYPE_NAMES[][8] = { "number", "", "boolean", "string", "path" };
@@ -67,9 +68,9 @@ bool do_exit;
 static struct DialogOptions dialog_options = { .color = COLOR_GREEN, .title = "Settings" };
 
 static QKeyCallbackReturn
-settingInputCallback(int key, va_list args)
+settingInputCallback(int key, QKeyInputValue value, va_list args)
 {
-  (void)args;
+  (void)value, (void)args;
 
   if (key == ESC_CHAR)
   {
@@ -205,7 +206,7 @@ settingCallback(int index)
     break;
   }
   if (gp_settings[index].callback) gp_settings[index].callback();
-  saveSettings();
+  settings_save();
 }
 
 void
@@ -216,8 +217,10 @@ showSettings(byte settings_count, const struct Setting settings[])
   for (byte i = 0; i < settings_count; i++)
   {
     choices[i].name = (char*)settings[i].name;
+    choices[i].disabled = settings[i].disabled;
   }
   choices[settings_count].name = "Back";
+  choices[settings_count].disabled = 0;
   gp_settings = settings;
   gp_dialog_choices = choices;
   gp_dialog_choices_count = settings_count + 1;

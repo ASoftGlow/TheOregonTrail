@@ -225,7 +225,7 @@ getNumberInput(unsigned start, unsigned end, bool erase, const QKeyCallback key_
     {
       va_list argptr;
       va_start(argptr, key_callback);
-      const QKeyCallbackReturn result = ((*key_callback)(key, argptr));
+      const QKeyCallbackReturn result = ((*key_callback)(key, (QKeyInputValue){ .number = num }, argptr));
       va_end(argptr);
       if (HALT) return -1;
       if (result.behavior == QKEY_BEHAVIOR_IGNORE) continue;
@@ -293,7 +293,7 @@ getStringInput(char* buffer, int min_len, int max_len, const QKeyCallback key_ca
     {
       va_list argptr;
       va_start(argptr, key_callback);
-      const QKeyCallbackReturn result = key_callback(key, argptr);
+      const QKeyCallbackReturn result = key_callback(key, (QKeyInputValue){ .string = buffer }, argptr);
       va_end(argptr);
       if (result.behavior == QKEY_BEHAVIOR_IGNORE) continue;
       if (result.behavior == QKEY_BEHAVIOR_END) break;
@@ -354,7 +354,7 @@ getWrappedStringInput(char* buffer, byte width, Coord offset, int min_len, int m
     {
       va_list argptr;
       va_start(argptr, key_callback);
-      const QKeyCallbackReturn result = key_callback(key, argptr);
+      const QKeyCallbackReturn result = key_callback(key, (QKeyInputValue){ .string = buffer }, argptr);
       va_end(argptr);
       if (result.behavior == QKEY_BEHAVIOR_IGNORE) continue;
       if (result.behavior == QKEY_BEHAVIOR_END) break;
@@ -437,8 +437,14 @@ getWrappedStringInput(char* buffer, byte width, Coord offset, int min_len, int m
   return 0;
 }
 
+static bool
+getTruthyValue(char c)
+{
+  return c == 'y' || c == 'Y' || c == '1' || c == 't' || c == 'T';
+}
+
 static QKeyCallbackReturn
-booleanInputCallback(int key, va_list args)
+booleanInputCallback(int key, QKeyInputValue value, va_list args)
 {
   const QKeyCallback callback = va_arg(args, const QKeyCallback);
 
@@ -464,7 +470,7 @@ booleanInputCallback(int key, va_list args)
   default:
     if (callback)
     {
-      const QKeyCallbackReturn result = callback(key, args);
+      const QKeyCallbackReturn result = callback(key, (QKeyInputValue){ .boolean = getTruthyValue(value.string[0]) }, args);
       if (result.behavior == QKEY_BEHAVIOR_NORMAL) return (QKeyCallbackReturn){ QKEY_BEHAVIOR_IGNORE };
       return result;
     }
@@ -475,7 +481,7 @@ booleanInputCallback(int key, va_list args)
 bool
 getBooleanInput(const QKeyCallback key_callback)
 {
-  char key[2];
-  getStringInput(key, 1, 1, &booleanInputCallback, key_callback);
-  return key[0] == 'y' || key[0] == 'Y' || key[0] == '1' || key[0] == 't' || key[0] == 'T';
+  char buffer[2];
+  getStringInput(buffer, 1, 1, &booleanInputCallback, key_callback);
+  return getTruthyValue(buffer[0]);
 }

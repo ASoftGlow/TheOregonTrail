@@ -81,9 +81,9 @@ showMonth(void)
 }
 
 static QKeyCallbackReturn
-nameInputCallback(int key, va_list args)
+nameInputCallback(int key, QKeyInputValue value, va_list args)
 {
-  (void)args;
+  (void)value, (void)args;
 
   if (key == '\b' || key == ETR_CHAR || key == DEL_CHAR || key == ' ' || key == '\'' || (KEY_IS_NORMAL(key) && isalpha(key)))
   {
@@ -98,10 +98,14 @@ showName(void)
   // money per role
   state.money = (float[]){ 1600.f, 800.f, 400.f }[state.role];
   clearStdout();
+  // add placeholder to ensure enough space for name input
   drawBox(
-      &("What is the first name of the wagon leader?\n" ANSI_CURSOR_SAVE)[0], DIALOG_WIDTH, BORDER_DOUBLE,
-      &(struct BoxOptions){ .height = 8, .color = COLOR_YELLOW }
+      "What is the first name of the wagon leader? " ANSI_CURSOR_SAVE NAME_PLACEHOLDER, DIALOG_WIDTH, BORDER_DOUBLE,
+      &(struct BoxOptions){ .color = COLOR_YELLOW }
   );
+  putsn(ANSI_CURSOR_RESTORE);
+  // clear placeholder
+  for (unsigned i = 0; i < NAME_SIZE; i++) putchar(' ');
   putsn(ANSI_CURSOR_RESTORE ANSI_CURSOR_SHOW);
   fflush(stdout);
   if (getStringInput(state.wagon_leader.name, 1, NAME_SIZE, &nameInputCallback)) return;
@@ -144,7 +148,7 @@ screen_role(void)
           "carpenter or a farmer.\n\nHowever, the harder you have to try, the more points you deserve! Therefore, the farmer "
           "earns "
           "the greatest number of points and the banker earns the least.",
-          COLOR_DEFAULT
+          COLOR_DEFAULT, false
       );
       break;
 

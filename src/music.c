@@ -66,9 +66,7 @@ musicCallback(
     PaStreamCallbackFlags status_flags, void* user_data
 )
 {
-  (void)input_buffer;
-  (void)time_info;
-  (void)status_flags;
+  (void)input_buffer, (void)time_info, (void)status_flags;
 
   PaStreamCallbackResult result = paContinue;
   MusicData* data = (MusicData*)user_data;

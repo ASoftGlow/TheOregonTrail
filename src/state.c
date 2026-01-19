@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "input.h"
+#include "screens.h"
 #include "state.h"
 #include "tui.h"
 #ifdef TOT_DISCORD
@@ -41,7 +42,7 @@ getSettingsPath(void)
 #define write(v) fwrite(&v, sizeof(v), 1, f)
 
 int
-saveSettings(void)
+settings_save(void)
 {
   // clang-format off
   uint16_t flags = settings.no_tutorials     << 0
@@ -73,7 +74,7 @@ saveSettings(void)
 #define read(v) fread(&v, sizeof(v), 1, f)
 
 int
-loadSettings(void)
+settings_load(void)
 {
   settings = DEFAULT_SETTINGS;
 
@@ -128,8 +129,14 @@ loadSettings(void)
 
 #undef read
 
+void
+settings_free(void)
+{
+  if (settings.auto_save_path) free(settings.auto_save_path);
+}
+
 const char*
-saveState(const char* path)
+state_save(const char* path)
 {
   FILE* f = fopen(path, "wb");
   if (!f) return "open failed";
@@ -144,7 +151,7 @@ saveState(const char* path)
 }
 
 const char*
-loadState(const char* path)
+state_load(const char* path)
 {
   FILE* f = fopen(path, "rb");
   if (!f) return "open failed";
@@ -170,16 +177,16 @@ loadState(const char* path)
 
   switch (state.stage)
   {
-  case STATE_STAGE_START: return NULL;
+  case STATE_STAGE_START: screen_trail(); return NULL;
 
   default:                return "unknown stage";
   }
 }
 
 void
-autoSave(void)
+state_autoSave(void)
 {
-  if (settings.auto_save && *settings.auto_save_path) saveState(settings.auto_save_path);
+  if (settings.auto_save && *settings.auto_save_path) state_save(settings.auto_save_path);
 }
 
 byte MAP_VIEWPORT_HEIGHT;

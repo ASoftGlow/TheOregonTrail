@@ -24,6 +24,8 @@ void setCursorPos(byte x, byte y);
 
 // strlen but ignores ANSI escape codes
 size_t _strlen_iae(const char* str);
+// non-null-terminated string with length
+size_t _strlen_iae_n(const char* str, size_t len);
 
 void puts_warn(const char*);
 void puts_warnf(const char*, ...);

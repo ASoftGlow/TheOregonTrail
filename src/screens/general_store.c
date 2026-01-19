@@ -73,7 +73,7 @@ store_matt_leave(const struct Store* store)
   state.bullets = store->categories[3].items[0].amount * 20;
   state.wagon_axles = store->categories[4].items[0].amount;
   state.wagon_wheels = store->categories[4].items[1].amount;
-  state.wagon_torques = store->categories[4].items[2].amount;
+  state.wagon_tongues = store->categories[4].items[2].amount;
   return 0;
 }
 
@@ -104,7 +104,7 @@ screen_generalStore(void)
       TAB "  your wagon\n\n"                                                                 //
       TAB "- clothing for both\n"                                                            //
       TAB "  summer and winter",
-      COLOR_YELLOW
+      COLOR_YELLOW, true
   );
   if (HALT) return;
 #undef matt_greeting
@@ -124,7 +124,6 @@ screen_generalStore(void)
   );
   if (HALT) return;
   state.stage = STATE_STAGE_START;
-  setActivity("On the trail");
-  autoSave();
+  state_autoSave();
   screen_trail();
 }

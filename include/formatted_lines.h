@@ -4,9 +4,13 @@
 #include "base.h"
 
 // Signifies a position to capture
-#define CAPTURE_CHAR   '\5'
-#define CAPTURE_STRING "\5"
+#define CAPTURE_CHAR       '\5'
+#define CAPTURE_STRING     "\5"
+#define PLACEHOLDER_CHAR   '\4'
+#define PLACEHOLDER_STRING "\4"
+#define PH_STR             PLACEHOLDER_STRING
 static_assert(sizeof(CAPTURE_STRING) == 2, "Capture string too long");
+static_assert(sizeof(PLACEHOLDER_STRING) == 2, "Placeholder string too long");
 
 typedef enum
 {
@@ -91,3 +95,8 @@ CHECK_RETURN FormattedLines textToLines(const char* text);
  * Convert a string to a single line
  */
 CHECK_RETURN FormattedLines textToLinesWL(FormattedLines lines, const char* text);
+
+#ifdef DEBUG
+void put_esc(const char* text);
+void fl_pls(const FormattedLines lines);
+#endif

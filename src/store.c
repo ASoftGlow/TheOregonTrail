@@ -28,7 +28,7 @@ showStoreCategoryMenu(struct StoreCategory* category)
   category->spent = 0;
 
   const char question_start[] = "\n\nHow many " CAPTURE_STRING;
-  const char question_end[] = "? " CAPTURE_STRING;
+  const char question_end[] = "? " CAPTURE_STRING PH_STR PH_STR PH_STR;
   const size_t len1 = strlen(category->desciption), len2 = strlen(item->name);
   char* text = malloc(len1 + len2 + sizeof(question_start) + sizeof(question_end));
   assert(text);

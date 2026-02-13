@@ -19,6 +19,7 @@ SET(SOURCE_FILES
   screens/map.c
   screens/general_store.c
 
+  ../test/test.c
   ../test/wrapping.c
 )
 

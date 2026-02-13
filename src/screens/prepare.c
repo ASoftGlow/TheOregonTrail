@@ -9,6 +9,9 @@
 #include "tui.h"
 #include "utils.h"
 
+#define NAME_PLACEHOLDER PH_STR PH_STR PH_STR PH_STR PH_STR PH_STR PH_STR PH_STR PH_STR PH_STR
+static_assert(sizeof(NAME_PLACEHOLDER) - 1 == NAME_SIZE, "Name placeholder size is incorrect");
+
 static void
 showBlackjack(void)
 {
@@ -103,9 +106,6 @@ showName(void)
       "What is the first name of the wagon leader? " ANSI_CURSOR_SAVE NAME_PLACEHOLDER, DIALOG_WIDTH, BORDER_DOUBLE,
       &(struct BoxOptions){ .color = COLOR_YELLOW }
   );
-  putsn(ANSI_CURSOR_RESTORE);
-  // clear placeholder
-  for (unsigned i = 0; i < NAME_SIZE; i++) putchar(' ');
   putsn(ANSI_CURSOR_RESTORE ANSI_CURSOR_SHOW);
   fflush(stdout);
   if (getStringInput(state.wagon_leader.name, 1, NAME_SIZE, &nameInputCallback)) return;

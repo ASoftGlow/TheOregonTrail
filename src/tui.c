@@ -440,7 +440,7 @@ removeScrollIndicator(void)
 void
 showLongInfoDialog(const char title[], const char text[], enum Color border_color, bool must_read)
 {
-  FormattedLines lines = wrapText(text, DIALOG_WIDTH - 3, NULL);
+  FormattedLines lines = wrapText(text, DIALOG_WIDTH - 4, NULL);
 
   lines = addNewline(lines);
   lines = addLine(lines, PRESS_SPACE, WRAPLINEKIND_CENTER);

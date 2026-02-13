@@ -63,6 +63,7 @@ formatted_lines_it_cur(const FormattedLinesIterator* it)
 FormattedLine*
 formatted_lines_it_next(FormattedLinesIterator* it)
 {
+  assert(((Im*)it->lines)->total_size >= it->_pos + formatted_line_size(*formatted_lines_it_cur(it)));
   if (((Im*)it->lines)->total_size == it->_pos + formatted_line_size(*formatted_lines_it_cur(it))) return NULL;
   it->_pos += formatted_line_size(*formatted_lines_it_cur(it));
   return formatted_lines_it_cur(it);
@@ -157,33 +158,45 @@ addNewline(FormattedLines lines)
   return addEmptyLine(lines, 0, WRAPLINEKIND_LTR);
 }
 
+static FormattedLines
+_wrapText_newline(FormattedLines lines, const FormattedLine line, const char* text, unsigned skipped_chars)
+{
+  lines = formatted_lines_add(lines, line);
+  FormattedLine* last = formatted_lines_back(lines);
+  unsigned j = 0;
+  for (unsigned i = 0; i < line.length + skipped_chars; i++)
+  {
+    assert(text[i]);
+    switch (text[i])
+    {
+    case CAPTURE_CHAR:     continue;
+    case PLACEHOLDER_CHAR: last->text[j++] = ' '; break;
+    default:               last->text[j++] = text[i]; break;
+    }
+  }
+  last->text[j] = '\0';
+  return lines;
+}
+
 CHECK_RETURN FormattedLines
 wrapText(const char* text, unsigned width, WrapLineOptions* options)
 {
   assert(text && text[0]); // don't wrap an empty string
   if (!options) options = &DEFAULT_WrapLineOptions;
 
-  byte start = 0;
   FormattedLines lines = options->lines;
-  if (options->lines)
-  {
-    start = (byte)formatted_lines_size(lines);
-  }
-  else
-  {
-    lines = formatted_lines_new();
-  }
-  byte li = start;
+  if (!options->lines) lines = formatted_lines_new();
 
-  unsigned i = -1, line_start = 0;
-  bool is_escaping = 0;
-  byte escaped_chars = 0;
+  const char *c = text - 1, *line_start = text;
+  bool is_escaping = 0, break_next = 0;
+  byte escaped_chars = 0, skipped_chars = 0;
 
   struct
   {
-    unsigned pos;
+    const char* pos;
     unsigned escaped_chars;
-  } last_break = { 0 };
+    unsigned skipped_chars;
+  } last_break = { c };
 
   options->captures_count = 0;
 
@@ -191,47 +204,38 @@ wrapText(const char* text, unsigned width, WrapLineOptions* options)
 
   while (1)
   {
-    switch (text[++i])
+    switch (*++c)
     {
     case '\0':
       if (!line.length) return lines;
       FALLTHROUGH;
     case '\n':
-    newline:
       line.display_length = line.length - escaped_chars;
-      escaped_chars = 0;
-      lines = formatted_lines_add(lines, line);
-      FormattedLine* last = formatted_lines_back(lines);
-      for (unsigned j = line_start, h = 0; j < i; j++)
+      lines = _wrapText_newline(lines, line, line_start, skipped_chars);
+      if (*c)
       {
-        if (text[j] == CAPTURE_CHAR) continue;
-        last->text[h++] = text[j];
+        line_start = c + 1;
+        line.length = 0;
+        escaped_chars = 0;
+        skipped_chars = 0;
+        continue;
       }
-      last->text[line.length] = '\0';
-
-      ++li;
-      line_start = i + 1;
-      line.length = 0;
       // if at end
-      if (!text[i])
-      {
 #ifdef DEBUG
-        assert(!is_escaping);
+      assert(!is_escaping);
 
-        FormattedLinesIterator it = formatted_lines_it(lines, 0);
-        FormattedLine* l = formatted_lines_it_cur(&it);
-        do {
-          assert(l->display_length <= l->length);
-          assert(l->display_length <= width);
-          for (char* c = l->text; *c; c++)
-          {
-            assert(*c != CAPTURE_CHAR);
-          }
-        } while ((l = formatted_lines_it_next(&it)));
+      FormattedLinesIterator it = formatted_lines_it(lines, 0);
+      FormattedLine* l = formatted_lines_it_cur(&it);
+      do {
+        assert(l->display_length <= l->length);
+        assert(l->display_length <= width);
+        for (char* c = l->text; *c; c++)
+        {
+          assert(*c != CAPTURE_CHAR && *c != PLACEHOLDER_CHAR);
+        }
+      } while ((l = formatted_lines_it_next(&it)));
 #endif
-        return lines;
-      }
-      continue;
+      return lines;
 
     case ESC_CHAR:
       assert(!is_escaping);
@@ -239,14 +243,16 @@ wrapText(const char* text, unsigned width, WrapLineOptions* options)
       break;
 
     case ' ':
-      last_break.pos = i;
+      last_break.pos = c;
       last_break.escaped_chars = escaped_chars;
+      last_break.skipped_chars = skipped_chars;
       break;
 
     case CAPTURE_CHAR:
       assert(options->captures && !is_escaping);
-      options->captures[options->captures_count].y = li;
+      options->captures[options->captures_count].y = formatted_lines_size(lines);
       options->captures[options->captures_count++].x = line.length;
+      ++skipped_chars;
       continue;
     }
 
@@ -254,21 +260,40 @@ wrapText(const char* text, unsigned width, WrapLineOptions* options)
     if (is_escaping)
     {
       ++escaped_chars;
-      if (isalpha(text[i]) || (i && text[i - 1] == ESC_CHAR && isdigit(text[i]))) is_escaping = 0;
+      if (isalpha(*c) || (c > text && *(c - 1) == ESC_CHAR && isdigit(*c))) is_escaping = 0;
     }
     // only check when the display length changes
-    else if (line.length - escaped_chars == width)
+    else if (line.length - escaped_chars >= width)
     {
-      if (!text[i + 1] || i - last_break.pos + 1 - escaped_chars >= width)
+      if (break_next)
       {
-        // end || no break
-        goto newline;
-      }
+        break_next = 0;
 
-      // TODO: start at wrapped word on next line
-      i = last_break.pos;
-      escaped_chars = last_break.escaped_chars;
-      goto newline;
+        if (c - last_break.pos + 1 - escaped_chars >= width)
+        {
+          FormattedLine break_line = {
+            .length = width + escaped_chars,
+            .display_length = width,
+          };
+          lines = _wrapText_newline(lines, break_line, line_start, skipped_chars);
+          line.length = 1; // probablem here
+          escaped_chars = 0;
+          // TODO: skipped_chars
+          line_start = c;
+          continue;
+        }
+
+        FormattedLine break_line = {
+          .length = last_break.pos - line_start,
+          .display_length = break_line.length - last_break.escaped_chars,
+        };
+        lines = _wrapText_newline(lines, break_line, line_start, last_break.skipped_chars);
+        line.length -= break_line.length + 1;
+        escaped_chars -= last_break.escaped_chars;
+        skipped_chars -= last_break.skipped_chars;
+        line_start = last_break.pos + 1;
+      }
+      else break_next = 1;
     }
   }
 }
@@ -350,8 +375,24 @@ textToLinesWL(FormattedLines lines, const char* in_text)
   return lines;
 }
 
+#ifdef DEBUG
 void
-fl_summary(const FormattedLines lines)
+put_esc(const char* text)
+{
+  while (*text)
+  {
+    switch (*text)
+    {
+    case ESC_CHAR:         putchar('$'); break;
+    case PLACEHOLDER_CHAR: putchar('@'); break;
+    default:               putchar(*text);
+    }
+    ++text;
+  }
+}
+
+void
+fl_pls(const FormattedLines lines)
 {
   printf("%p size: %i\n", lines, formatted_lines_size(lines));
   if (formatted_lines_size(lines))
@@ -359,7 +400,10 @@ fl_summary(const FormattedLines lines)
     FormattedLinesIterator it = formatted_lines_it(lines, 0);
     FormattedLine* line = formatted_lines_it_cur(&it);
     do {
-      printf("  len: %i:%i\t txt: %s\n", line->length, line->display_length, line->text);
+      printf("  len: %i:%i\t txt: `", line->length, line->display_length);
+      put_esc(line->text);
+      puts("`");
     } while ((line = formatted_lines_it_next(&it)));
   }
 }
+#endif

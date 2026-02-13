@@ -5,7 +5,7 @@
 #include "state.h"
 #include "tui.h"
 #ifdef DEBUG
-#include "test.h"
+#include "tests.h"
 #endif
 
 #include "setup.c"
@@ -133,8 +133,14 @@ main(int argc, char** argv)
 #ifdef DEBUG
     else if (strcmp(argv[i], "test") == 0)
     {
-      test_wrapping();
-      return 0;
+      unsigned start = 0;
+      if (argc - i > 1)
+      {
+        start = atoi(argv[i + 1]);
+      }
+      tests_setup();
+      tests_run(wrapping, start);
+      return tests_failed;
     }
 #endif
   }

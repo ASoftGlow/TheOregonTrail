@@ -3,8 +3,6 @@
 
 #define WAGON_MEMBER_COUNT 4
 #define NAME_SIZE          10
-#define NAME_PLACEHOLDER   "xxxxxxxxxx"
-static_assert(sizeof(NAME_PLACEHOLDER) - 1 == NAME_SIZE, "Name placeholder size is incorrect");
 extern const char WAGON_MEMBER_NAMES[4][NAME_SIZE];
 
 extern const char MONTHS[][16];

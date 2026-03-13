@@ -90,6 +90,7 @@ handleLoss(float bet)
 static void
 handleWin(float bet)
 {
+  state.money += bet;
   end();
 }
 

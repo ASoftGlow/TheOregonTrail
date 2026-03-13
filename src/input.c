@@ -124,11 +124,12 @@ disableInputWait(void)
 int
 getKeyInput(void)
 {
-  if (HALT) switch (HALT)
-    {
-    case HALT_QUIT:
-    case HALT_GAME: return KEY_QUIT;
-    }
+  switch (HALT)
+  {
+  case HALT_QUIT:
+  case HALT_GAME: return KEY_QUIT;
+  default:        break;
+  }
 
   // https://stackoverflow.com/a/912796
   int key = tot_getchar();

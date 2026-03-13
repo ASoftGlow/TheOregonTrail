@@ -11,7 +11,7 @@
 #include "tui.h"
 #include "utils.h"
 
-const char SETTING_TYPE_NAMES[][8] = { "number", "", "boolean", "string", "path" };
+const char SETTING_TYPE_NAMES[][8] = { "number", "", "boolean", "text", "text", "path" };
 
 #ifndef TOT_TTY
 const nfdfilteritem_t SAVE_FILE_NFD_FILTER_ITEM = { "Binary data", "dat" };
@@ -94,7 +94,7 @@ settingCallback(int index)
   printFormattedSetting(&gp_settings[index]);
   if (gp_settings[index].type != SETTING_TYPE_FRACTIONAL)
   {
-    putsn("Enter a ");
+    putsn("Enter ");
     putsn(SETTING_TYPE_NAMES[gp_settings[index].type]);
     putsn(": " ANSI_CURSOR_SHOW);
   }

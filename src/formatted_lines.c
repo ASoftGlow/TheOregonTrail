@@ -263,7 +263,7 @@ wrapText(const char* text, unsigned width, WrapLineOptions* options)
       if (isalpha(*c) || (c > text && *(c - 1) == ESC_CHAR && isdigit(*c))) is_escaping = 0;
     }
     // only check when the display length changes
-    else if (line.length - escaped_chars >= width)
+    else if ((unsigned)(line.length - escaped_chars) >= width)
     {
       if (break_next)
       {
